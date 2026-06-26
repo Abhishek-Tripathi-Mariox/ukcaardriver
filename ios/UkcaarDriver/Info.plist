@@ -36,6 +36,12 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>UKCAAR uses the camera to capture your profile photo, document images, and to scan passenger ticket QR codes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>UKCAAR needs access to your photos to upload your profile picture and documents.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>UKCAAR needs the microphone for in-app voice features.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

@@ -1,5 +1,44 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+## Daily Android development workflow
+
+`npm run android` now uses a development-friendly flow:
+
+- if the app is already installed, it just reconnects Metro and relaunches the app
+- if the app is missing, it falls back to a full `react-native run-android`
+
+`npm run android:install` always runs the native Android build and reinstall flow. That is only needed the first time, or after native changes.
+
+For normal UI and logic work, use this workflow instead:
+
+```sh
+# terminal 1: keep Metro running
+npm start
+
+# terminal 2: normal development command
+npm run android
+
+# terminal 2: reopen the already-installed app without rebuilding
+npm run android:launch
+
+# terminal 2: first install only, or after native Android changes
+npm run android:install
+
+# terminal 2: if you reconnect a physical device
+npm run android:reverse
+```
+
+Rebuild with `npm run android:install` only when one of these changes:
+
+- files under `android/`
+- native dependencies
+- Gradle config
+- app id, permissions, or native modules
+
+For TypeScript, JavaScript, styles, and most screen/component changes, leave Metro running and rely on Fast Refresh.
+
+If `npm run android:launch` says the activity does not exist, that means the driver app is not currently installed on the connected device. Run `npm run android:install` once, then go back to `npm run android` for daily work.
+
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
