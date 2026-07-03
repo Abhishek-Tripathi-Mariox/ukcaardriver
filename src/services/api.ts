@@ -1453,7 +1453,9 @@ export type DocumentType =
   | 'aadhaar-back'
   | 'profile-photo'
   | 'vehicle'
-  | 'insurance';
+  | 'insurance'
+  | 'dbs'
+  | 'phv';
 
 export interface DriverDocument {
   type: string;
@@ -1466,6 +1468,20 @@ export interface UploadedFile {
   uri: string;
   fileName?: string | null;
   type?: string | null;
+}
+
+/**
+ * The backend only accepts image/jpeg, image/png, image/webp and
+ * application/pdf. Some pickers report the non-standard 'image/jpg', and
+ * iPhones can report 'image/heic'/'image/heif' — normalise those to
+ * image/jpeg (the picker re-encodes to JPEG when resizing, so the bytes
+ * match). Anything unknown falls back to image/jpeg rather than being
+ * rejected server-side.
+ */
+function normalizeMime(type?: string | null): string {
+  const t = (type || '').toLowerCase();
+  if (t === 'image/png' || t === 'image/webp' || t === 'application/pdf') return t;
+  return 'image/jpeg';
 }
 
 /**
@@ -1487,7 +1503,7 @@ export async function uploadDocument(
   form.append('file', {
     uri: file.uri,
     name: file.fileName || `${type}.jpg`,
-    type: file.type || 'image/jpeg',
+    type: normalizeMime(file.type),
   } as any);
   form.append('type', type);
 
@@ -1522,7 +1538,7 @@ export async function uploadAvatar(
   form.append('file', {
     uri: file.uri,
     name: file.fileName || 'avatar.jpg',
-    type: file.type || 'image/jpeg',
+    type: normalizeMime(file.type),
   } as any);
   form.append('type', 'avatar');
 

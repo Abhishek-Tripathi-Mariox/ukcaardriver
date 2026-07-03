@@ -18,10 +18,18 @@ import { openAppSettings, requestCameraPermission } from './permissions';
  * with the chosen asset — or null if the user cancelled / something failed.
  */
 
+// Cap dimensions so phone photos stay comfortably under the backend's 5MB
+// limit (a 12MP shot at quality 0.8 alone can exceed it). Resizing also makes
+// the picker re-encode to JPEG, which converts iPhone HEIC into a format the
+// backend whitelist accepts. 2048px keeps document text readable.
+const MAX_DIMENSION = 2048;
+
 async function fromGallery(): Promise<Asset | null> {
   const result = await launchImageLibrary({
     mediaType: 'photo',
     quality: 0.8,
+    maxWidth: MAX_DIMENSION,
+    maxHeight: MAX_DIMENSION,
     selectionLimit: 1,
   });
   if (result.didCancel) return null;
@@ -50,6 +58,8 @@ async function fromCamera(cameraType: CameraType): Promise<Asset | null> {
   const result = await launchCamera({
     mediaType: 'photo',
     quality: 0.8,
+    maxWidth: MAX_DIMENSION,
+    maxHeight: MAX_DIMENSION,
     cameraType,
     saveToPhotos: false,
   });
