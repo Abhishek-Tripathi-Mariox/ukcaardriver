@@ -1,7 +1,7 @@
 # UKCAAR Driver — Release APK builder
 # -----------------------------------------------------------------------------
 # Builds a signed, compressed release APK ready to share with the team.
-# The APK points at the production backend (https://backend.ukcaar.com/api/v1)
+# The APK points at the production backend (https://ukcaar.com/api/v1)
 # because src/services/api.ts uses PRODUCTION_URL whenever __DEV__ is false,
 # which is automatically the case for any release build.
 #
@@ -124,7 +124,7 @@ Write-Host "APK : $ApkPath"
 Write-Host "Size: $SizeMb MB"
 Write-Host "SHA : $Hash"
 Write-Host ""
-Write-Host "Backend baked into this build: https://backend.ukcaar.com/api/v1" -ForegroundColor Cyan
+Write-Host "Backend baked into this build: https://ukcaar.com/api/v1" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Share `app-release.apk` with the team." -ForegroundColor Cyan
 Write-Host "Testers: enable 'Install unknown apps' for the file manager / browser they're using, then tap the APK to install." -ForegroundColor DarkGray

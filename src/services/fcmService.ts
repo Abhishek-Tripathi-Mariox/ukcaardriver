@@ -7,8 +7,15 @@ import notifee, {
   AndroidImportance,
   AndroidCategory,
   AndroidVisibility,
+  EventType,
 } from '@notifee/react-native';
 import { API_BASE_URL } from './api';
+
+// Where the headless background handler (index.js) stashes a ride-request
+// notification the driver tapped while the app was backgrounded-but-alive.
+// App.tsx drains this on the next foreground so the modal re-surfaces.
+// Must match PENDING_RIDE_REQUEST_KEY in index.js.
+export const PENDING_RIDE_REQUEST_KEY = 'pendingRideRequest';
 
 const FCM_TOKEN_KEY = 'fcmToken';
 const FCM_TOKEN_SYNCED_KEY = 'fcmTokenSynced';
@@ -276,10 +283,46 @@ export async function initFcm(
     if (remoteMessage && onMessage) onMessage(remoteMessage);
   });
 
-  // App was fully killed → user taps notification → app cold-starts.
-  // getInitialNotification returns the message that launched the app.
-  const initial = await messaging().getInitialNotification();
-  if (initial && onMessage) onMessage(initial);
+  // --- Notifee event bridge -------------------------------------------------
+  // Android ride/data-only pushes are rendered by Notifee (in index.js's
+  // background handler and displayRemoteMessage), NOT by FCM. That means
+  // FCM's onNotificationOpenedApp / getInitialNotification NEVER fire for
+  // them — so tapping a ride alert (or the full-screen intent launching the
+  // app) would land on the dashboard with no modal. Bridge Notifee's own
+  // press + launch events back into the same `onMessage` handler so the
+  // RideRequestModal re-surfaces. `{ data }` matches the shape the App.tsx
+  // callback reads (msg.data.kind === 'ride:new-request').
+  notifee.onForegroundEvent(({ type, detail }) => {
+    const data = detail.notification?.data;
+    if (type === EventType.PRESS && data && onMessage) {
+      onMessage({ data } as FirebaseMessagingTypes.RemoteMessage);
+    }
+  });
+
+  // App fully killed → tap/full-screen-intent launches it. Prefer the Notifee
+  // launch notification (covers our data-only alerts); fall back to FCM's for
+  // any server-rendered notification-payload messages.
+  const initialNotifee = await notifee.getInitialNotification();
+  if (initialNotifee?.notification?.data && onMessage) {
+    onMessage({
+      data: initialNotifee.notification.data,
+    } as FirebaseMessagingTypes.RemoteMessage);
+  } else {
+    const initial = await messaging().getInitialNotification();
+    if (initial && onMessage) onMessage(initial);
+  }
+
+  // Warm-background tap: index.js's onBackgroundEvent can't touch React state,
+  // so it stashes the ride to AsyncStorage. Drain anything already waiting
+  // from a tap that happened just before this listener was installed.
+  try {
+    const stashed = await AsyncStorage.getItem(PENDING_RIDE_REQUEST_KEY);
+    if (stashed && onMessage) {
+      await AsyncStorage.removeItem(PENDING_RIDE_REQUEST_KEY);
+      const data = JSON.parse(stashed);
+      onMessage({ data } as FirebaseMessagingTypes.RemoteMessage);
+    }
+  } catch {}
 }
 
 /**

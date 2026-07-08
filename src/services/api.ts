@@ -17,6 +17,9 @@ import {
 
 /** Force production API even when running a dev build (handy for testing
  *  on a physical device against staging/prod). */
+// Set true to point a dev (Metro) build at the live EC2 backend
+// (https://ukcaar.com) instead of a local LAN server. Needed to test against
+// production data / the deployed FCM fix. Flip back to false for local backend dev.
 const FORCE_PRODUCTION = false;
 
 /** Your dev machine's LAN IPv4 — physical phones on the same Wi-Fi reach
@@ -30,7 +33,7 @@ const LOCAL_IP = '192.168.1.33';
 const USE_ANDROID_EMULATOR = false;
 
 const PORT = 5000;
-const PRODUCTION_URL = 'https://backend.ukcaar.com/api/v1';
+const PRODUCTION_URL = 'https://ukcaar.com/api/v1';
 
 const devHost =
   Platform.OS === 'android' && USE_ANDROID_EMULATOR

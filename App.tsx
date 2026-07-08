@@ -1,6 +1,7 @@
 ﻿import './global.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, Modal, StatusBar, View } from 'react-native';
+import { Alert, AppState, BackHandler, Modal, StatusBar, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import DriverBottomNav from './src/components/DriverBottomNav';
 import RideRequestModal from './src/components/RideRequestModal';
@@ -8,6 +9,7 @@ import {
   buzzForRideAlert,
   ensureFcmTokenRegistered,
   initFcm,
+  PENDING_RIDE_REQUEST_KEY,
   resyncFcmTokenIfPending,
   stopRideAlert,
 } from './src/services/fcmService';
@@ -289,6 +291,43 @@ function App() {
   // navigation so we don't flash the login screen for a frame before resuming.
   const [bootResolved, setBootResolved] = useState<Stage | null>(null);
 
+  // Reconstruct the RideRequestModal from a push's data fields. Shared by the
+  // FCM foreground handler, the Notifee tap/launch bridge, and the AsyncStorage
+  // drain — all of which deliver the same `data` payload via different Android
+  // delivery paths. The same-rideId dedupe keeps a socket emit + FCM push (or a
+  // double-tap) from resetting the accept timer or stacking modals.
+  const surfaceRideRequestFromData = useCallback((d: any) => {
+    if (!d?.rideId) {
+      setStage('dashboard');
+      return;
+    }
+    setStage('dashboard');
+    setIncomingRequest(prev => {
+      if (prev?.rideId === d.rideId) return prev;
+      const fare = Number(d.fare ?? 0);
+      const distance = Number(d.distance ?? 0);
+      const duration = Number(d.duration ?? 0);
+      return {
+        rideId: String(d.rideId),
+        variant: (d.variant as 'instant' | 'private') ?? 'instant',
+        passengerName: d.passengerName ?? 'Passenger',
+        pickup: d.pickup ?? '',
+        drop: d.drop ?? '',
+        fare: `₹${Math.round(fare)}.00`,
+        distance: `${distance.toFixed(1)} km`,
+        eta: `${Math.round(duration)} min`,
+        pickupLat: Number(d.pickupLat ?? 0),
+        pickupLng: Number(d.pickupLng ?? 0),
+        dropLat: Number(d.dropLat ?? 0),
+        dropLng: Number(d.dropLng ?? 0),
+      };
+    });
+    setIncomingVisible(true);
+    // Wake the ringtone for taps that arrive without a live foreground
+    // onMessage (killed/backgrounded launch). No-ops if already ringing.
+    buzzForRideAlert();
+  }, []);
+
   useEffect(() => {
     // Listen for inbound FCM messages so we can react to admin events
     // (document rejected â†’ re-route the driver back to upload step).
@@ -312,46 +351,34 @@ function App() {
           setStage('dashboard');
         }
       } else if (kind === 'ride:new-request') {
-        // FCM is the resilient delivery path — it works regardless of
-        // socket state, backend split (customer-on-server, driver-on-local),
-        // or whether the app was just woken from a kill. Reconstruct the
-        // ride payload from the data fields and surface the modal here,
-        // so the bell rings even when no live socket emit landed. If the
-        // socket *did* fire first, `setIncomingRequest`'s same-rideId
-        // dedupe (see socket onRideRequest handler) prevents a duplicate.
-        const d = (msg.data as any) ?? {};
-        if (d.rideId) {
-          setStage('dashboard');
-          setIncomingRequest(prev => {
-            if (prev?.rideId === d.rideId) return prev;
-            const fare = Number(d.fare ?? 0);
-            const distance = Number(d.distance ?? 0);
-            const duration = Number(d.duration ?? 0);
-            return {
-              rideId: String(d.rideId),
-              variant: (d.variant as 'instant' | 'private') ?? 'instant',
-              passengerName: d.passengerName ?? 'Passenger',
-              pickup: d.pickup ?? '',
-              drop: d.drop ?? '',
-              fare: `₹${Math.round(fare)}.00`,
-              distance: `${distance.toFixed(1)} km`,
-              eta: `${Math.round(duration)} min`,
-              pickupLat: Number(d.pickupLat ?? 0),
-              pickupLng: Number(d.pickupLng ?? 0),
-              dropLat: Number(d.dropLat ?? 0),
-              dropLng: Number(d.dropLng ?? 0),
-            };
-          });
-          setIncomingVisible(true);
-          // buzzForRideAlert was already called inside fcmService's
-          // foreground onMessage handler; calling it again is a no-op
-          // (alertActive guard), so we don't repeat it here.
-        } else {
-          setStage('dashboard');
-        }
+        surfaceRideRequestFromData((msg.data as any) ?? {});
       }
     }).catch(() => {});
-  }, []);
+  }, [surfaceRideRequestFromData]);
+
+  // Drain a ride request the driver tapped while the app was backgrounded but
+  // alive: index.js's headless Notifee handler can't touch React state, so it
+  // stashes the payload in AsyncStorage. Read it now (covers the case where the
+  // stash landed after initFcm's one-shot drain) and on every return to
+  // foreground, then re-surface the modal. Ignore stale taps (>2 min old) — the
+  // ride has almost certainly been taken or auto-cancelled by then.
+  useEffect(() => {
+    const drainPendingRideRequest = async () => {
+      try {
+        const stashed = await AsyncStorage.getItem(PENDING_RIDE_REQUEST_KEY);
+        if (!stashed) return;
+        await AsyncStorage.removeItem(PENDING_RIDE_REQUEST_KEY);
+        const d = JSON.parse(stashed);
+        if (d?.tappedAt && Date.now() - d.tappedAt > 2 * 60 * 1000) return;
+        surfaceRideRequestFromData(d);
+      } catch {}
+    };
+    drainPendingRideRequest();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') drainPendingRideRequest();
+    });
+    return () => sub.remove();
+  }, [surfaceRideRequestFromData]);
 
   // On every app start (including a Metro reload), try to resume the
   // last session from the stored access token. If valid, skip login and

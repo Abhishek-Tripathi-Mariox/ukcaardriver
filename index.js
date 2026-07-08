@@ -3,17 +3,21 @@
  */
 
 import { AppRegistry, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import notifee, {
   AndroidImportance,
   AndroidCategory,
   AndroidVisibility,
+  EventType,
 } from '@notifee/react-native';
 import App from './App';
 import { name as appName } from './app.json';
 
 const DEFAULT_CHANNEL_ID = 'ukcaar_default';
 const RIDE_ALERTS_CHANNEL_ID = 'ukcaar_ride_alerts';
+// Must match PENDING_RIDE_REQUEST_KEY in src/services/fcmService.ts.
+const PENDING_RIDE_REQUEST_KEY = 'pendingRideRequest';
 // Stable ID so the foreground stopRideAlert() and the in-app
 // 'ride:request-taken' handler can cancel whatever the background handler
 // posted. Must match RIDE_ALERT_NOTIFICATION_ID in src/services/fcmService.ts.
@@ -103,6 +107,24 @@ messaging().setBackgroundMessageHandler(async (remoteMessage) => {
         : {}),
     },
   });
+});
+
+// Notifee background/killed press handler. Registering this is REQUIRED once
+// the app displays Notifee notifications from headless JS. When the driver
+// taps a ride alert while the app is backgrounded-but-alive, FCM's open events
+// don't fire (the notification was rendered by Notifee, not FCM) and we can't
+// touch React state from here — so stash the ride payload for App.tsx to drain
+// on the next foreground, which re-surfaces the RideRequestModal.
+notifee.onBackgroundEvent(async ({ type, detail }) => {
+  const data = detail?.notification?.data;
+  if (type === EventType.PRESS && data?.kind === 'ride:new-request') {
+    try {
+      await AsyncStorage.setItem(
+        PENDING_RIDE_REQUEST_KEY,
+        JSON.stringify({ ...data, tappedAt: Date.now() }),
+      );
+    } catch {}
+  }
 });
 
 AppRegistry.registerComponent(appName, () => App);
