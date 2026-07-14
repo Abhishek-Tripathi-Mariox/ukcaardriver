@@ -85,7 +85,7 @@ export function RideInProgressScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View className="bg-[#0097B3]">
         <SafeAreaView edges={['top']}>
@@ -93,7 +93,7 @@ export function RideInProgressScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="flex-1 text-[18px] font-semibold text-white">{title}</Text>
+            <Text className="flex-1 text-[18px] font-poppins-semibold text-white">{title}</Text>
           </View>
         </SafeAreaView>
       </View>
@@ -128,7 +128,7 @@ export function RideInProgressScreen({
             className="absolute right-4 bottom-4 h-14 flex-row items-center gap-2 rounded-full bg-[#0097B3] px-5 shadow-lg shadow-black/25"
           >
             <MapPinIcon size={20} color="white" />
-            <Text className="text-sm font-semibold text-white">Navigate</Text>
+            <Text className="text-sm font-poppins-semibold text-white">Navigate</Text>
           </Pressable>
         )}
       </View>
@@ -148,7 +148,7 @@ export function RideInProgressScreen({
             <View className="flex-row items-center gap-2">
               <Text className="text-[18px] font-extrabold text-[#282F39]">{liveEta}</Text>
               <View className="h-5 w-5 items-center justify-center rounded-full bg-[#FFD60A]">
-                <Text className="text-[10px] font-bold text-[#282F39]">$</Text>
+                <Text className="text-[10px] font-poppins-bold text-[#282F39]">$</Text>
               </View>
               <Text className="text-[18px] font-extrabold text-[#282F39]">{liveDistance}</Text>
             </View>
@@ -179,7 +179,7 @@ export function RideInProgressScreen({
           }}
         >
           <Text
-            className="text-sm font-bold tracking-[0.28px]"
+            className="text-sm font-poppins-bold tracking-[0.28px]"
             style={{ color: canComplete ? 'white' : '#9CA3AF' }}
           >
             COMPLETE

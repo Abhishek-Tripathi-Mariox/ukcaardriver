@@ -99,21 +99,21 @@ function StatusBadge({ status }: { status: UiStatus }) {
     return (
       <View className="flex-row items-center self-start rounded-full bg-[#E8F8F4] px-3 py-1">
         <CheckIcon size={12} color="#00C896" />
-        <Text className="ml-1 text-xs font-medium text-[#00C896]">Verified</Text>
+        <Text className="ml-1 text-xs font-poppins-medium text-[#00C896]">Verified</Text>
       </View>
     );
   }
   if (status === 'rejected') {
     return (
       <View className="flex-row items-center self-start rounded-full bg-[#FEE2E2] px-3 py-1">
-        <Text className="text-xs font-medium text-[#B91C1C]">Rejected — re-upload</Text>
+        <Text className="text-xs font-poppins-medium text-[#B91C1C]">Rejected — re-upload</Text>
       </View>
     );
   }
   if (status === 'missing') {
     return (
       <View className="flex-row items-center self-start rounded-full bg-[#F3F4F6] px-3 py-1">
-        <Text className="text-xs font-medium text-[#6A7282]">Not uploaded</Text>
+        <Text className="text-xs font-poppins-medium text-[#6A7282]">Not uploaded</Text>
       </View>
     );
   }
@@ -121,7 +121,7 @@ function StatusBadge({ status }: { status: UiStatus }) {
     return (
       <View className="flex-row items-center self-start rounded-full bg-[#E0F2FE] px-3 py-1">
         <HourglassIcon size={12} color="#0369A1" />
-        <Text className="ml-1 text-xs font-medium text-[#0369A1]">
+        <Text className="ml-1 text-xs font-poppins-medium text-[#0369A1]">
           Change Requested
         </Text>
       </View>
@@ -130,7 +130,7 @@ function StatusBadge({ status }: { status: UiStatus }) {
   return (
     <View className="flex-row items-center self-start rounded-full bg-[#FFF3E0] px-3 py-1">
       <HourglassIcon size={12} color="#FFA726" />
-      <Text className="ml-1 text-xs font-medium text-[#FFA726]">Under Review</Text>
+      <Text className="ml-1 text-xs font-poppins-medium text-[#FFA726]">Under Review</Text>
     </View>
   );
 }
@@ -172,7 +172,7 @@ function DocumentCard({
           <Text className="text-2xl">{item.emoji}</Text>
         </View>
         <View className="flex-1">
-          <Text className="text-base font-semibold text-[#101828]">{item.title}</Text>
+          <Text className="text-base font-poppins-semibold text-[#101828]">{item.title}</Text>
           <View className="mt-1">
             <StatusBadge status={item.status} />
           </View>
@@ -184,13 +184,13 @@ function DocumentCard({
           {item.expiryDate && (
             <View className="flex-row items-center justify-between">
               <Text className="text-[13px] text-[#4A5565]">Expiry Date:</Text>
-              <Text className="text-[13px] font-medium text-[#101828]">{item.expiryDate}</Text>
+              <Text className="text-[13px] font-poppins-medium text-[#101828]">{item.expiryDate}</Text>
             </View>
           )}
           {item.uploadedDate && (
             <View className="flex-row items-center justify-between">
               <Text className="text-[13px] text-[#4A5565]">Uploaded:</Text>
-              <Text className="text-[13px] font-medium text-[#101828]">{item.uploadedDate}</Text>
+              <Text className="text-[13px] font-poppins-medium text-[#101828]">{item.uploadedDate}</Text>
             </View>
           )}
         </View>
@@ -206,7 +206,7 @@ function DocumentCard({
         >
           <EyeIcon size={14} color={canView ? '#0097B3' : '#99A1AF'} />
           <Text
-            className={`text-sm font-medium ${
+            className={`text-sm font-poppins-medium ${
               canView ? 'text-[#0097B3]' : 'text-[#99A1AF]'
             }`}
           >
@@ -225,7 +225,7 @@ function DocumentCard({
             ) : (
               <>
                 <EditPencilIcon size={14} color="#0097B3" />
-                <Text className="text-sm font-medium text-[#0097B3]">
+                <Text className="text-sm font-poppins-medium text-[#0097B3]">
                   {item.status === 'rejected' ? 'Re-upload' : 'Upload'}
                 </Text>
               </>
@@ -239,7 +239,7 @@ function DocumentCard({
             className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-[#0097B3] py-4"
           >
             <EditPencilIcon size={14} color="#0097B3" />
-            <Text className="text-sm font-medium text-[#0097B3]">
+            <Text className="text-sm font-poppins-medium text-[#0097B3]">
               Request Change
             </Text>
           </Pressable>
@@ -247,7 +247,7 @@ function DocumentCard({
 
         {item.hasOpenChangeRequest && !showUploadAction && (
           <View className="flex-1 items-center justify-center rounded-xl border border-[#0097B3]/30 py-4">
-            <Text className="text-xs font-medium text-[#0097B3]">
+            <Text className="text-xs font-poppins-medium text-[#0097B3]">
               Awaiting admin
             </Text>
           </View>
@@ -419,7 +419,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
 
   return (
     <View className="flex-1 bg-[#F5F5F5]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -431,7 +431,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">Documents</Text>
+            <Text className="text-[20px] font-poppins-semibold text-white">Documents</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>

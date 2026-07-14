@@ -11,6 +11,7 @@ import {
   UsersIcon,
 } from '../components/icons/ServiceTypeIcons';
 import { fetchJourneys, type JourneySummary } from '../services/api';
+import { fs, s, vs } from '../theme/responsive';
 
 interface ScheduledJourney {
   id: string;
@@ -63,56 +64,81 @@ function UpcomingJourneyCard({
         colors={['#FAF5FF', '#F3E8FF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="rounded-2xl p-5"
+        style={{ borderRadius: s(16), padding: s(20) }}
       >
         <View className="flex-row items-start justify-between">
           <View className="flex-1 pr-3">
-            <Text className="text-base font-semibold text-[#1E293B]">
+            <Text
+              className="font-poppins-semibold text-[#1E293B]"
+              style={{ fontSize: fs(16), lineHeight: fs(22) }}
+              numberOfLines={2}
+            >
               {journey.title}
             </Text>
-            <View className="mt-1 flex-row items-center gap-4">
+            <View className="flex-row items-center gap-4" style={{ marginTop: vs(4) }}>
               <View className="flex-row items-center gap-1.5">
-                <CalendarIcon size={14} color="#8200DB" />
-                <Text className="text-[14px] font-medium text-[#8200DB]">
+                <CalendarIcon size={s(14)} color="#8200DB" />
+                <Text
+                  className="font-poppins-medium text-[#8200DB]"
+                  style={{ fontSize: fs(14) }}
+                >
                   {journey.date}
                 </Text>
               </View>
               <View className="flex-row items-center gap-1.5">
-                <ClockSmallIcon size={14} color="#8200DB" />
-                <Text className="text-[14px] font-medium text-[#8200DB]">
+                <ClockSmallIcon size={s(14)} color="#8200DB" />
+                <Text
+                  className="font-poppins-medium text-[#8200DB]"
+                  style={{ fontSize: fs(14) }}
+                >
                   {journey.time}
                 </Text>
               </View>
             </View>
           </View>
-          <View className="rounded-full bg-[#9810FA] px-3 py-1">
-            <Text className="text-[14px] font-semibold text-white">
+          <View
+            className="rounded-full bg-[#9810FA]"
+            style={{ paddingHorizontal: s(12), paddingVertical: vs(4) }}
+          >
+            <Text
+              className="font-poppins-semibold text-white"
+              style={{ fontSize: fs(14) }}
+            >
               {journey.fare}
             </Text>
           </View>
         </View>
 
-        <View className="mt-4 flex-row items-center gap-2">
-          <LocationPinSmallIcon size={16} color="#4A5565" />
-          <Text className="text-[14px] font-medium text-[#4A5565]">
-            {journey.from}
-          </Text>
-          <ArrowRightIcon size={12} color="#4A5565" />
-          <Text className="text-[14px] font-medium text-[#4A5565]">
-            {journey.to}
+        <View className="flex-row items-center" style={{ marginTop: vs(16) }}>
+          <LocationPinSmallIcon size={s(16)} color="#4A5565" />
+          <Text
+            className="font-poppins-medium text-[#4A5565] flex-1 ml-2"
+            style={{ fontSize: fs(14) }}
+            numberOfLines={2}
+          >
+            {journey.from} → {journey.to}
           </Text>
         </View>
 
-        <View className="mt-4 flex-row items-center gap-6 border-t border-[#E9D4FF] pt-3">
+        <View
+          className="flex-row items-center gap-6 border-t border-[#E9D4FF]"
+          style={{ marginTop: vs(16), paddingTop: vs(12) }}
+        >
           <View className="flex-row items-center gap-1.5">
-            <LocationPinSmallIcon size={14} color="#4A5565" />
-            <Text className="text-[14px] font-medium text-[#4A5565]">
+            <LocationPinSmallIcon size={s(14)} color="#4A5565" />
+            <Text
+              className="font-poppins-medium text-[#4A5565]"
+              style={{ fontSize: fs(14) }}
+            >
               {journey.stops} Stops
             </Text>
           </View>
           <View className="flex-row items-center gap-1.5">
-            <UsersIcon size={14} color="#4A5565" />
-            <Text className="text-[14px] font-medium text-[#4A5565]">
+            <UsersIcon size={s(14)} color="#4A5565" />
+            <Text
+              className="font-poppins-medium text-[#4A5565]"
+              style={{ fontSize: fs(14) }}
+            >
               {journey.passengers} Passengers
             </Text>
           </View>
@@ -132,55 +158,85 @@ function PastJourneyCard({
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-2xl bg-[#F9FAFB] p-5"
+      className="bg-[#F9FAFB]"
+      style={{ borderRadius: s(16), padding: s(20) }}
     >
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
-          <Text className="text-base font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(16), lineHeight: fs(22) }}
+            numberOfLines={2}
+          >
             {journey.title}
           </Text>
-          <View className="mt-1 flex-row items-center gap-4">
+          <View className="flex-row items-center gap-4" style={{ marginTop: vs(4) }}>
             <View className="flex-row items-center gap-1.5">
-              <CalendarIcon size={14} color="#4A5565" />
-              <Text className="text-[14px] font-medium text-[#4A5565]">
+              <CalendarIcon size={s(14)} color="#4A5565" />
+              <Text
+                className="font-poppins-medium text-[#4A5565]"
+                style={{ fontSize: fs(14) }}
+              >
                 {journey.date}
               </Text>
             </View>
             <View className="flex-row items-center gap-1.5">
-              <ClockSmallIcon size={14} color="#4A5565" />
-              <Text className="text-[14px] font-medium text-[#4A5565]">
+              <ClockSmallIcon size={s(14)} color="#4A5565" />
+              <Text
+                className="font-poppins-medium text-[#4A5565]"
+                style={{ fontSize: fs(14) }}
+              >
                 {journey.time}
               </Text>
             </View>
           </View>
         </View>
         <View className="items-end">
-          <Text className="text-base font-semibold text-[#00A63E]">
+          <Text
+            className="font-poppins-semibold text-[#00A63E]"
+            style={{ fontSize: fs(16) }}
+          >
             {journey.fare}
           </Text>
-          <Text className="mt-0.5 text-[12px] font-medium text-[#00A63E]">
+          <Text
+            className="font-poppins-medium text-[#00A63E]"
+            style={{ fontSize: fs(12), marginTop: vs(2) }}
+          >
             ✓ Completed
           </Text>
         </View>
       </View>
 
-      <View className="mt-4 flex-row items-center gap-2">
-        <LocationPinSmallIcon size={16} color="#4A5565" />
-        <Text className="text-[14px] font-medium text-[#4A5565]">
+      <View className="flex-row items-center" style={{ marginTop: vs(16) }}>
+        <LocationPinSmallIcon size={s(16)} color="#4A5565" />
+        <Text
+          className="font-poppins-medium text-[#4A5565] flex-1 ml-2"
+          style={{ fontSize: fs(14) }}
+          numberOfLines={2}
+        >
           {journey.from} → {journey.to}
         </Text>
       </View>
 
-      <View className="mt-4 flex-row items-center gap-6 border-t border-[#E5E7EB] pt-3">
+      <View
+        className="flex-row items-center gap-6 border-t border-[#E5E7EB]"
+        style={{ marginTop: vs(16), paddingTop: vs(12) }}
+      >
         <View className="flex-row items-center gap-1.5">
-          <LocationPinSmallIcon size={14} color="#4A5565" />
-          <Text className="text-[14px] font-medium text-[#4A5565]">
+          <LocationPinSmallIcon size={s(14)} color="#4A5565" />
+          <Text
+            className="font-poppins-medium text-[#4A5565]"
+            style={{ fontSize: fs(14) }}
+          >
             {journey.stops} Stops
           </Text>
         </View>
         <View className="flex-row items-center gap-1.5">
-          <UsersIcon size={14} color="#4A5565" />
-          <Text className="text-[14px] font-medium text-[#4A5565]">
+          <UsersIcon size={s(14)} color="#4A5565" />
+          <Text
+            className="font-poppins-medium text-[#4A5565]"
+            style={{ fontSize: fs(14) }}
+          >
             {journey.passengers} Passengers
           </Text>
         </View>
@@ -218,7 +274,7 @@ export function ScheduledJourneysScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -226,15 +282,24 @@ export function ScheduledJourneysScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center gap-4"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(20), lineHeight: fs(28) }}
+              >
                 {tab === 'past' ? 'Past Journeys' : 'Scheduled Journeys'}
               </Text>
-              <Text className="text-[14px] text-white/80">
+              <Text
+                className="text-white/80 font-poppins-regular"
+                style={{ fontSize: fs(14) }}
+              >
                 Pre-planned multi-stop rides
               </Text>
             </View>
@@ -242,38 +307,54 @@ export function ScheduledJourneysScreen({
         </SafeAreaView>
       </LinearGradient>
 
-      <View className="px-6 pt-6">
-        <View className="h-9 flex-row rounded-2xl bg-[#ECECF0] p-1">
+      <View style={{ paddingHorizontal: s(24), paddingTop: vs(24) }}>
+        <View
+          className="flex-row bg-[#ECECF0]"
+          style={{ height: vs(40), borderRadius: s(16), padding: s(4) }}
+        >
           <Pressable
             onPress={() => setTab('upcoming')}
-            className={`flex-1 items-center justify-center rounded-2xl ${
+            className={`flex-1 items-center justify-center ${
               tab === 'upcoming' ? 'bg-white' : ''
             }`}
+            style={{ borderRadius: s(14) }}
           >
-            <Text className="text-[14px] font-medium text-[#1E293B]">
+            <Text
+              className="font-poppins-medium text-[#1E293B]"
+              style={{ fontSize: fs(14) }}
+            >
               Upcoming
             </Text>
           </Pressable>
           <Pressable
             onPress={() => setTab('past')}
-            className={`flex-1 items-center justify-center rounded-2xl ${
+            className={`flex-1 items-center justify-center ${
               tab === 'past' ? 'bg-white' : ''
             }`}
+            style={{ borderRadius: s(14) }}
           >
-            <Text className="text-[14px] font-medium text-[#1E293B]">Past</Text>
+            <Text
+              className="font-poppins-medium text-[#1E293B]"
+              style={{ fontSize: fs(14) }}
+            >
+              Past
+            </Text>
           </Pressable>
         </View>
       </View>
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 24, paddingBottom: 32, gap: 16 }}
+        contentContainerStyle={{ padding: s(24), paddingBottom: vs(32), gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator className="mt-10" color="#9810FA" />
+          <ActivityIndicator style={{ marginTop: vs(40) }} color="#9810FA" />
         ) : items.length === 0 ? (
-          <Text className="mt-10 text-center text-sm text-[#6A7282]">
+          <Text
+            className="text-center font-poppins-regular text-[#6A7282]"
+            style={{ marginTop: vs(40), fontSize: fs(14) }}
+          >
             No {tab} journeys.
           </Text>
         ) : (

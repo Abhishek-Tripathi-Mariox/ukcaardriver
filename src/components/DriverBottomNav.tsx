@@ -46,7 +46,7 @@ export function DriverBottomNav({ active, onChange }: DriverBottomNavProps) {
             >
               <Icon size={20} color={isActive ? '#0097B3' : '#6A7282'} />
               <Text
-                className={`mt-1 text-[12px] font-medium ${
+                className={`mt-1 text-[12px] font-poppins-medium ${
                   isActive ? 'text-brand-teal' : 'text-[#6A7282]'
                 }`}
               >

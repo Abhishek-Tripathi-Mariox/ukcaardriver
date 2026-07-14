@@ -136,7 +136,7 @@ function ActionButton({ icon, label, onPress }: ActionButtonProps) {
         {icon}
       </View>
       <Text
-        className="text-center text-[12px] font-bold text-[#364B63]"
+        className="text-center text-[12px] font-poppins-bold text-[#364B63]"
         style={{ lineHeight: 16 }}
       >
         {label}
@@ -165,7 +165,7 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
       <View className="flex-1">
         <View className="flex-row items-center gap-2">
           <Text
-            className="text-[15px] font-semibold"
+            className="text-[15px] font-poppins-semibold"
             style={{
               color: isCompleted ? '#132235' : '#6A7282',
               // Strike-through failed rows so the eye dismisses them.
@@ -180,7 +180,7 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
               style={{ backgroundColor: badge.bg }}
             >
               <Text
-                className="text-[10px] font-bold uppercase"
+                className="text-[10px] font-poppins-bold uppercase"
                 style={{ color: badge.color }}
               >
                 {badge.label}
@@ -194,7 +194,7 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
       </View>
       {isCompleted ? (
         <Text
-          className="text-[15px] font-bold"
+          className="text-[15px] font-poppins-bold"
           style={{ color: isCredit ? '#08875D' : '#E02D3C' }}
         >
           {isCredit ? '+ ' : '- '}
@@ -204,7 +204,7 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
         // For pending / failed rows we show the *attempted* amount in grey
         // with no sign, so the driver knows what was tried but doesn't
         // mistake it for a successful credit.
-        <Text className="text-[15px] font-medium text-[#9CA3AF]">
+        <Text className="text-[15px] font-poppins-medium text-[#9CA3AF]">
           {fmtRupees(transaction.amount)}
         </Text>
       )}
@@ -248,7 +248,7 @@ export function WalletScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -260,7 +260,7 @@ export function WalletScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">My Wallet</Text>
+            <Text className="text-[20px] font-poppins-semibold text-white">My Wallet</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -274,7 +274,7 @@ export function WalletScreen({
         }
       >
         <View className="overflow-hidden rounded-2xl bg-[#0097B3] px-6 py-5">
-          <Text className="text-center text-sm font-semibold text-[#D3DDE7]">
+          <Text className="text-center text-sm font-poppins-semibold text-[#D3DDE7]">
             Total balance
           </Text>
           {loading && balance === null ? (
@@ -325,7 +325,7 @@ export function WalletScreen({
           <View className="gap-2">
             {groups.map(group => (
               <View key={group.label}>
-                <Text className="py-2 text-[11px] font-bold text-[#607080]">
+                <Text className="py-2 text-[11px] font-poppins-bold text-[#607080]">
                   {group.label}
                 </Text>
                 {group.transactions.map(t => (

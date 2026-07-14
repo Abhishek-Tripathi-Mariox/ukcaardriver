@@ -83,7 +83,7 @@ export function AddressAutocomplete({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-slate-800">{label}</Text>
+      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
       <View className="relative">
         <TextInput
           value={value}

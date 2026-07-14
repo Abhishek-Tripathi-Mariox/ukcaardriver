@@ -106,7 +106,7 @@ export function RequestDocumentChangeModal({
           }}
         >
           <View className="flex-row items-center justify-between border-b border-[#F3F4F6] px-6 py-4">
-            <Text className="text-[18px] font-semibold text-[#101828]">
+            <Text className="text-[18px] font-poppins-semibold text-[#101828]">
               Request Document Update
             </Text>
             <Pressable
@@ -123,18 +123,18 @@ export function RequestDocumentChangeModal({
             keyboardShouldPersistTaps="handled"
           >
             <View className="gap-2">
-              <Text className="text-[13px] font-medium text-[#364153]">
+              <Text className="text-[13px] font-poppins-medium text-[#364153]">
                 Document Type
               </Text>
               <View className="h-12 justify-center rounded-xl bg-[#F3F4F6] px-4">
-                <Text className="text-[14px] font-medium text-[#364153]">
+                <Text className="text-[14px] font-poppins-medium text-[#364153]">
                   {docTitle ?? '—'}
                 </Text>
               </View>
             </View>
 
             <View className="gap-2">
-              <Text className="text-[13px] font-medium text-[#364153]">
+              <Text className="text-[13px] font-poppins-medium text-[#364153]">
                 Reason for Change *
               </Text>
               <View className="h-28 rounded-xl border border-[#D7E1E7] px-4 py-3">
@@ -156,7 +156,7 @@ export function RequestDocumentChangeModal({
             </View>
 
             <View className="gap-2">
-              <Text className="text-[13px] font-medium text-[#364153]">
+              <Text className="text-[13px] font-poppins-medium text-[#364153]">
                 Upload New File (Optional)
               </Text>
               <Pressable
@@ -170,7 +170,7 @@ export function RequestDocumentChangeModal({
                     <UploadIcon size={28} color="#0097B3" />
                     <View className="mt-2 flex-row items-center">
                       <Text className="text-[14px] text-[#364153]">Drag & drop or </Text>
-                      <Text className="text-[14px] font-medium text-[#0097B3]">
+                      <Text className="text-[14px] font-poppins-medium text-[#0097B3]">
                         browse
                       </Text>
                     </View>
@@ -190,7 +190,7 @@ export function RequestDocumentChangeModal({
                 disabled={submitting}
                 className="h-12 flex-1 items-center justify-center rounded-xl"
               >
-                <Text className="text-[14px] font-semibold text-[#364153]">
+                <Text className="text-[14px] font-poppins-semibold text-[#364153]">
                   Cancel
                 </Text>
               </Pressable>
@@ -215,7 +215,7 @@ export function RequestDocumentChangeModal({
                 {submitting ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="text-[14px] font-semibold text-white">
+                  <Text className="text-[14px] font-poppins-semibold text-white">
                     Submit Request
                   </Text>
                 )}

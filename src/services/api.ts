@@ -20,12 +20,13 @@ import {
 // Set true to point a dev (Metro) build at the live EC2 backend
 // (https://ukcaar.com) instead of a local LAN server. Needed to test against
 // production data / the deployed FCM fix. Flip back to false for local backend dev.
-const FORCE_PRODUCTION = false;
+const FORCE_PRODUCTION = true;
 
-/** Your dev machine's LAN IPv4 — physical phones on the same Wi-Fi reach
- *  the backend through this. Update if your IP changes
- *  (Windows: `ipconfig`; macOS/Linux: `ifconfig` / `ip addr`). */
-const LOCAL_IP = '192.168.1.33';
+/** Your dev machine's LAN IPv4 — used ONLY by dev/USB (Metro) builds so a
+ *  physical phone on the same Wi-Fi reaches the local backend. Release/prod
+ *  APKs always use the deployed backend (PRODUCTION_URL) — see API_BASE_URL.
+ *  Update if your IP changes (Windows: `ipconfig`; macOS/Linux: `ip addr`). */
+const LOCAL_IP = '192.168.1.34';
 
 /** Set to true ONLY when running in the Android emulator (which routes
  *  10.0.2.2 → host machine's loopback). Physical devices + iOS sim/device
@@ -40,6 +41,7 @@ const devHost =
     ? '10.0.2.2'
     : LOCAL_IP;
 
+// Dev/USB build → local LAN backend; release build → deployed backend.
 export const API_BASE_URL = FORCE_PRODUCTION
   ? PRODUCTION_URL
   : __DEV__
@@ -146,7 +148,27 @@ async function request<T>(
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
+  // Hard network timeout. Raw fetch has none, so an unresponsive server (e.g.
+  // a stalled endpoint) would hang the caller forever — which froze the driver
+  // on the ride screen when "Complete" couldn't get a reply. Abort after 20s so
+  // the promise rejects and the UI can surface an error / move on instead.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      throw new ApiError('Request timed out', 0, null);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   const text = await res.text();
   const json = text ? safeParseJson(text) : null;
 
@@ -1011,6 +1033,9 @@ export interface JourneyPassenger {
   contact: string;
   boarded: boolean;
   noShow: boolean;
+  gender?: 'F' | 'M';
+  age?: number;
+  stop?: number;
 }
 
 export async function fetchJourneys(scope: 'upcoming' | 'past'): Promise<JourneySummary[]> {
@@ -1306,6 +1331,38 @@ export async function getActiveRide(): Promise<ActiveRide | null> {
     { method: 'GET', auth: true },
   );
   return res.data?.ride ?? null;
+}
+
+/** Raw ride-request payload — matches the backend socket `ride:new-request`
+ *  and `GET /rides/available` shape (numbers, not display strings). */
+export interface AvailableRidePayload {
+  rideId: string;
+  variant: 'instant' | 'private';
+  passengerName: string;
+  pickup: string;
+  drop: string;
+  pickupLat: number;
+  pickupLng: number;
+  dropLat?: number;
+  dropLng?: number;
+  fare: number;
+  distance: number;
+  duration: number;
+}
+
+/**
+ * Pull the ride requests currently offered to this driver. The REST complement
+ * to the socket `ride:new-request` push — works on a multi-instance / split
+ * backend where the socket emit can't reach the driver's process, so the
+ * dashboard's in-app request list stays reliable even when only FCM arrives.
+ * Returns [] when the driver is offline / has no fix (server-gated).
+ */
+export async function getAvailableRides(): Promise<AvailableRidePayload[]> {
+  const res = await request<{
+    success: boolean;
+    data: { rides: AvailableRidePayload[] };
+  }>(`/rides/available`, { method: 'GET', auth: true });
+  return res.data?.rides ?? [];
 }
 
 export async function rejectRideRequest(

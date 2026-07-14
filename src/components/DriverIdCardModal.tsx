@@ -19,8 +19,8 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center">
       <Text className="w-[126px] text-[15px] text-[#607080]">{label}</Text>
-      <Text className="w-3 text-center text-xs font-bold text-[#607080]">:</Text>
-      <Text className="flex-1 text-[15px] font-semibold text-[#132235]">{value}</Text>
+      <Text className="w-3 text-center text-xs font-poppins-bold text-[#607080]">:</Text>
+      <Text className="flex-1 text-[15px] font-poppins-semibold text-[#132235]">{value}</Text>
     </View>
   );
 }
@@ -77,7 +77,7 @@ export function DriverIdCardModal({
           </View>
 
           <View className="mt-3 items-center px-6">
-            <Text className="text-[20px] font-bold text-[#132235]">{name}</Text>
+            <Text className="text-[20px] font-poppins-bold text-[#132235]">{name}</Text>
             <Text className="mt-1 text-[15px] text-[#364B63]">{partnerType}</Text>
             <Text className="text-[15px] text-[#364B63]">{partnerId}</Text>
           </View>

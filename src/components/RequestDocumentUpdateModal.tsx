@@ -59,7 +59,7 @@ export function RequestDocumentUpdateModal({
           }}
         >
           <View className="flex-row items-center justify-between border-b border-[#F3F4F6] px-6 py-4">
-            <Text className="text-[18px] font-semibold text-[#101828]">
+            <Text className="text-[18px] font-poppins-semibold text-[#101828]">
               Request Document Update
             </Text>
             <Pressable onPress={handleClose} hitSlop={10} className="h-8 w-8 items-center justify-center">
@@ -69,14 +69,14 @@ export function RequestDocumentUpdateModal({
 
           <View className="gap-5 px-6 py-6">
             <View>
-              <Text className="text-[13px] font-medium text-[#364153]">Document Type</Text>
+              <Text className="text-[13px] font-poppins-medium text-[#364153]">Document Type</Text>
               <View className="mt-2 h-11 justify-center rounded-xl bg-[#F3F4F6] px-4">
-                <Text className="text-sm font-medium text-[#364153]">{documentType}</Text>
+                <Text className="text-sm font-poppins-medium text-[#364153]">{documentType}</Text>
               </View>
             </View>
 
             <View>
-              <Text className="text-[13px] font-medium text-[#364153]">Reason for Change *</Text>
+              <Text className="text-[13px] font-poppins-medium text-[#364153]">Reason for Change *</Text>
               <View className="mt-2 h-[110px] rounded-xl border border-[#D7E1E7] px-4 py-3">
                 <TextInput
                   value={reason}
@@ -97,7 +97,7 @@ export function RequestDocumentUpdateModal({
             </View>
 
             <View>
-              <Text className="text-[13px] font-medium text-[#364153]">
+              <Text className="text-[13px] font-poppins-medium text-[#364153]">
                 Upload New File (Optional)
               </Text>
               <Pressable
@@ -107,11 +107,11 @@ export function RequestDocumentUpdateModal({
                 <UploadIcon size={32} color="#0097B3" />
                 <View className="mt-3 flex-row items-center">
                   <Text className="text-sm text-[#364153]">Drag & drop or </Text>
-                  <Text className="text-base font-medium text-[#0097B3]">browse</Text>
+                  <Text className="text-base font-poppins-medium text-[#0097B3]">browse</Text>
                 </View>
                 <Text className="mt-1 text-xs text-[#6A7282]">PNG, JPG or PDF (Max 5MB)</Text>
                 {fileName && (
-                  <Text className="mt-2 text-xs font-medium text-[#00C896]">{fileName}</Text>
+                  <Text className="mt-2 text-xs font-poppins-medium text-[#00C896]">{fileName}</Text>
                 )}
               </Pressable>
             </View>
@@ -121,7 +121,7 @@ export function RequestDocumentUpdateModal({
                 onPress={handleClose}
                 className="h-12 flex-1 items-center justify-center rounded-xl"
               >
-                <Text className="text-sm font-semibold text-[#364153]">Cancel</Text>
+                <Text className="text-sm font-poppins-semibold text-[#364153]">Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={handleSubmit}
@@ -136,7 +136,7 @@ export function RequestDocumentUpdateModal({
                   elevation: 4,
                 }}
               >
-                <Text className="text-sm font-semibold text-white">Submit Request</Text>
+                <Text className="text-sm font-poppins-semibold text-white">Submit Request</Text>
               </Pressable>
             </View>
           </View>

@@ -14,16 +14,15 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { pickImageFromSource } from '../services/imagePicker';
 import {
-  BackArrowIcon,
   ChevronDownIcon,
   UploadIcon,
 } from '../components/icons/ServiceTypeIcons';
-import LogoutButton from '../components/LogoutButton';
+import RegistrationHeader from '../components/RegistrationHeader';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { fs, s, vs } from '../theme/responsive';
 import {
   CatalogueType,
   DocumentType,
@@ -77,7 +76,7 @@ interface FieldProps {
 function Field({ label, children }: FieldProps) {
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-slate-800">{label}</Text>
+      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
       {children}
     </View>
   );
@@ -109,7 +108,8 @@ function TextField({
       keyboardType={keyboardType}
       maxLength={maxLength}
       autoCapitalize={autoCapitalize}
-      className="h-12 rounded-2xl bg-[#F3F3F5] px-3 text-base text-slate-900"
+      className="rounded-2xl bg-[#F3F3F5] font-poppins text-slate-900"
+      style={{ height: vs(50), paddingHorizontal: s(14), fontSize: fs(15) }}
     />
   );
 }
@@ -125,12 +125,16 @@ function SelectField({ value, placeholder, onPress }: SelectFieldProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="h-12 flex-row items-center justify-between rounded-2xl bg-[#F3F3F5] px-3"
+      className="flex-row items-center justify-between rounded-2xl bg-[#F3F3F5]"
+      style={{ height: vs(50), paddingHorizontal: s(14) }}
     >
-      <Text className={`text-base ${isEmpty ? 'text-[#717182]' : 'text-slate-900'}`}>
+      <Text
+        className={`font-poppins ${isEmpty ? 'text-[#717182]' : 'text-slate-900'}`}
+        style={{ fontSize: fs(15) }}
+      >
         {isEmpty ? placeholder : value}
       </Text>
-      <ChevronDownIcon size={14} />
+      <ChevronDownIcon size={s(14)} />
     </Pressable>
   );
 }
@@ -161,7 +165,7 @@ function DocUploadField({
   const hasFile = uploadedUrl !== null;
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-slate-800">{label}</Text>
+      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
       <Pressable
         onPress={uploading ? undefined : onPress}
         className={`h-28 items-center justify-center rounded-2xl border ${
@@ -188,7 +192,7 @@ function PickerModal({ visible, title, options, onSelect, onClose }: PickerModal
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable onPress={onClose} className="flex-1 bg-black/40 justify-end">
         <Pressable className="rounded-t-3xl bg-white p-5" style={{ maxHeight: '70%' }}>
-          <Text className="mb-3 text-lg font-semibold text-slate-800">{title}</Text>
+          <Text className="mb-3 text-lg font-poppins-semibold text-slate-800">{title}</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             {options.map(option => (
               <Pressable
@@ -204,7 +208,7 @@ function PickerModal({ visible, title, options, onSelect, onClose }: PickerModal
             ))}
           </ScrollView>
           <Pressable onPress={onClose} className="mt-4 h-12 items-center justify-center rounded-2xl bg-slate-100">
-            <Text className="text-sm font-medium text-slate-600">Cancel</Text>
+            <Text className="text-sm font-poppins-medium text-slate-600">Cancel</Text>
           </Pressable>
         </Pressable>
       </Pressable>
@@ -273,7 +277,6 @@ export function VehicleDetailsScreen({
     };
   }, []);
 
-  const progressPct = `${(currentStep / totalSteps) * 100}%` as const;
   const update = <K extends keyof VehicleDetails>(key: K, value: VehicleDetails[K]) =>
     setDetails(prev => ({ ...prev, [key]: value }));
 
@@ -354,34 +357,14 @@ export function VehicleDetailsScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
-      <LinearGradient
-        colors={['#0097B3', '#00C896']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      >
-        <SafeAreaView edges={['top']}>
-          <View className="px-6 pb-4 pt-4">
-            <View className="flex-row items-center gap-4">
-              <Pressable onPress={onBack} hitSlop={12}>
-                <BackArrowIcon size={24} color="white" />
-              </Pressable>
-              <View className="flex-1">
-                <Text className="text-[20px] font-semibold text-white">
-                  Driver Registration
-                </Text>
-                <Text className="mt-0.5 text-sm text-white/80">
-                  Step {currentStep} of {totalSteps}
-                </Text>
-              </View>
-              <LogoutButton onLoggedOut={onLogout} tint="light" />
-            </View>
-            <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/30">
-              <View className="h-full bg-white" style={{ width: progressPct }} />
-            </View>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <RegistrationHeader
+        title="Driver Registration"
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        onBack={onBack}
+        onLogout={onLogout}
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -393,7 +376,7 @@ export function VehicleDetailsScreen({
           contentContainerClassName="px-6 pt-6 pb-10"
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="mb-4 text-[20px] font-semibold text-slate-800">
+          <Text className="font-poppins-semibold text-slate-800" style={{ marginBottom: vs(16), fontSize: fs(20) }}>
             Vehicle Details
           </Text>
 
@@ -443,7 +426,7 @@ export function VehicleDetailsScreen({
 
           <View className="mb-4 flex-row gap-4">
             <View className="flex-1">
-              <Text className="mb-2 text-sm font-medium text-slate-800">Year</Text>
+              <Text className="mb-2 text-sm font-poppins-medium text-slate-800">Year</Text>
               <SelectField
                 value={details.year}
                 placeholder="2023"
@@ -451,7 +434,7 @@ export function VehicleDetailsScreen({
               />
             </View>
             <View className="flex-1">
-              <Text className="mb-2 text-sm font-medium text-slate-800">Seating</Text>
+              <Text className="mb-2 text-sm font-poppins-medium text-slate-800">Seating</Text>
               <TextField
                 value={details.seating}
                 placeholder="7"
@@ -505,22 +488,16 @@ export function VehicleDetailsScreen({
           />
 
           {catalogueError && (
-            <Text className="mb-2 text-xs text-red-600">{catalogueError}</Text>
+            <Text className="font-poppins text-red-600" style={{ marginBottom: vs(8), fontSize: fs(12) }}>{catalogueError}</Text>
           )}
 
-          <Pressable
-            disabled={!canProceed}
+          <PrimaryButton
+            label="Next"
             onPress={handleNext}
-            className={`mt-2 h-12 flex-row items-center justify-center rounded-2xl ${
-              canProceed ? 'bg-brand-teal' : 'bg-brand-teal/50'
-            }`}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text className="text-sm font-medium text-white">Next</Text>
-            )}
-          </Pressable>
+            disabled={!canProceed}
+            loading={submitting}
+            className="mt-2"
+          />
         </ScrollView>
       </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

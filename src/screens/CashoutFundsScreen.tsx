@@ -142,7 +142,7 @@ export function CashoutFundsScreen({
 
   return (
     <View className="flex-1 bg-[#F5F5F5]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -154,7 +154,7 @@ export function CashoutFundsScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Cashout Funds
             </Text>
           </View>
@@ -185,14 +185,14 @@ export function CashoutFundsScreen({
           {loading ? (
             <ActivityIndicator color="#0097B3" className="mt-3" />
           ) : (
-            <Text className="mt-1 text-[36px] font-bold text-[#0097B3]">
+            <Text className="mt-1 text-[36px] font-poppins-bold text-[#0097B3]">
               {fmtRupees(balance ?? 0)}
             </Text>
           )}
         </View>
 
         <View className="gap-3">
-          <Text className="text-sm font-semibold text-[#101828]">
+          <Text className="text-sm font-poppins-semibold text-[#101828]">
             Select Payout Method
           </Text>
 
@@ -207,7 +207,7 @@ export function CashoutFundsScreen({
           >
             <RadioDot selected={method === 'bank'} />
             <View className="flex-1">
-              <Text className="text-sm font-semibold text-[#101828]">
+              <Text className="text-sm font-poppins-semibold text-[#101828]">
                 Bank Account
               </Text>
               <Text className="text-xs text-[#6A7282]">
@@ -227,7 +227,7 @@ export function CashoutFundsScreen({
           >
             <RadioDot selected={method === 'upi'} />
             <View className="flex-1">
-              <Text className="text-sm font-semibold text-[#101828]">UPI ID</Text>
+              <Text className="text-sm font-poppins-semibold text-[#101828]">UPI ID</Text>
               <Text className="text-xs text-[#6A7282]">Transfer to UPI</Text>
             </View>
           </Pressable>
@@ -246,7 +246,7 @@ export function CashoutFundsScreen({
           >
             <View className="flex-1">
               <Text className="text-xs text-[#6A7282]">Linked Bank Account</Text>
-              <Text className="mt-0.5 text-sm font-semibold text-[#101828]">
+              <Text className="mt-0.5 text-sm font-poppins-semibold text-[#101828]">
                 {accountLast4
                   ? `${bankName || 'Bank'} •••• ${accountLast4}`
                   : 'No bank linked'}
@@ -264,7 +264,7 @@ export function CashoutFundsScreen({
 
         {method === 'upi' && (
           <View className="gap-2">
-            <Text className="text-sm font-semibold text-[#101828]">UPI ID</Text>
+            <Text className="text-sm font-poppins-semibold text-[#101828]">UPI ID</Text>
             <View className="rounded-xl border-[1.2px] border-[#E5E7EB] bg-white px-4 py-3">
               <TextInput
                 value={upiId}
@@ -279,18 +279,18 @@ export function CashoutFundsScreen({
         )}
 
         <View className="gap-2">
-          <Text className="text-sm font-semibold text-[#101828]">
+          <Text className="text-sm font-poppins-semibold text-[#101828]">
             Enter Amount
           </Text>
           <View className="flex-row items-center rounded-xl border-[1.2px] border-[#E5E7EB] bg-white px-4 py-4">
-            <Text className="text-[20px] font-semibold text-[#101828]">₹</Text>
+            <Text className="text-[20px] font-poppins-semibold text-[#101828]">₹</Text>
             <TextInput
               value={amountText}
               onChangeText={t => setAmountText(t.replace(/[^0-9]/g, ''))}
               keyboardType="number-pad"
               placeholder="0"
               placeholderTextColor="rgba(10,10,10,0.5)"
-              className="ml-2 flex-1 text-[20px] font-semibold text-[#101828]"
+              className="ml-2 flex-1 text-[20px] font-poppins-semibold text-[#101828]"
             />
           </View>
           {amountText.length > 0 && numericAmount < MIN_WITHDRAWAL && (
@@ -326,7 +326,7 @@ export function CashoutFundsScreen({
             elevation: 4,
           }}
         >
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-poppins-semibold text-white">
             Proceed to Cashout
           </Text>
         </Pressable>
@@ -341,12 +341,12 @@ export function CashoutFundsScreen({
       >
         <View className="flex-1 items-center justify-center bg-black/40 px-4">
           <View className="w-full rounded-2xl bg-white p-6">
-            <Text className="text-[20px] font-semibold text-[#101828]">
+            <Text className="text-[20px] font-poppins-semibold text-[#101828]">
               Confirm Withdrawal
             </Text>
             <Text className="mt-3 text-sm text-[#364153]">
               You're about to withdraw{' '}
-              <Text className="font-semibold text-[#0097B3]">
+              <Text className="font-poppins-semibold text-[#0097B3]">
                 {fmtRupees(numericAmount)}
               </Text>
               .
@@ -355,7 +355,7 @@ export function CashoutFundsScreen({
               {method === 'bank'
                 ? `Amount will be credited to your linked account ending `
                 : `Amount will be sent to your UPI `}
-              <Text className="font-bold">
+              <Text className="font-poppins-bold">
                 {method === 'bank' ? accountLast4 : upiId}
               </Text>
               .
@@ -366,7 +366,7 @@ export function CashoutFundsScreen({
                 disabled={submitting}
                 className="flex-1 items-center justify-center py-3"
               >
-                <Text className="text-sm font-semibold text-[#364153]">
+                <Text className="text-sm font-poppins-semibold text-[#364153]">
                   Cancel
                 </Text>
               </Pressable>
@@ -378,7 +378,7 @@ export function CashoutFundsScreen({
                 {submitting ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="text-sm font-semibold text-white">
+                  <Text className="text-sm font-poppins-semibold text-white">
                     Confirm
                   </Text>
                 )}

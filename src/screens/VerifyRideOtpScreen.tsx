@@ -113,7 +113,7 @@ export function VerifyRideOtpScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -126,7 +126,7 @@ export function VerifyRideOtpScreen({
               <BackArrowIcon size={24} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">Verify OTP</Text>
+              <Text className="text-[20px] font-poppins-semibold text-white">Verify OTP</Text>
               <Text className="text-sm text-white/80">Ride ID: {displayRideId}</Text>
             </View>
             {rideId && (
@@ -135,7 +135,7 @@ export function VerifyRideOtpScreen({
                 hitSlop={6}
                 className="rounded-full bg-white/20 px-3 py-1.5"
               >
-                <Text className="text-xs font-medium text-white">I've arrived</Text>
+                <Text className="text-xs font-poppins-medium text-white">I've arrived</Text>
               </Pressable>
             )}
           </View>
@@ -158,9 +158,9 @@ export function VerifyRideOtpScreen({
               </View>
               <View className="flex-1">
                 <Text className="text-xs text-[#6A7282]">Pickup</Text>
-                <Text className="text-sm font-medium text-[#1E293B]">{pickup}</Text>
+                <Text className="text-sm font-poppins-medium text-[#1E293B]">{pickup}</Text>
                 <Text className="mt-3 text-xs text-[#6A7282]">Drop</Text>
-                <Text className="text-sm font-medium text-[#1E293B]">{drop}</Text>
+                <Text className="text-sm font-poppins-medium text-[#1E293B]">{drop}</Text>
               </View>
             </View>
           </View>
@@ -188,7 +188,7 @@ export function VerifyRideOtpScreen({
             className="absolute left-4 bottom-[260px] h-14 flex-row items-center gap-2 rounded-full bg-[#0097B3] px-5 shadow-lg shadow-black/25"
           >
             <MapPinIcon size={20} color="white" />
-            <Text className="text-sm font-semibold text-white">Navigate</Text>
+            <Text className="text-sm font-poppins-semibold text-white">Navigate</Text>
           </Pressable>
         )}
 
@@ -213,7 +213,7 @@ export function VerifyRideOtpScreen({
           elevation: 20,
         }}
       >
-        <Text className="text-center text-[20px] font-semibold text-[#1E293B]">
+        <Text className="text-center text-[20px] font-poppins-semibold text-[#1E293B]">
           Verify Passenger OTP
         </Text>
         <Text className="mt-1 text-center text-sm text-[#6A7282]">
@@ -223,7 +223,7 @@ export function VerifyRideOtpScreen({
         <View className="mt-4 flex-row items-center justify-between rounded-2xl bg-[#F9FAFB] p-4">
           <View>
             <Text className="text-sm text-[#6A7282]">Passenger</Text>
-            <Text className="text-base font-semibold text-[#1E293B]">{passengerName}</Text>
+            <Text className="text-base font-poppins-semibold text-[#1E293B]">{passengerName}</Text>
           </View>
           <Pressable className="h-11 w-11 items-center justify-center rounded-full bg-brand-teal">
             <PhoneIcon size={20} color="white" />
@@ -250,7 +250,7 @@ export function VerifyRideOtpScreen({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-sm font-medium text-white">Verify & Start Ride</Text>
+            <Text className="text-sm font-poppins-medium text-white">Verify & Start Ride</Text>
           )}
         </Pressable>
       </View>

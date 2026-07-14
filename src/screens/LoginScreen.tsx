@@ -1,27 +1,28 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Keyboard,
-  Pressable,
   StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconPhone, logoUkcaar } from '../assets/images';
-import { sendOtp, ApiError } from '../services/api';
+import { sendOtp } from '../services/api';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { fs, s, vs } from '../theme/responsive';
 
 interface LoginScreenProps {
   onSendOtp: (mobile: string) => void;
+  /** "New Driver? Register Now" tap — optional (renders the link regardless). */
+  onRegister?: () => void;
 }
 
-export function LoginScreen({
-  onSendOtp,
-}: LoginScreenProps) {
+export function LoginScreen({ onSendOtp, onRegister }: LoginScreenProps) {
   const [mobile, setMobile] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +37,10 @@ export function LoginScreen({
       onSendOtp(mobile);
     } catch (err: any) {
       console.warn('[sendOtp] failed:', err);
-      const message =
+      setError(
         (err && err.message) ||
-        'Could not send OTP. Check your connection and try again.';
-      setError(message);
+          'Could not send OTP. Check your connection and try again.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -48,34 +49,46 @@ export function LoginScreen({
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View className="flex-1 bg-white">
-        <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        {/* Full teal→green gradient header with a rounded bottom; the white
+            card overlaps its lower edge (matches Figma). */}
         <LinearGradient
           colors={['#0097B3', '#00C896']}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          className="absolute left-0 right-0 top-0 h-[276px] rounded-b-3xl"
+          style={{ height: vs(452), borderBottomLeftRadius: s(28), borderBottomRightRadius: s(28) }}
+          className="absolute left-0 right-0 top-0"
         />
+
         <SafeAreaView edges={['top']} className="flex-1">
-          <View className="mt-2 items-center">
-            <View className="h-24 w-24 overflow-hidden rounded-full bg-white">
-              <Image
-                source={logoUkcaar}
-                resizeMode="cover"
-                className="h-full w-full"
-              />
+          <View className="items-center" style={{ marginTop: vs(56) }}>
+            <View
+              className="overflow-hidden rounded-full bg-white"
+              style={{ height: s(96), width: s(96) }}
+            >
+              <Image source={logoUkcaar} resizeMode="cover" className="h-full w-full" />
             </View>
-            <Text className="mt-5 text-[30px] font-semibold text-white">
+            <Text
+              className="font-poppins-bold text-white"
+              style={{ marginTop: vs(18), fontSize: fs(30) }}
+            >
               Welcome Driver 👋
             </Text>
           </View>
 
-          <View className="mx-6 mt-6 rounded-2xl bg-white p-6 shadow-lg shadow-black/10">
-            <Text className="mb-2 text-sm font-medium text-slate-800">
+          <View
+            className="rounded-3xl bg-white shadow-lg shadow-black/10"
+            style={{ marginHorizontal: s(20), marginTop: vs(40), padding: s(22) }}
+          >
+            <Text
+              className="font-poppins-medium text-slate-800"
+              style={{ marginBottom: vs(8), fontSize: fs(14) }}
+            >
               Mobile Number
             </Text>
-            <View className="relative">
-              <View className="absolute left-3 top-0 bottom-0 z-10 justify-center">
-                <IconPhone width={20} height={20} />
+            <View className="relative justify-center">
+              <View className="absolute left-3 z-10">
+                <IconPhone width={s(20)} height={s(20)} />
               </View>
               <TextInput
                 value={mobile}
@@ -88,31 +101,45 @@ export function LoginScreen({
                 keyboardType="number-pad"
                 maxLength={10}
                 editable={!submitting}
-                className="h-12 rounded-2xl border border-slate-200 bg-[#F3F3F5] pl-12 pr-3 text-base text-slate-900"
+                className="rounded-2xl border border-slate-200 bg-[#F3F3F5] font-poppins text-slate-900"
+                style={{ height: vs(50), paddingLeft: s(44), paddingRight: s(12), fontSize: fs(15) }}
               />
             </View>
 
             {error && (
-              <Text className="mt-2 text-xs text-red-600">{error}</Text>
+              <Text className="font-poppins text-red-600" style={{ marginTop: vs(8), fontSize: fs(12) }}>
+                {error}
+              </Text>
             )}
 
-            <Pressable
-              disabled={!canSubmit}
+            <PrimaryButton
+              label="Send OTP"
               onPress={handleSubmit}
-              className={`mt-5 h-12 flex-row items-center justify-center rounded-2xl shadow-md ${
-                canSubmit ? 'bg-brand-teal' : 'bg-brand-teal/60'
-              }`}
+              disabled={!canSubmit}
+              loading={submitting}
+              className="mt-5"
+            />
+
+            <TouchableOpacity
+              onPress={onRegister}
+              disabled={!onRegister}
+              className="items-center"
+              style={{ marginTop: vs(18) }}
             >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text className="text-sm font-medium text-white">Send OTP</Text>
-              )}
-            </Pressable>
+              <Text
+                className="font-poppins-semibold text-brand-teal"
+                style={{ fontSize: fs(14) }}
+              >
+                New Driver? Register Now →
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View className="flex-1" />
-          <Text className="mb-8 text-center text-xs text-slate-400">
+          <Text
+            className="text-center font-poppins text-slate-400"
+            style={{ marginBottom: vs(28), fontSize: fs(12) }}
+          >
             By continuing, you agree to our Terms & Conditions
           </Text>
         </SafeAreaView>

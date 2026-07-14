@@ -33,7 +33,7 @@ export function LanguageBar({ onPress, tint = 'light' }: LanguageBarProps) {
       >
         <Text className="text-lg mr-1.5">{meta.flag}</Text>
         <Text
-          className={`text-xs font-semibold ${
+          className={`text-xs font-poppins-semibold ${
             isLight ? 'text-white' : 'text-slate-800'
           }`}
         >

@@ -25,15 +25,18 @@ import {
 } from '../components/icons/ServiceTypeIcons';
 import {
   DriverDashboard,
-  fetchMyDashboard,
+  fetchMyDashboardFresh,
   fetchUnreadNotificationCount,
   setOnlineStatus,
+  fetchJourneys,
+  type JourneySummary,
 } from '../services/api';
 import {
   ensureLocationPermission,
   startLocationReporting,
   stopLocationReporting,
 } from '../services/locationReporter';
+import { fs, s, vs } from '../theme/responsive';
 
 type ServiceType = 'instant' | 'private' | 'scheduled';
 
@@ -71,6 +74,13 @@ const RIDE_TYPE_CARDS: RideTypeCard[] = [
 
 interface DriverDashboardScreenProps {
   onAcceptRide?: (request: RideRequest) => void;
+  /** Ride requests currently awaiting a decision — rendered as an in-app list
+   *  so the driver can accept/reject without relying on the pop-up modal. */
+  incomingRequests?: RideRequest[];
+  onAcceptRequest?: (request: RideRequest) => void;
+  onRejectRequest?: (request: RideRequest) => void;
+  /** Re-open the full-screen request modal for a tapped list item. */
+  onOpenRequest?: (request: RideRequest) => void;
   onOpenEarnings?: () => void;
   onOpenProfile?: () => void;
   onOpenNotifications?: () => void;
@@ -86,17 +96,29 @@ interface CounterCardProps {
 
 function CounterCard({ value, label, icon }: CounterCardProps) {
   return (
-    <View className="flex-1 flex-row items-start justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
+    <View
+      style={{ paddingHorizontal: s(16), paddingVertical: vs(18), borderRadius: s(15) }}
+      className="flex-1 flex-row items-start justify-between border border-[#EBEBEB] bg-white"
+    >
       <View>
-        <Text className="text-[22px] font-semibold leading-[22px] text-brand-teal">
+        <Text
+          style={{ fontSize: fs(22), lineHeight: fs(24) }}
+          className="font-poppins-semibold text-brand-teal"
+        >
           {value}
         </Text>
-        <Text className="mt-2 text-[12px] font-bold uppercase text-[#6C757D]">
+        <Text
+          style={{ fontSize: fs(12), marginTop: vs(6) }}
+          className="font-poppins-bold uppercase text-[#6C757D]"
+        >
           {label}
         </Text>
       </View>
-      <View className="h-[35px] w-[35px] items-center justify-center rounded-full bg-[#F0F0FA]">
-        {icon === 'rupee' ? <RupeeBadgeIcon size={18} /> : <ListBadgeIcon size={18} />}
+      <View
+        style={{ height: s(36), width: s(36) }}
+        className="items-center justify-center rounded-full bg-[#F0F0FA]"
+      >
+        {icon === 'rupee' ? <RupeeBadgeIcon size={s(18)} /> : <ListBadgeIcon size={s(18)} />}
       </View>
     </View>
   );
@@ -113,6 +135,10 @@ const formatRupees = (n: number): string => {
 
 export function DriverDashboardScreen({
   onAcceptRide,
+  incomingRequests = [],
+  onAcceptRequest,
+  onRejectRequest,
+  onOpenRequest,
   onOpenEarnings,
   onOpenProfile,
   onOpenNotifications,
@@ -124,6 +150,7 @@ export function DriverDashboardScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [upcomingJourneys, setUpcomingJourneys] = useState<JourneySummary[]>([]);
 
   const refreshUnread = useCallback(async () => {
     try {
@@ -136,8 +163,13 @@ export function DriverDashboardScreen({
 
   const load = useCallback(async () => {
     try {
-      const [fresh] = await Promise.all([fetchMyDashboard(), refreshUnread()]);
+      const [fresh, journeys] = await Promise.all([
+        fetchMyDashboardFresh(),
+        fetchJourneys('upcoming').catch(() => [] as JourneySummary[]),
+        refreshUnread(),
+      ]);
       setData(fresh);
+      setUpcomingJourneys(journeys);
     } catch (err) {
       console.warn('[dashboard] fetch failed:', err);
     } finally {
@@ -278,7 +310,7 @@ export function DriverDashboardScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={['#0097B3', '#00C896']}
         start={{ x: 0.5, y: 0 }}
@@ -286,39 +318,50 @@ export function DriverDashboardScreen({
         className="rounded-b-3xl"
       >
         <SafeAreaView edges={['top']}>
-          <View className="px-6 pb-6 pt-2">
+          <View style={{ paddingHorizontal: s(24), paddingBottom: vs(24), paddingTop: vs(8) }}>
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-[24px] font-semibold leading-8 text-white">
+                <Text
+                  style={{ fontSize: fs(24), lineHeight: fs(32) }}
+                  className="font-poppins-semibold text-white"
+                >
                   Welcome back,
                 </Text>
-                <Text className="text-[18px] text-white/90">{driverName} 👋</Text>
+                <Text
+                  style={{ fontSize: fs(18) }}
+                  className="font-poppins text-white/90"
+                >
+                  {driverName} 👋
+                </Text>
               </View>
-              <View className="flex-row items-center gap-3">
+              <View className="flex-row items-center" style={{ gap: s(12) }}>
                 <Pressable
                   onPress={onOpenWallet}
-                  className="h-11 w-11 items-center justify-center rounded-full bg-white/20"
+                  style={{ height: s(44), width: s(44) }}
+                  className="items-center justify-center rounded-full bg-white/20"
                   hitSlop={8}
                 >
-                  <WalletIcon size={20} color="white" />
+                  <WalletIcon size={s(20)} color="white" />
                 </Pressable>
                 <Pressable
                   onPress={() => {
                     onOpenNotifications?.();
-                    // Optimistically clear the badge — the notifications
-                    // screen will mark them all read on mount.
                     setUnreadNotifs(0);
                   }}
-                  className="h-11 w-11 items-center justify-center rounded-full bg-white/20"
+                  style={{ height: s(44), width: s(44) }}
+                  className="items-center justify-center rounded-full bg-white/20"
                   hitSlop={8}
                 >
-                  <BellIcon size={20} color="white" />
+                  <BellIcon size={s(20)} color="white" />
                   {unreadNotifs > 0 && (
                     <View
-                      className="absolute -right-0.5 -top-0.5 min-w-[18px] items-center justify-center rounded-full border-[1.5px] border-[#0097B3] bg-[#E02D3C] px-1"
-                      style={{ height: 18 }}
+                      className="absolute -right-0.5 -top-0.5 items-center justify-center rounded-full border-[1.5px] border-[#0097B3] bg-[#E02D3C] px-1"
+                      style={{ height: s(18), minWidth: s(18) }}
                     >
-                      <Text className="text-[10px] font-bold text-white">
+                      <Text
+                        style={{ fontSize: fs(10) }}
+                        className="font-poppins-bold text-white"
+                      >
                         {unreadNotifs > 99 ? '99+' : unreadNotifs}
                       </Text>
                     </View>
@@ -327,14 +370,21 @@ export function DriverDashboardScreen({
               </View>
             </View>
 
-            <View className="mt-6 h-14 flex-row items-center justify-between rounded-2xl bg-white px-4 shadow-sm">
-              <View className="flex-row items-center gap-3">
+            <View
+              style={{ marginTop: vs(24), height: vs(56), paddingHorizontal: s(16) }}
+              className="flex-row items-center justify-between rounded-2xl bg-white shadow-sm"
+            >
+              <View className="flex-row items-center" style={{ gap: s(12) }}>
                 <View
-                  className={`h-3 w-3 rounded-full ${
+                  style={{ height: s(12), width: s(12) }}
+                  className={`rounded-full ${
                     isOnline ? 'bg-[#00C896]' : 'bg-[#99A1AF]'
                   }`}
                 />
-                <Text className="text-base font-semibold text-[#1E293B]">
+                <Text
+                  style={{ fontSize: fs(16) }}
+                  className="font-poppins-semibold text-[#1E293B]"
+                >
                   {isOnline ? "You're Online" : "You're Offline"}
                 </Text>
                 {togglingOnline && (
@@ -382,6 +432,89 @@ export function DriverDashboardScreen({
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* In-app incoming ride requests — lets the driver accept/reject from
+            the dashboard itself, not only from the pop-up modal / notification.
+            Shown above everything and even while the dashboard stats load. */}
+        {incomingRequests.length > 0 && (
+          <View className="mb-5">
+            <View className="mb-3 flex-row items-center gap-2">
+              <Text className="text-[18px] font-poppins-semibold text-[#1E293B]">
+                Incoming Requests
+              </Text>
+              <View className="min-w-[22px] items-center justify-center rounded-full bg-[#00C896] px-2 py-0.5">
+                <Text className="text-[12px] font-poppins-bold text-white">
+                  {incomingRequests.length}
+                </Text>
+              </View>
+            </View>
+
+            <View className="gap-3">
+              {incomingRequests.map(req => (
+                <Pressable
+                  key={req.rideId}
+                  onPress={() => onOpenRequest?.(req)}
+                  className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-[15px] font-poppins-semibold text-[#1E293B]">
+                      {req.passengerName}
+                    </Text>
+                    <Text className="text-[15px] font-poppins-bold text-brand-teal">
+                      {req.fare}
+                    </Text>
+                  </View>
+
+                  <View className="mt-2 flex-row items-center gap-2">
+                    <View className="h-2 w-2 rounded-full bg-[#00C896]" />
+                    <Text
+                      className="flex-1 text-[13px] text-[#475569]"
+                      numberOfLines={1}
+                    >
+                      {req.pickup || 'Pickup'}
+                    </Text>
+                  </View>
+                  <View className="mt-1 flex-row items-center gap-2">
+                    <View className="h-2 w-2 rounded-full bg-[#E02D3C]" />
+                    <Text
+                      className="flex-1 text-[13px] text-[#475569]"
+                      numberOfLines={1}
+                    >
+                      {req.drop || 'Drop'}
+                    </Text>
+                  </View>
+
+                  <View className="mt-2 flex-row items-center gap-3 pl-4">
+                    <Text className="text-[12px] text-[#94A3B8]">
+                      {req.distance}
+                    </Text>
+                    <Text className="text-[12px] text-[#94A3B8]">•</Text>
+                    <Text className="text-[12px] text-[#94A3B8]">{req.eta}</Text>
+                  </View>
+
+                  <View className="mt-3 flex-row gap-3">
+                    <Pressable
+                      onPress={() => onRejectRequest?.(req)}
+                      className="h-11 flex-1 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white"
+                    >
+                      <Text className="text-[14px] font-poppins-semibold text-[#64748B]">
+                        Reject
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onAcceptRequest?.(req)}
+                      className="h-11 flex-1 items-center justify-center rounded-xl bg-brand-teal"
+                    >
+                      <Text className="text-[14px] font-poppins-semibold text-white">
+                        Accept
+                      </Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
         {loading && !data ? (
           <View className="py-20 items-center">
             <ActivityIndicator color="#0097B3" />
@@ -389,7 +522,7 @@ export function DriverDashboardScreen({
         ) : (
           <>
             <View className="mb-1">
-              <Text className="text-[18px] font-semibold text-[#1E293B]">
+              <Text className="text-[18px] font-poppins-semibold text-[#1E293B]">
                 Your Ride Type
               </Text>
             </View>
@@ -407,10 +540,10 @@ export function DriverDashboardScreen({
                       {card.icon}
                     </View>
                     <View className="flex-1">
-                      <Text className="text-base font-semibold text-white">
+                      <Text className="text-base font-poppins-semibold text-white">
                         {card.title}
                       </Text>
-                      <Text className="text-sm font-medium text-white/80">
+                      <Text className="text-sm font-poppins-medium text-white/80">
                         {card.subtitle}
                       </Text>
                     </View>
@@ -441,7 +574,7 @@ export function DriverDashboardScreen({
               </View>
               <View className="flex-row gap-4">
                 <CounterCard
-                  value={String(stats?.upcomingServices ?? 0)}
+                  value={String(Math.max(stats?.upcomingServices ?? 0, upcomingJourneys.length))}
                   label="Upcoming Services"
                   icon="list"
                 />
@@ -456,7 +589,7 @@ export function DriverDashboardScreen({
             <View className="mt-4 flex-row items-center justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
               <View>
                 <Text className="text-[13px] text-[#6A7282]">Your Rating</Text>
-                <Text className="text-[22px] font-semibold leading-[22px] text-brand-teal">
+                <Text className="text-[22px] font-poppins-semibold leading-[22px] text-brand-teal">
                   {(data?.driver?.rating ?? 0).toFixed(1)}
                 </Text>
               </View>
@@ -475,17 +608,71 @@ export function DriverDashboardScreen({
               </View>
             </View>
 
-            {(stats?.upcomingServices ?? 0) === 0 && (
+            {upcomingJourneys.length > 0 ? (
+              <View className="mt-6">
+                <View className="mb-3 flex-row items-center justify-between">
+                  <Text className="text-base font-poppins-semibold text-[#0A0A0A]">
+                    Upcoming Scheduled Rides
+                  </Text>
+                  <Pressable onPress={onOpenScheduledJourneys}>
+                    <Text className="text-sm font-poppins-medium text-brand-teal">
+                      View All
+                    </Text>
+                  </Pressable>
+                </View>
+                {upcomingJourneys.slice(0, 3).map(j => (
+                  <Pressable
+                    key={j.journeyKey}
+                    onPress={onOpenScheduledJourneys}
+                    className="mb-3 rounded-2xl border border-[#EBEBEB] bg-white p-4 shadow-sm"
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <Text
+                        className="flex-1 font-poppins-semibold text-[#1E293B]"
+                        style={{ fontSize: fs(15) }}
+                        numberOfLines={1}
+                      >
+                        {j.routeName}
+                      </Text>
+                      <View className="rounded-full bg-[#EBF8FA] px-2.5 py-1">
+                        <Text className="font-poppins-semibold text-xs text-brand-teal">
+                          ₹{j.seatPrice} / seat
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="mt-2 flex-row items-center gap-4">
+                      <View className="flex-row items-center gap-1.5">
+                        <CalendarIcon size={14} color="#0097B3" />
+                        <Text className="font-poppins-medium text-xs text-[#6A7282]">
+                          {j.departureDate}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-1.5">
+                        <Text className="font-poppins-semibold text-xs text-[#0A0A0A]">
+                          {j.departureTime}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text
+                      className="mt-2 font-poppins-regular text-xs text-[#6A7282]"
+                      numberOfLines={1}
+                    >
+                      {j.from} → {j.to}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (stats?.upcomingServices ?? 0) === 0 ? (
               <View className="mt-6 rounded-2xl bg-white p-5 shadow-sm items-center">
                 <CalendarIcon size={32} color="#9CA3AF" />
-                <Text className="mt-2 text-base font-semibold text-[#0A0A0A]">
+                <Text className="mt-2 text-base font-poppins-semibold text-[#0A0A0A]">
                   No upcoming rides
                 </Text>
                 <Text className="mt-1 text-center text-sm text-[#6C757D]">
                   Go online and start accepting nearby ride requests.
                 </Text>
               </View>
-            )}
+            ) : null}
           </>
         )}
       </ScrollView>

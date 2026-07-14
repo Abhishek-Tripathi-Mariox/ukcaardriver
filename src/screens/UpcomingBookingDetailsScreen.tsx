@@ -11,6 +11,7 @@ import {
   RoutingIcon,
   UsersIcon,
 } from '../components/icons/ServiceTypeIcons';
+import { fs, s, vs } from '../theme/responsive';
 
 interface Stop {
   index: number;
@@ -58,25 +59,42 @@ const DEFAULT_PASSENGERS: Passenger[] = [];
 function StopRow({ stop, isLast }: { stop: Stop; isLast: boolean }) {
   const dotColor = stop.index === 1 ? '#00C950' : stop.final ? '#FB2C36' : '#AD46FF';
   return (
-    <View className="flex-row gap-4">
+    <View className="flex-row" style={{ gap: s(16) }}>
       <View className="items-center">
         <View
-          className="h-4 w-4 rounded-full"
-          style={{ backgroundColor: dotColor }}
+          className="rounded-full"
+          style={{ width: s(16), height: s(16), backgroundColor: dotColor }}
         />
-        {!isLast && <View className="mt-1 w-[2px] flex-1 bg-[#D1D5DC]" />}
+        {!isLast && <View className="flex-1 bg-[#D1D5DC]" style={{ marginTop: vs(4), width: s(2) }} />}
       </View>
-      <View className="flex-1 pb-4">
-        <Text className="text-base font-medium text-[#1E293B]">{stop.title}</Text>
-        <Text className="mt-0.5 text-[14px] text-[#6A7282]">{stop.time}</Text>
-        <View className="mt-2 flex-row gap-4">
+      <View className="flex-1" style={{ paddingBottom: vs(16) }}>
+        <Text
+          className="font-poppins-medium text-[#1E293B]"
+          style={{ fontSize: fs(16), lineHeight: fs(22) }}
+          numberOfLines={2}
+        >
+          {stop.title}
+        </Text>
+        <Text
+          className="text-[#6A7282]"
+          style={{ fontSize: fs(14), marginTop: vs(2) }}
+        >
+          {stop.time || 'Scheduled Stop'}
+        </Text>
+        <View className="flex-row" style={{ marginTop: vs(8), gap: s(16) }}>
           {stop.board != null && (
-            <Text className="text-[14px] text-[#00A63E]">
+            <Text
+              className="text-[#00A63E] font-poppins-medium"
+              style={{ fontSize: fs(14) }}
+            >
               ↑ {stop.board} Board
             </Text>
           )}
           {stop.drop != null && (
-            <Text className="text-[14px] text-[#E7000B]">
+            <Text
+              className="text-[#E7000B] font-poppins-medium"
+              style={{ fontSize: fs(14) }}
+            >
               ↓ {stop.drop} Drop
             </Text>
           )}
@@ -94,18 +112,35 @@ function PassengerRow({
   onCall?: () => void;
 }) {
   return (
-    <View className="flex-row items-center justify-between rounded-2xl bg-[#F9FAFB] px-4 py-3">
-      <View className="flex-1 flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-[#E9D4FF]">
-          <Text className="text-base font-semibold text-[#8200DB]">
+    <View
+      className="flex-row items-center justify-between bg-[#F9FAFB]"
+      style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
+    >
+      <View className="flex-1 flex-row items-center" style={{ gap: s(12) }}>
+        <View
+          className="items-center justify-center rounded-full bg-[#E9D4FF]"
+          style={{ width: s(40), height: s(40) }}
+        >
+          <Text
+            className="font-poppins-semibold text-[#8200DB]"
+            style={{ fontSize: fs(16) }}
+          >
             {passenger.gender}
           </Text>
         </View>
-        <View className="flex-1">
-          <Text className="text-base font-medium text-[#1E293B]">
+        <View className="flex-1 pr-2">
+          <Text
+            className="font-poppins-medium text-[#1E293B]"
+            style={{ fontSize: fs(16), lineHeight: fs(22) }}
+            numberOfLines={1}
+          >
             {passenger.name}
           </Text>
-          <Text className="text-[14px] text-[#6A7282]">
+          <Text
+            className="text-[#6A7282] font-poppins-regular"
+            style={{ fontSize: fs(14) }}
+            numberOfLines={1}
+          >
             {passenger.age} years • Stop {passenger.stop}
           </Text>
         </View>
@@ -113,9 +148,10 @@ function PassengerRow({
       <Pressable
         onPress={onCall}
         hitSlop={8}
-        className="h-8 w-8 items-center justify-center rounded-full bg-[#0097B3]"
+        className="items-center justify-center rounded-full bg-[#0097B3]"
+        style={{ width: s(36), height: s(36) }}
       >
-        <PhoneIcon size={16} color="white" />
+        <PhoneIcon size={s(16)} color="white" />
       </Pressable>
     </View>
   );
@@ -152,9 +188,9 @@ export function UpcomingBookingDetailsScreen({
           r.passengers.map((p) => ({
             id: `${p.bookingId}-${p.seat}`,
             name: p.name,
-            gender: 'M' as const,
-            age: 0,
-            stop: 1,
+            gender: p.gender ?? 'M',
+            age: p.age && p.age > 0 ? p.age : 28,
+            stop: p.stop ?? 1,
           })),
         ),
       )
@@ -195,7 +231,7 @@ export function UpcomingBookingDetailsScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -203,15 +239,24 @@ export function UpcomingBookingDetailsScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(20), lineHeight: fs(28) }}
+              >
                 {title}
               </Text>
-              <Text className="text-[14px] text-white/80">
+              <Text
+                className="text-white/80 font-poppins-regular"
+                style={{ fontSize: fs(14) }}
+              >
                 Journey ID: {journeyId}
               </Text>
             </View>
@@ -224,12 +269,19 @@ export function UpcomingBookingDetailsScreen({
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <View className="items-center py-6">
-          <RoutingIcon size={32} color="#6E11B0" />
-          <Text className="mt-2 text-base font-medium text-[#6E11B0]">
+        <View className="items-center" style={{ paddingVertical: vs(24) }}>
+          <RoutingIcon size={s(32)} color="#6E11B0" />
+          <Text
+            className="font-poppins-medium text-[#6E11B0]"
+            style={{ fontSize: fs(16), marginTop: vs(8) }}
+          >
             Route Map
           </Text>
-          <Text className="text-[14px] text-[#9810FA]">
+          <Text
+            className="text-[#9810FA] font-poppins-medium text-center px-4"
+            style={{ fontSize: fs(14) }}
+            numberOfLines={2}
+          >
             {routeFrom} → {routeTo}
           </Text>
         </View>
@@ -237,50 +289,78 @@ export function UpcomingBookingDetailsScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 24, paddingBottom: 24, gap: 24 }}
+        contentContainerStyle={{ padding: s(24), paddingBottom: vs(32), gap: vs(24) }}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
           colors={['#FAF5FF', '#F3E8FF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          className="rounded-2xl p-5"
+          style={{ borderRadius: s(16), padding: s(20) }}
         >
           <View className="flex-row items-start">
             <View className="flex-1">
-              <Text className="text-[14px] text-[#8200DB]">Date</Text>
-              <Text className="mt-1 text-base font-semibold text-[#1E293B]">
+              <Text className="text-[#8200DB] font-poppins-medium" style={{ fontSize: fs(14) }}>
+                Date
+              </Text>
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(16), marginTop: vs(4) }}
+              >
                 {date}
               </Text>
             </View>
             <View className="flex-1">
-              <Text className="text-[14px] text-[#8200DB]">Time</Text>
-              <Text className="mt-1 text-base font-semibold text-[#1E293B]">
+              <Text className="text-[#8200DB] font-poppins-medium" style={{ fontSize: fs(14) }}>
+                Time
+              </Text>
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(16), marginTop: vs(4) }}
+              >
                 {time}
               </Text>
             </View>
-            <View className="rounded-full bg-[#9810FA] px-3 py-1">
-              <Text className="text-[14px] font-semibold text-white">
+            <View
+              className="rounded-full bg-[#9810FA]"
+              style={{ paddingHorizontal: s(12), paddingVertical: vs(4) }}
+            >
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(14) }}
+              >
                 {totalFare}
               </Text>
             </View>
           </View>
-          <View className="mt-4 flex-row border-t border-[#E9D4FF] pt-4">
+          <View
+            className="flex-row border-t border-[#E9D4FF]"
+            style={{ marginTop: vs(16), paddingTop: vs(16) }}
+          >
             <View className="flex-1 items-center">
-              <LocationPinSmallIcon size={20} color="#8200DB" />
-              <Text className="mt-1 text-[14px] text-[#8200DB]">
+              <LocationPinSmallIcon size={s(20)} color="#8200DB" />
+              <Text
+                className="text-[#8200DB] font-poppins-medium"
+                style={{ fontSize: fs(14), marginTop: vs(4) }}
+              >
                 {stopsCount} Stops
               </Text>
             </View>
             <View className="flex-1 items-center">
-              <UsersIcon size={20} color="#8200DB" />
-              <Text className="mt-1 text-[14px] text-[#8200DB]">
+              <UsersIcon size={s(20)} color="#8200DB" />
+              <Text
+                className="text-[#8200DB] font-poppins-medium"
+                style={{ fontSize: fs(14), marginTop: vs(4) }}
+              >
                 {passengerCount} Passengers
               </Text>
             </View>
             <View className="flex-1 items-center">
-              <ClockSmallIcon size={20} color="#8200DB" />
-              <Text className="mt-1 text-[14px] text-[#8200DB]">
+              <ClockSmallIcon size={s(20)} color="#8200DB" />
+              <Text
+                className="text-[#8200DB] font-poppins-medium"
+                style={{ fontSize: fs(14), marginTop: vs(4) }}
+              >
                 ₹{seatPrice.toLocaleString('en-IN')}/seat
               </Text>
             </View>
@@ -288,10 +368,13 @@ export function UpcomingBookingDetailsScreen({
         </LinearGradient>
 
         <View>
-          <Text className="text-[18px] font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(18) }}
+          >
             Route & Stops
           </Text>
-          <View className="mt-4">
+          <View style={{ marginTop: vs(16) }}>
             {stops.map((s, i) => (
               <StopRow key={s.index} stop={s} isLast={i === stops.length - 1} />
             ))}
@@ -299,10 +382,13 @@ export function UpcomingBookingDetailsScreen({
         </View>
 
         <View>
-          <Text className="text-[18px] font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(18) }}
+          >
             Passenger List ({passengers.length})
           </Text>
-          <View className="mt-4 gap-2">
+          <View style={{ marginTop: vs(16), gap: vs(8) }}>
             {passengers.map(p => (
               <PassengerRow
                 key={p.id}
@@ -317,20 +403,25 @@ export function UpcomingBookingDetailsScreen({
           colors={['#FAF5FF', '#F3E8FF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          className="rounded-2xl p-5"
+          style={{ borderRadius: s(16), padding: s(20) }}
         >
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-[14px] text-[#8200DB]">Total Fare</Text>
-              <Text className="mt-1 text-[30px] font-bold text-[#9810FA]">
+              <Text className="text-[#8200DB] font-poppins-medium" style={{ fontSize: fs(14) }}>
+                Total Fare
+              </Text>
+              <Text
+                className="font-poppins-bold text-[#9810FA]"
+                style={{ fontSize: fs(30), marginTop: vs(4) }}
+              >
                 {totalFare}
               </Text>
             </View>
             <View className="items-end">
-              <Text className="text-[14px] text-[#8200DB]">
+              <Text className="text-[#8200DB] font-poppins-medium" style={{ fontSize: fs(14) }}>
                 ₹{seatPrice.toLocaleString('en-IN')} / seat
               </Text>
-              <Text className="text-[14px] text-[#8200DB]">
+              <Text className="text-[#8200DB] font-poppins-medium" style={{ fontSize: fs(14) }}>
                 {passengerCount} seat{passengerCount === 1 ? '' : 's'}
               </Text>
             </View>
@@ -338,13 +429,17 @@ export function UpcomingBookingDetailsScreen({
         </LinearGradient>
       </ScrollView>
 
-      <View className="px-4 pb-6 pt-2">
+      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
         <Pressable
           onPress={handleStart}
           disabled={starting}
-          className="h-[56px] items-center justify-center rounded-2xl bg-[#9810FA]"
+          className="items-center justify-center bg-[#9810FA]"
+          style={{ height: s(56), borderRadius: s(16) }}
         >
-          <Text className="text-base font-semibold uppercase text-white">
+          <Text
+            className="font-poppins-semibold uppercase text-white"
+            style={{ fontSize: fs(16) }}
+          >
             Start Journey
           </Text>
         </Pressable>

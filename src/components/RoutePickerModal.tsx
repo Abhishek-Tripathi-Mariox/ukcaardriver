@@ -271,7 +271,7 @@ export function RoutePickerModal({
             <Pressable onPress={onClose} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="flex-1 text-[18px] font-semibold text-white">
+            <Text className="flex-1 text-[18px] font-poppins-semibold text-white">
               {step === 'pick-return' ? 'Pick return route' : 'Pick your route'}
             </Text>
           </View>
@@ -353,7 +353,7 @@ export function RoutePickerModal({
               className="h-12 items-center justify-center rounded-2xl"
               style={{ backgroundColor: canSave ? '#0097B3' : '#9DD7E0' }}
             >
-              <Text className="text-base font-bold text-white">Save selection</Text>
+              <Text className="text-base font-poppins-bold text-white">Save selection</Text>
             </Pressable>
           </SafeAreaView>
         )}
@@ -423,7 +423,7 @@ function RouteSearchList({
         </View>
       ) : routes.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-base font-semibold text-[#1E293B]">
+          <Text className="text-base font-poppins-semibold text-[#1E293B]">
             No matching routes
           </Text>
           <Text className="mt-2 text-center text-sm text-[#6A7282]">
@@ -459,7 +459,7 @@ function RouteSearchList({
                 onPress={() => onPick(r)}
                 className="rounded-2xl border border-[#EBEBEB] bg-white p-4"
               >
-                <Text className="text-base font-bold text-[#1E293B]">{r.name}</Text>
+                <Text className="text-base font-poppins-bold text-[#1E293B]">{r.name}</Text>
                 <View className="mt-3 flex-row items-start gap-3">
                   <View className="items-center pt-1">
                     <View className="h-2.5 w-2.5 rounded-full bg-[#00C950]" />
@@ -467,10 +467,10 @@ function RouteSearchList({
                     <View className="h-2.5 w-2.5 rounded-full bg-[#FB2C36]" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-sm font-medium text-[#1E293B]">
+                    <Text className="text-sm font-poppins-medium text-[#1E293B]">
                       {first?.name}
                     </Text>
-                    <Text className="mt-3 text-sm font-medium text-[#1E293B]">
+                    <Text className="mt-3 text-sm font-poppins-medium text-[#1E293B]">
                       {last?.name}
                     </Text>
                   </View>
@@ -536,7 +536,7 @@ function HourlyDepartureGrid({
             }}
           >
             <Text
-              className="text-sm font-bold"
+              className="text-sm font-poppins-bold"
               style={{ color: isSelected ? '#0097B3' : '#1E293B' }}
             >
               {fmtHourLabel(hour)}
@@ -567,13 +567,13 @@ function RouteDetailPane({
   return (
     <ScrollView contentContainerClassName="px-4 py-4 gap-4">
       <Pressable onPress={onBackToList} className="self-start">
-        <Text className="text-xs font-medium text-[#0097B3]">
+        <Text className="text-xs font-poppins-medium text-[#0097B3]">
           ← Pick a different route
         </Text>
       </Pressable>
 
       <View>
-        <Text className="text-base font-bold text-[#1E293B]">{route.name}</Text>
+        <Text className="text-base font-poppins-bold text-[#1E293B]">{route.name}</Text>
         <View className="mt-3 flex-row items-start gap-3">
           <View className="items-center pt-1">
             <View className="h-2.5 w-2.5 rounded-full bg-[#00C950]" />
@@ -581,10 +581,10 @@ function RouteDetailPane({
             <View className="h-2.5 w-2.5 rounded-full bg-[#FB2C36]" />
           </View>
           <View className="flex-1">
-            <Text className="text-sm font-medium text-[#1E293B]">
+            <Text className="text-sm font-poppins-medium text-[#1E293B]">
               {first?.name}
             </Text>
-            <Text className="mt-3 text-sm font-medium text-[#1E293B]">
+            <Text className="mt-3 text-sm font-poppins-medium text-[#1E293B]">
               {last?.name}
             </Text>
           </View>
@@ -592,7 +592,7 @@ function RouteDetailPane({
       </View>
 
       <View>
-        <Text className="text-sm font-bold text-[#1E293B]">
+        <Text className="text-sm font-poppins-bold text-[#1E293B]">
           Pick a departure time
         </Text>
         <HourlyDepartureGrid
@@ -634,7 +634,7 @@ function ReturnTripSection({
       <View className="rounded-2xl border border-[#EBEBEB] bg-white p-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-3">
-            <Text className="text-sm font-semibold text-[#1E293B]">
+            <Text className="text-sm font-poppins-semibold text-[#1E293B]">
               I'll do a return trip
             </Text>
             <Text className="mt-1 text-xs text-[#6A7282]">
@@ -661,7 +661,7 @@ function ReturnTripSection({
             >
               <Radio selected={returnMode === 'same'} />
               <View className="flex-1">
-                <Text className="text-sm font-medium text-[#1E293B]">
+                <Text className="text-sm font-poppins-medium text-[#1E293B]">
                   Same route, reversed
                 </Text>
                 <Text className="mt-0.5 text-xs text-[#6A7282]">
@@ -682,7 +682,7 @@ function ReturnTripSection({
             >
               <Radio selected={returnMode === 'different'} />
               <View className="flex-1">
-                <Text className="text-sm font-medium text-[#1E293B]">
+                <Text className="text-sm font-poppins-medium text-[#1E293B]">
                   Different return route
                 </Text>
                 <Text className="mt-0.5 text-xs text-[#6A7282]">
@@ -696,7 +696,7 @@ function ReturnTripSection({
 
       {returnMode === 'same' && (
         <View className="rounded-2xl border border-[#EBEBEB] bg-white p-4">
-          <Text className="text-sm font-bold text-[#1E293B]">
+          <Text className="text-sm font-poppins-bold text-[#1E293B]">
             Return departure time
           </Text>
           <Text className="mt-1 text-xs text-[#6A7282]">
@@ -711,7 +711,7 @@ function ReturnTripSection({
 
       {returnMode === 'different' && (
         <View className="rounded-2xl border border-[#EBEBEB] bg-white p-4">
-          <Text className="text-sm font-bold text-[#1E293B]">
+          <Text className="text-sm font-poppins-bold text-[#1E293B]">
             Return route
           </Text>
           {!returnRoute ? (
@@ -728,7 +728,7 @@ function ReturnTripSection({
             <View className="mt-3 gap-2">
               <View className="flex-row items-start justify-between gap-3">
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-[#1E293B]">
+                  <Text className="text-sm font-poppins-semibold text-[#1E293B]">
                     {returnRoute.name}
                   </Text>
                   <Text className="mt-0.5 text-xs text-[#6A7282]">
@@ -737,12 +737,12 @@ function ReturnTripSection({
                   </Text>
                 </View>
                 <Pressable onPress={onClearDifferentReturn}>
-                  <Text className="text-xs font-medium text-[#0097B3]">
+                  <Text className="text-xs font-poppins-medium text-[#0097B3]">
                     Change
                   </Text>
                 </Pressable>
               </View>
-              <Text className="mt-2 text-xs font-medium text-[#1E293B]">
+              <Text className="mt-2 text-xs font-poppins-medium text-[#1E293B]">
                 Pick a return departure time
               </Text>
               <HourlyDepartureGrid

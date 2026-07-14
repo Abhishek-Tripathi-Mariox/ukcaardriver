@@ -35,7 +35,7 @@ export function EmergencySosModal({
               <AlertCircleIcon size={40} color="#E7000B" />
             </View>
 
-            <Text className="mt-5 text-[20px] font-semibold text-[#1E293B]">
+            <Text className="mt-5 text-[20px] font-poppins-semibold text-[#1E293B]">
               Emergency SOS
             </Text>
             <Text className="mt-2 text-center text-sm text-[#6A7282]">
@@ -48,7 +48,7 @@ export function EmergencySosModal({
             className="mt-6 h-14 flex-row items-center justify-center gap-2 rounded-2xl bg-[#E7000B]"
           >
             <PhoneIcon size={18} color="white" />
-            <Text className="text-base font-medium text-white">Call Emergency (100)</Text>
+            <Text className="text-base font-poppins-medium text-white">Call Emergency (100)</Text>
           </Pressable>
 
           <Pressable
@@ -56,7 +56,7 @@ export function EmergencySosModal({
             className="mt-3 h-14 flex-row items-center justify-center gap-2 rounded-2xl border border-brand-teal bg-white"
           >
             <PhoneIcon size={18} color="#0097B3" />
-            <Text className="text-base font-medium text-brand-teal">Call UKCAAR Support</Text>
+            <Text className="text-base font-poppins-medium text-brand-teal">Call UKCAAR Support</Text>
           </Pressable>
         </View>
       </View>

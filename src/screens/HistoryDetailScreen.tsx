@@ -101,7 +101,7 @@ export function HistoryDetailScreen({
 
   return (
     <View className="flex-1 bg-[#F5F5F5]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -136,7 +136,7 @@ export function HistoryDetailScreen({
         ) : (
           <>
             <View className="rounded-2xl border border-[#E1E6EF] bg-white p-4">
-              <Text className="text-xs font-bold text-[#132234]">PICKUP & DESTINATION</Text>
+              <Text className="text-xs font-poppins-bold text-[#132234]">PICKUP & DESTINATION</Text>
 
               <View className="relative mt-3">
                 <View className="absolute left-[9px] top-3 h-[70px] w-0.5 bg-[#E1E6EF]" />
@@ -148,7 +148,7 @@ export function HistoryDetailScreen({
                     </View>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-[15px] font-bold text-[#132235]">
+                    <Text className="text-[15px] font-poppins-bold text-[#132235]">
                       Started : {fmtDateTime(ride.startedAt ?? ride.createdAt)}
                     </Text>
                     <Text className="mt-1 text-[13px] text-[#132235]">
@@ -164,7 +164,7 @@ export function HistoryDetailScreen({
                     </View>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-[15px] font-bold text-[#132235]">
+                    <Text className="text-[15px] font-poppins-bold text-[#132235]">
                       Ended : {fmtDateTime(ride.completedAt)}
                     </Text>
                     <Text className="mt-1 text-[13px] text-[#132235]">
@@ -176,7 +176,7 @@ export function HistoryDetailScreen({
             </View>
 
             <View className="gap-4 rounded-2xl border border-[#E1E6EF] bg-white p-4">
-              <Text className="text-xs font-bold text-[#132234]">BASIC DETAILS</Text>
+              <Text className="text-xs font-poppins-bold text-[#132234]">BASIC DETAILS</Text>
               <View className="gap-4">
                 <DetailRow label="Trip ID:" value={tripIdShort} />
                 <DetailRow label="Trip Type:" value={tripType} />
@@ -191,7 +191,7 @@ export function HistoryDetailScreen({
             </View>
 
             <View className="rounded-2xl border border-[#E1E6EF] bg-white p-4">
-              <Text className="text-xs font-bold text-[#132234]">FARE DETAILS</Text>
+              <Text className="text-xs font-poppins-bold text-[#132234]">FARE DETAILS</Text>
               <View className="mt-3 flex-row items-center">
                 <Text className="flex-1 text-[15px] text-[#132235]">Total Fare:</Text>
                 <Text className="text-[15px] text-[#132235]">{estimatedFare}</Text>
@@ -200,7 +200,7 @@ export function HistoryDetailScreen({
               <Text className="mt-3 text-center text-[13px] text-[#2F6FED]">
                 Earned money from trip:
               </Text>
-              <Text className="mt-1 text-center text-[20px] font-bold text-[#2F6FED]">
+              <Text className="mt-1 text-center text-[20px] font-poppins-bold text-[#2F6FED]">
                 {earnedAmount}
               </Text>
             </View>

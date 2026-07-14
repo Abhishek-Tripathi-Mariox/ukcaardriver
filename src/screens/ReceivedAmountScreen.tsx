@@ -63,27 +63,27 @@ function RideEntry({ ride }: { ride: ReceivedAmountItem }) {
     <View className="px-4">
       <View className="flex-row items-center border-b border-[#E9F0F7] py-3">
         <View className="flex-1">
-          <Text className="text-[15px] font-bold text-[#132235]">
+          <Text className="text-[15px] font-poppins-bold text-[#132235]">
             Fare Collected
           </Text>
           <Text className="mt-0.5 text-xs text-[#364B63]">
             Reference ID: {ref}
           </Text>
         </View>
-        <Text className="text-[17px] font-bold text-[#08875D]">
+        <Text className="text-[17px] font-poppins-bold text-[#08875D]">
           + {fmtRupees(ride.grossFare)}
         </Text>
       </View>
       <View className="flex-row items-center border-b border-[#E9F0F7] py-3">
         <View className="flex-1">
-          <Text className="text-[15px] font-bold text-[#132235]">
+          <Text className="text-[15px] font-poppins-bold text-[#132235]">
             Net Earning (after commission)
           </Text>
           <Text className="mt-0.5 text-xs text-[#364B63]">
             Commission: {fmtRupees(ride.commission)} · Ref: {ref}
           </Text>
         </View>
-        <Text className="text-[17px] font-bold text-[#08875D]">
+        <Text className="text-[17px] font-poppins-bold text-[#08875D]">
           + {fmtRupees(ride.netEarnings)}
         </Text>
       </View>
@@ -136,7 +136,7 @@ export function ReceivedAmountScreen({ onBack }: ReceivedAmountScreenProps) {
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -148,7 +148,7 @@ export function ReceivedAmountScreen({ onBack }: ReceivedAmountScreenProps) {
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Received Amount
             </Text>
           </View>
@@ -186,7 +186,7 @@ export function ReceivedAmountScreen({ onBack }: ReceivedAmountScreenProps) {
             item.kind === 'header' ? (
               <View className="flex-row items-center gap-4 px-4 pb-2 pt-4">
                 <View className="h-px flex-1 bg-[#E1E6EF]" />
-                <Text className="text-[11px] font-bold text-[#607080]">
+                <Text className="text-[11px] font-poppins-bold text-[#607080]">
                   {item.label}
                 </Text>
                 <View className="h-px flex-1 bg-[#E1E6EF]" />

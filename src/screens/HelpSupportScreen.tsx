@@ -155,7 +155,7 @@ export function HelpSupportScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -168,7 +168,7 @@ export function HelpSupportScreen({
               <BackArrowIcon size={20} color="white" />
               <Text className="text-[16px] text-white">Back</Text>
             </Pressable>
-            <Text className="flex-1 text-center text-[18px] font-medium text-white">
+            <Text className="flex-1 text-center text-[18px] font-poppins-medium text-white">
               Help & Support
             </Text>
             <View className="w-16" />
@@ -270,7 +270,7 @@ export function HelpSupportScreen({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-[17px] font-bold text-white">Submit</Text>
+            <Text className="text-[17px] font-poppins-bold text-white">Submit</Text>
           )}
         </Pressable>
       </SafeAreaView>

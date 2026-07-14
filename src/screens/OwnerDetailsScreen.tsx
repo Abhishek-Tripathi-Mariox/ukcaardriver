@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StatusBar,
   Text,
@@ -15,6 +13,8 @@ import {
 import RegistrationHeader from '../components/RegistrationHeader';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import { updateRegistrationStep, AddressHit } from '../services/api';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { fs, s, vs } from '../theme/responsive';
 
 export interface OwnerDetails {
   ownerName: string;
@@ -61,8 +61,8 @@ function Field({
   locked = false,
 }: FieldProps) {
   return (
-    <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-slate-800">{label}</Text>
+    <View style={{ marginBottom: vs(16) }}>
+      <Text className="font-poppins-medium text-slate-800" style={{ marginBottom: vs(8), fontSize: fs(14) }}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -71,9 +71,10 @@ function Field({
         keyboardType={keyboardType}
         maxLength={maxLength}
         editable={!locked}
-        className={`h-12 rounded-2xl px-3 text-base ${
+        className={`rounded-2xl font-poppins ${
           locked ? 'bg-[#E8F0FE] text-slate-600' : 'bg-[#F3F3F5] text-slate-900'
         }`}
+        style={{ height: vs(50), paddingHorizontal: s(14), fontSize: fs(15) }}
       />
     </View>
   );
@@ -138,7 +139,7 @@ export function OwnerDetailsScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <RegistrationHeader currentStep={3} onBack={onBack} onLogout={onLogout} />
 
       <KeyboardAvoidingView
@@ -151,10 +152,10 @@ export function OwnerDetailsScreen({
           contentContainerClassName="px-6 pt-6 pb-10"
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="mb-1 text-[20px] font-semibold text-slate-800">
+          <Text className="font-poppins-semibold text-slate-800" style={{ marginBottom: vs(4), fontSize: fs(20) }}>
             Owner Details
           </Text>
-          <Text className="mb-4 text-sm text-slate-500">
+          <Text className="font-poppins text-slate-500" style={{ marginBottom: vs(16), fontSize: fs(13) }}>
             {phoneLocked
               ? "We'll use your verified mobile number as the owner contact."
               : 'Enter your details below.'}
@@ -190,22 +191,16 @@ export function OwnerDetailsScreen({
           />
 
           {error && (
-            <Text className="mb-2 text-xs text-red-600">{error}</Text>
+            <Text className="font-poppins text-red-600" style={{ marginBottom: vs(8), fontSize: fs(12) }}>{error}</Text>
           )}
 
-          <Pressable
-            disabled={!canProceed}
+          <PrimaryButton
+            label="Next"
             onPress={handleNext}
-            className={`mt-2 h-12 flex-row items-center justify-center rounded-2xl ${
-              canProceed ? 'bg-brand-teal' : 'bg-brand-teal/50'
-            }`}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text className="text-sm font-medium text-white">Next</Text>
-            )}
-          </Pressable>
+            disabled={!canProceed}
+            loading={submitting}
+            className="mt-2"
+          />
         </ScrollView>
       </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

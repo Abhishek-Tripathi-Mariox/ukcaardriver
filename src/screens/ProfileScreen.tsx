@@ -48,6 +48,7 @@ interface ProfileScreenProps {
   onOpenDriverInstructions?: () => void;
   onOpenOnePass?: () => void;
   onOpenIncentives?: () => void;
+  onOpenRouteChange?: () => void;
 }
 
 const formatRupees = (n: number): string => {
@@ -92,6 +93,7 @@ export function ProfileScreen({
   onOpenDriverInstructions,
   onOpenOnePass,
   onOpenIncentives,
+  onOpenRouteChange,
 }: ProfileScreenProps) {
   const [idCardOpen, setIdCardOpen] = useState(false);
   const [user, setUser] = useState<Awaited<ReturnType<typeof fetchCurrentUser>>>(null);
@@ -242,7 +244,7 @@ export function ProfileScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -255,7 +257,7 @@ export function ProfileScreen({
               <Pressable onPress={onBack} hitSlop={10}>
                 <BackArrowIcon size={22} color="white" />
               </Pressable>
-              <Text className="text-[20px] font-semibold text-white">Profile</Text>
+              <Text className="text-[20px] font-poppins-semibold text-white">Profile</Text>
             </View>
 
             <Pressable
@@ -283,7 +285,7 @@ export function ProfileScreen({
                 )}
               </Pressable>
               <View className="flex-1">
-                <Text className="text-[20px] font-semibold text-white">{driverName}</Text>
+                <Text className="text-[20px] font-poppins-semibold text-white">{driverName}</Text>
                 <Text className="text-sm text-white/80">Driver ID: {driverId}</Text>
               </View>
               <ChevronRightIcon size={22} color="white" />
@@ -309,22 +311,22 @@ export function ProfileScreen({
         <View className="flex-row border-b border-[#E5E7EB] bg-white px-4 py-4">
           <View className="flex-1 items-center">
             <Text className="text-xs text-[#6A7282]">Total Earning</Text>
-            <Text className="mt-1 text-base font-semibold text-[#1E293B]">{totalEarning}</Text>
+            <Text className="mt-1 text-base font-poppins-semibold text-[#1E293B]">{totalEarning}</Text>
           </View>
           <View className="h-10 w-px bg-[#E5E7EB]" />
           <View className="flex-1 items-center">
             <Text className="text-xs text-[#6A7282]">Total Trips</Text>
-            <Text className="mt-1 text-base font-semibold text-[#1E293B]">{totalTrips}</Text>
+            <Text className="mt-1 text-base font-poppins-semibold text-[#1E293B]">{totalTrips}</Text>
           </View>
           <View className="h-10 w-px bg-[#E5E7EB]" />
           <View className="flex-1 items-center">
             <Text className="text-xs text-[#6A7282]">Rating</Text>
-            <Text className="mt-1 text-base font-semibold text-[#1E293B]">{rating}</Text>
+            <Text className="mt-1 text-base font-poppins-semibold text-[#1E293B]">{rating}</Text>
           </View>
         </View>
 
         <View className="px-6 pt-5">
-          <Text className="text-base font-semibold text-[#1E293B]">Contact Information</Text>
+          <Text className="text-base font-poppins-semibold text-[#1E293B]">Contact Information</Text>
           <View className="mt-3 gap-3">
             <View className="flex-row items-center gap-3">
               <PhoneIcon size={18} color="#0097B3" />
@@ -342,18 +344,18 @@ export function ProfileScreen({
         </View>
 
         <View className="mt-6 px-6">
-          <Text className="text-base font-semibold text-[#1E293B]">Vehicle Information</Text>
+          <Text className="text-base font-poppins-semibold text-[#1E293B]">Vehicle Information</Text>
           <View className="mt-3 flex-row items-center gap-3">
             <CarOutlineIcon size={18} color="#00C896" />
             <Text className="text-sm text-[#1E293B]">{vehicleModel}</Text>
           </View>
           <View className="mt-3 flex-row items-center justify-between">
             <Text className="text-sm text-[#6A7282]">License Plate:</Text>
-            <Text className="text-sm font-semibold text-[#1E293B]">{licensePlate}</Text>
+            <Text className="text-sm font-poppins-semibold text-[#1E293B]">{licensePlate}</Text>
           </View>
           <View className="mt-2 flex-row items-center justify-between pb-4">
             <Text className="text-sm text-[#6A7282]">Color:</Text>
-            <Text className="text-sm font-semibold text-[#1E293B]">{vehicleColor}</Text>
+            <Text className="text-sm font-poppins-semibold text-[#1E293B]">{vehicleColor}</Text>
           </View>
         </View>
 
@@ -362,6 +364,11 @@ export function ProfileScreen({
             icon={<TabProfileIcon size={20} color="#0097B3" />}
             label="Edit Profile"
             onPress={openEdit}
+          />
+          <MenuRow
+            icon={<MapPinIcon size={20} color="#0097B3" />}
+            label="Apply for Route Change"
+            onPress={onOpenRouteChange}
           />
           <MenuRow
             icon={<ClockSmallIcon size={20} color="#0097B3" />}
@@ -428,9 +435,9 @@ export function ProfileScreen({
           className="flex-1 justify-end bg-black/50"
         >
           <Pressable onPress={(e) => e.stopPropagation()} className="rounded-t-3xl bg-white px-6 pb-8 pt-5">
-            <Text className="mb-4 text-center text-lg font-semibold text-[#1E293B]">Edit Profile</Text>
+            <Text className="mb-4 text-center text-lg font-poppins-semibold text-[#1E293B]">Edit Profile</Text>
 
-            <Text className="mb-1 text-xs font-semibold text-[#6A7282]">First Name</Text>
+            <Text className="mb-1 text-xs font-poppins-semibold text-[#6A7282]">First Name</Text>
             <TextInput
               value={editFirst}
               onChangeText={setEditFirst}
@@ -439,7 +446,7 @@ export function ProfileScreen({
               className="mb-3 rounded-xl border border-[#E5E7EB] px-4 py-3 text-[15px] text-[#1E293B]"
             />
 
-            <Text className="mb-1 text-xs font-semibold text-[#6A7282]">Last Name</Text>
+            <Text className="mb-1 text-xs font-poppins-semibold text-[#6A7282]">Last Name</Text>
             <TextInput
               value={editLast}
               onChangeText={setEditLast}
@@ -448,7 +455,7 @@ export function ProfileScreen({
               className="mb-3 rounded-xl border border-[#E5E7EB] px-4 py-3 text-[15px] text-[#1E293B]"
             />
 
-            <Text className="mb-1 text-xs font-semibold text-[#6A7282]">Email</Text>
+            <Text className="mb-1 text-xs font-poppins-semibold text-[#6A7282]">Email</Text>
             <TextInput
               value={editEmail}
               onChangeText={setEditEmail}
@@ -468,11 +475,11 @@ export function ProfileScreen({
               {savingEdit ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-base font-semibold text-white">Save</Text>
+                <Text className="text-base font-poppins-semibold text-white">Save</Text>
               )}
             </Pressable>
             <Pressable onPress={() => setEditOpen(false)} className="mt-2 h-11 items-center justify-center">
-              <Text className="text-sm font-medium text-[#6A7282]">Cancel</Text>
+              <Text className="text-sm font-poppins-medium text-[#6A7282]">Cancel</Text>
             </Pressable>
           </Pressable>
         </Pressable>

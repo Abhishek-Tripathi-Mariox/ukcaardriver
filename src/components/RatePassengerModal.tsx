@@ -29,7 +29,7 @@ export function RatePassengerModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onSkip}>
       <View className="flex-1 justify-end bg-black/40">
         <View className="rounded-t-3xl bg-white px-6 pb-8 pt-6">
-          <Text className="text-center text-[20px] font-semibold text-[#1E293B]">
+          <Text className="text-center text-[20px] font-poppins-semibold text-[#1E293B]">
             Rate your passenger
           </Text>
           <Text className="mt-1 text-center text-sm text-[#6A7282]">
@@ -60,12 +60,12 @@ export function RatePassengerModal({
             className="mt-5 h-14 items-center justify-center rounded-2xl bg-brand-teal"
             style={{ opacity: rating === 0 || submitting ? 0.5 : 1 }}
           >
-            <Text className="text-sm font-semibold text-white">
+            <Text className="text-sm font-poppins-semibold text-white">
               {submitting ? 'Submitting…' : 'Submit Rating'}
             </Text>
           </Pressable>
           <Pressable onPress={onSkip} className="mt-3 h-12 items-center justify-center">
-            <Text className="text-sm font-medium text-[#6A7282]">Skip</Text>
+            <Text className="text-sm font-poppins-medium text-[#6A7282]">Skip</Text>
           </Pressable>
         </View>
       </View>

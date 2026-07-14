@@ -8,6 +8,7 @@ import {
   XCircleIcon,
 } from '../components/icons/ServiceTypeIcons';
 import { fetchJourneyPassengers } from '../services/api';
+import { fs, s, vs } from '../theme/responsive';
 
 interface AbsentPassenger {
   id: string;
@@ -76,7 +77,7 @@ export function BoardingSummaryScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -84,15 +85,24 @@ export function BoardingSummaryScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(20), lineHeight: fs(28) }}
+              >
                 Boarding Summary
               </Text>
-              <Text className="text-[14px] text-white/80">
+              <Text
+                className="text-white/80 font-poppins-regular"
+                style={{ fontSize: fs(14) }}
+              >
                 Journey ID: {journeyId}
               </Text>
             </View>
@@ -102,21 +112,32 @@ export function BoardingSummaryScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={{ padding: s(16), gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="items-center rounded-2xl bg-[#FAF3FF] py-8">
-          <Text className="text-[64px] font-bold leading-[72px] text-[#9C1AFC]">
+        <View
+          className="items-center rounded-2xl bg-[#FAF3FF]"
+          style={{ paddingVertical: vs(32) }}
+        >
+          <Text
+            className="font-poppins-bold text-[#9C1AFC]"
+            style={{ fontSize: fs(64), lineHeight: fs(72) }}
+          >
             {boarded}/{total}
           </Text>
-          <Text className="mt-2 text-[20px] font-medium text-[#1E293B]">
+          <Text
+            className="font-poppins-medium text-[#1E293B]"
+            style={{ fontSize: fs(20), marginTop: vs(8) }}
+          >
             Passengers Boarded
           </Text>
         </View>
 
         <View
-          className="rounded-2xl bg-white p-5"
+          className="bg-white"
           style={{
+            borderRadius: s(16),
+            padding: s(20),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
@@ -124,66 +145,110 @@ export function BoardingSummaryScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[18px] font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(18) }}
+          >
             Boarding Status
           </Text>
-          <View className="mt-4 flex-row">
+          <View className="flex-row" style={{ marginTop: vs(16) }}>
             <View className="flex-1 items-center">
-              <CheckCircleIcon size={28} color="#00A63E" />
-              <Text className="mt-2 text-[14px] text-[#6A7282]">Boarded</Text>
-              <Text className="mt-1 text-[24px] font-bold text-[#00A63E]">
+              <CheckCircleIcon size={s(28)} color="#00A63E" />
+              <Text
+                className="text-[#6A7282] font-poppins-regular"
+                style={{ fontSize: fs(14), marginTop: vs(8) }}
+              >
+                Boarded
+              </Text>
+              <Text
+                className="font-poppins-bold text-[#00A63E]"
+                style={{ fontSize: fs(24), marginTop: vs(4) }}
+              >
                 {boarded}
               </Text>
             </View>
             <View className="h-full w-px bg-[#E5E7EB]" />
             <View className="flex-1 items-center">
-              <XCircleIcon size={28} color="#E02D3C" />
-              <Text className="mt-2 text-[14px] text-[#6A7282]">
+              <XCircleIcon size={s(28)} color="#E02D3C" />
+              <Text
+                className="text-[#6A7282] font-poppins-regular"
+                style={{ fontSize: fs(14), marginTop: vs(8) }}
+              >
                 Marked Absent
               </Text>
-              <Text className="mt-1 text-[24px] font-bold text-[#E02D3C]">
+              <Text
+                className="font-poppins-bold text-[#E02D3C]"
+                style={{ fontSize: fs(24), marginTop: vs(4) }}
+              >
                 {absentCount}
               </Text>
             </View>
           </View>
         </View>
 
-        <View className="rounded-2xl bg-[#FFE5E5] p-5">
-          <Text className="text-[18px] font-semibold text-[#1E293B]">
+        <View
+          className="bg-[#FFE5E5]"
+          style={{ borderRadius: s(16), padding: s(20) }}
+        >
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(18) }}
+          >
             Absent Passengers
           </Text>
-          <View className="mt-3 gap-2">
+          <View style={{ marginTop: vs(12), gap: vs(8) }}>
             {absent.map(p => (
               <View
                 key={p.id}
-                className="flex-row items-center justify-between rounded-2xl bg-white px-4 py-3"
+                className="flex-row items-center justify-between bg-white"
+                style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
               >
-                <Text className="text-base font-medium text-[#1E293B]">
+                <Text
+                  className="font-poppins-medium text-[#1E293B]"
+                  style={{ fontSize: fs(16) }}
+                >
                   {p.name}
                 </Text>
-                <Text className="text-[14px] text-[#6A7282]">Seat {p.seat}</Text>
+                <Text
+                  className="text-[#6A7282] font-poppins-regular"
+                  style={{ fontSize: fs(14) }}
+                >
+                  Seat {p.seat}
+                </Text>
               </View>
             ))}
           </View>
-          <Text className="mt-3 text-[12px] text-[#991B1B]">
+          <Text
+            className="text-[#991B1B] font-poppins-regular"
+            style={{ fontSize: fs(12), marginTop: vs(12) }}
+          >
             Excluded from earnings • Refunds reviewed by admin
           </Text>
         </View>
       </ScrollView>
 
-      <View className="px-4 pb-6 pt-2">
+      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
         {!canStart && (
-          <Text className="mb-2 text-center text-[13px] text-[#B45309]">
+          <Text
+            className="text-center font-poppins-regular text-[#B45309]"
+            style={{ fontSize: fs(13), marginBottom: vs(8) }}
+          >
             {pending} passenger{pending === 1 ? '' : 's'} not yet checked in or marked no-show.
           </Text>
         )}
         <Pressable
           onPress={() => canStart && onStartJourney?.()}
           disabled={!canStart}
-          className="h-[56px] items-center justify-center rounded-2xl bg-[#9810FA]"
-          style={canStart ? undefined : { opacity: 0.5 }}
+          className="items-center justify-center bg-[#9810FA]"
+          style={[
+            { height: s(56), borderRadius: s(16) },
+            canStart ? undefined : { opacity: 0.5 },
+          ]}
         >
-          <Text className="text-base font-semibold uppercase text-white">
+          <Text
+            className="font-poppins-semibold uppercase text-white"
+            style={{ fontSize: fs(16) }}
+          >
             Start Journey
           </Text>
         </Pressable>

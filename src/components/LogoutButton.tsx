@@ -51,7 +51,7 @@ export function LogoutButton({
           color={tint === 'light' ? '#FFFFFF' : '#0097B3'}
         />
       ) : (
-        <Text className={`text-sm font-medium ${textColor}`}>Logout</Text>
+        <Text className={`text-sm font-poppins-medium ${textColor}`}>Logout</Text>
       )}
     </Pressable>
   );

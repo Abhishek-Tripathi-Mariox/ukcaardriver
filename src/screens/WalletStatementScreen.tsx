@@ -135,7 +135,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -147,7 +147,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Wallet Statement
             </Text>
           </View>
@@ -184,7 +184,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
               return (
                 <View className="flex-row items-center gap-4 px-4 pb-2 pt-4">
                   <View className="h-px flex-1 bg-[#E1E6EF]" />
-                  <Text className="text-[11px] font-bold text-[#607080]">
+                  <Text className="text-[11px] font-poppins-bold text-[#607080]">
                     {item.label}
                   </Text>
                   <View className="h-px flex-1 bg-[#E1E6EF]" />
@@ -206,7 +206,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
                     <Text
-                      className="text-[15px] font-bold"
+                      className="text-[15px] font-poppins-bold"
                       style={{
                         color: isCompleted ? '#132235' : '#6A7282',
                         textDecorationLine: isFailed ? 'line-through' : 'none',
@@ -220,7 +220,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                         style={{ backgroundColor: badge.bg }}
                       >
                         <Text
-                          className="text-[10px] font-bold uppercase"
+                          className="text-[10px] font-poppins-bold uppercase"
                           style={{ color: badge.color }}
                         >
                           {badge.label}
@@ -234,7 +234,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                 </View>
                 {isCompleted ? (
                   <Text
-                    className="text-[17px] font-bold"
+                    className="text-[17px] font-poppins-bold"
                     style={{ color: isCredit ? '#08875D' : '#E02D3C' }}
                   >
                     {isCredit ? '+ ' : '- '}
@@ -243,7 +243,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                 ) : (
                   // Pending / failed: show the *attempted* amount in muted
                   // grey with no sign, so it's clear no money moved.
-                  <Text className="text-[17px] font-medium text-[#9CA3AF]">
+                  <Text className="text-[17px] font-poppins-medium text-[#9CA3AF]">
                     {fmtRupees(Math.abs(t.amount))}
                   </Text>
                 )}

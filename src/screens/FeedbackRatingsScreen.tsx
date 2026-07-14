@@ -57,7 +57,7 @@ export function FeedbackRatingsScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -69,7 +69,7 @@ export function FeedbackRatingsScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Feedback & Ratings
             </Text>
           </View>
@@ -82,7 +82,7 @@ export function FeedbackRatingsScreen({
         showsVerticalScrollIndicator={false}
       >
         <View className="items-center rounded-2xl bg-[#FBF5FF] py-8">
-          <Text className="text-[64px] font-bold leading-[68px] text-[#9A15FB]">
+          <Text className="text-[64px] font-poppins-bold leading-[68px] text-[#9A15FB]">
             {overallRating}
           </Text>
           <View className="mt-2 flex-row gap-1">
@@ -105,7 +105,7 @@ export function FeedbackRatingsScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
             Performance Metrics
           </Text>
           <View className="mt-4 gap-4">
@@ -116,7 +116,7 @@ export function FeedbackRatingsScreen({
                 <View key={m.label}>
                   <View className="flex-row items-center justify-between">
                     <Text className="text-[14px] text-[#1E293B]">{m.label}</Text>
-                    <Text className="text-[14px] font-semibold text-[#1E293B]">
+                    <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
                       {m.value.toFixed(1)}/5
                     </Text>
                   </View>
@@ -142,7 +142,7 @@ export function FeedbackRatingsScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
             Weekly Trend
           </Text>
           <View className="mt-4 h-[120px] flex-row items-end justify-between">
@@ -173,7 +173,7 @@ export function FeedbackRatingsScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
             Recent Comments
           </Text>
           <View className="mt-3 gap-3">
@@ -201,7 +201,7 @@ export function FeedbackRatingsScreen({
           onPress={onGoDashboard}
           className="h-[50px] items-center justify-center rounded-2xl bg-[#9810FA]"
         >
-          <Text className="text-[14px] font-semibold uppercase text-white">
+          <Text className="text-[14px] font-poppins-semibold uppercase text-white">
             Go to Dashboard
           </Text>
         </Pressable>
@@ -209,7 +209,7 @@ export function FeedbackRatingsScreen({
           onPress={onViewEarnings}
           className="mt-3 h-[50px] items-center justify-center rounded-2xl border border-[#0097B3] bg-white"
         >
-          <Text className="text-[14px] font-semibold uppercase text-[#0097B3]">
+          <Text className="text-[14px] font-poppins-semibold uppercase text-[#0097B3]">
             View Earnings
           </Text>
         </Pressable>

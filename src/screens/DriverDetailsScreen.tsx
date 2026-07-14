@@ -99,7 +99,7 @@ function UploadField({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-slate-800">{label}</Text>
+      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
       <Pressable
         onPress={uploading ? undefined : onPress}
         className={`h-32 items-center justify-center rounded-2xl border ${tone}`}
@@ -319,20 +319,20 @@ export function DriverDetailsScreen({
           contentContainerClassName="px-6 pt-6 pb-10"
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="mb-4 text-[20px] font-semibold text-slate-800">
+          <Text className="mb-4 text-[20px] font-poppins-semibold text-slate-800">
             Driver Details
           </Text>
 
           {isScheduled && (
             <View className="mb-4">
-              <Text className="mb-2 text-sm font-medium text-slate-800">
+              <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
                 Scheduled Route
               </Text>
               {routeSelection ? (
                 <View className="rounded-2xl border border-brand-teal/40 bg-brand-teal/5 p-4">
                   <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1">
-                      <Text className="text-sm font-bold text-slate-800">
+                      <Text className="text-sm font-poppins-bold text-slate-800">
                         {routeSelection.primary.routeName}
                       </Text>
                       <Text className="mt-0.5 text-xs text-slate-600">
@@ -344,14 +344,14 @@ export function DriverDetailsScreen({
                       </Text>
                     </View>
                     <Pressable onPress={() => setRoutePickerOpen(true)}>
-                      <Text className="text-xs font-medium text-brand-teal">
+                      <Text className="text-xs font-poppins-medium text-brand-teal">
                         Change
                       </Text>
                     </Pressable>
                   </View>
                   {routeSelection.returnMode === 'same' && (
                     <View className="mt-3 border-t border-brand-teal/30 pt-3">
-                      <Text className="text-xs font-medium text-slate-700">
+                      <Text className="text-xs font-poppins-medium text-slate-700">
                         Return: same route reversed
                       </Text>
                       <Text className="mt-0.5 text-xs text-slate-500">
@@ -368,7 +368,7 @@ export function DriverDetailsScreen({
                   {routeSelection.returnMode === 'different' &&
                     routeSelection.returnRoute && (
                       <View className="mt-3 border-t border-brand-teal/30 pt-3">
-                        <Text className="text-xs font-medium text-slate-700">
+                        <Text className="text-xs font-poppins-medium text-slate-700">
                           Return: {routeSelection.returnRoute.routeName}
                         </Text>
                         <Text className="mt-0.5 text-xs text-slate-500">
@@ -387,7 +387,7 @@ export function DriverDetailsScreen({
                   <Text className="text-base text-[#717182]">
                     Tap to pick your route
                   </Text>
-                  <Text className="text-xs font-medium text-brand-teal">
+                  <Text className="text-xs font-poppins-medium text-brand-teal">
                     Pick
                   </Text>
                 </Pressable>
@@ -396,7 +396,7 @@ export function DriverDetailsScreen({
           )}
 
           <View className="mb-4">
-            <Text className="mb-2 text-sm font-medium text-slate-800">
+            <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
               Driving License Number
             </Text>
             <TextInput
@@ -410,7 +410,7 @@ export function DriverDetailsScreen({
           </View>
 
           <View className="mb-4">
-            <Text className="mb-2 text-sm font-medium text-slate-800">
+            <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
               DL Expiry Date
             </Text>
             <Pressable
@@ -428,7 +428,7 @@ export function DriverDetailsScreen({
           </View>
 
           <View className="mb-4">
-            <Text className="mb-2 text-sm font-medium text-slate-800">
+            <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
               Years of Experience
             </Text>
             <TextInput
@@ -495,7 +495,7 @@ export function DriverDetailsScreen({
             {submitting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text className="text-sm font-medium text-white">Next</Text>
+              <Text className="text-sm font-poppins-medium text-white">Next</Text>
             )}
           </Pressable>
         </ScrollView>

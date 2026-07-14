@@ -104,7 +104,7 @@ function NotificationRow({ item }: { item: NotificationApi }) {
       <NotificationThumb type={item.type} />
       <View className="flex-1">
         <View className="flex-row items-start justify-between">
-          <Text className="flex-1 pr-2 text-sm font-bold text-[#171717]">
+          <Text className="flex-1 pr-2 text-sm font-poppins-bold text-[#171717]">
             {item.title}
           </Text>
           <Text className="text-xs text-[#D9D9D9]">
@@ -200,7 +200,7 @@ export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Notification
             </Text>
           </View>
@@ -214,7 +214,7 @@ export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
       ) : items.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <BellIcon size={48} color="#D9D9D9" />
-          <Text className="mt-4 text-center text-base font-semibold text-[#1B1D21]">
+          <Text className="mt-4 text-center text-base font-poppins-semibold text-[#1B1D21]">
             No notifications yet
           </Text>
           <Text className="mt-2 text-center text-sm text-[#8F92A1]">
@@ -242,7 +242,7 @@ export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
             item.kind === 'header' ? (
               <>
                 <View className="px-6 pb-3 pt-6">
-                  <Text className="text-base font-bold text-[#1B1D21]">
+                  <Text className="text-base font-poppins-bold text-[#1B1D21]">
                     {item.label}
                   </Text>
                 </View>

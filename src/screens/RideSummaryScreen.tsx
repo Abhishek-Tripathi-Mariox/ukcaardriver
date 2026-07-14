@@ -137,7 +137,7 @@ function SlideToConfirm({
       }}
       className="h-12 justify-center rounded-xl bg-[#0097B3] px-1"
     >
-      <Text className="text-center text-[17px] font-bold text-white">{label}</Text>
+      <Text className="text-center text-[17px] font-poppins-bold text-white">{label}</Text>
       <Animated.View
         {...pan.panHandlers}
         style={{
@@ -170,7 +170,7 @@ export function RideSummaryScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View className="bg-[#0097B3]">
         <SafeAreaView edges={['top']}>
@@ -178,19 +178,19 @@ export function RideSummaryScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={24} color="white" />
             </Pressable>
-            <Text className="flex-1 text-[20px] font-bold text-white">Summary</Text>
+            <Text className="flex-1 text-[20px] font-poppins-bold text-white">Summary</Text>
           </View>
         </SafeAreaView>
       </View>
 
       <View className="items-center bg-[#00C896] py-4">
-        <Text className="text-[13px] font-bold text-white">Amount to be Collected</Text>
+        <Text className="text-[13px] font-poppins-bold text-white">Amount to be Collected</Text>
         <Pressable
           onPress={() => setFareVisible(true)}
           className="mt-1 flex-row items-center gap-1"
         >
           <Text
-            className="text-[28px] font-bold text-white"
+            className="text-[28px] font-poppins-bold text-white"
             style={{ letterSpacing: -0.4 }}
           >
             {amount}
@@ -206,11 +206,11 @@ export function RideSummaryScreen({
       >
         <View className="rounded-2xl border border-[#0097B3] bg-[#F0F5FF] p-4">
           <Text className="text-center text-[13px] text-[#0097B3]">DURATION OF USE</Text>
-          <Text className="text-center text-[17px] font-bold text-[#0097B3]">{duration}</Text>
+          <Text className="text-center text-[17px] font-poppins-bold text-[#0097B3]">{duration}</Text>
         </View>
 
         <View className="mt-10 items-center">
-          <Text className="text-[20px] font-bold text-[#132235]">QR Code</Text>
+          <Text className="text-[20px] font-poppins-bold text-[#132235]">QR Code</Text>
           <Text className="mt-1 text-[15px] text-[#364B63]">Scan & Pay</Text>
           <View className="mt-4">
             <QrPlaceholder size={200} />

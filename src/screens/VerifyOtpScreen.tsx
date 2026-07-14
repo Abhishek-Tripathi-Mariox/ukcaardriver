@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Keyboard,
   Pressable,
   StatusBar,
   Text,
   TextInput,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
@@ -19,17 +19,21 @@ import {
   logoUkcaar,
 } from '../assets/images';
 import { ApiError, ApiUser, verifyOtp } from '../services/api';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { fs, s, vs } from '../theme/responsive';
 
 interface VerifyOtpScreenProps {
   mobile: string;
   onBack: () => void;
   onVerified: (user: ApiUser) => void;
+  onRegister?: () => void;
 }
 
 export function VerifyOtpScreen({
   mobile,
   onBack,
   onVerified,
+  onRegister,
 }: VerifyOtpScreenProps) {
   const [otp, setOtp] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -45,8 +49,6 @@ export function VerifyOtpScreen({
       const res = await verifyOtp(mobile, otp);
       user = res?.data?.user ?? null;
       if (!user) {
-        // 2xx but malformed body — make this loud so we don't claim
-        // "wrong OTP" when the server actually accepted it.
         console.warn('[verifyOtp] 200 but no user in response:', res);
         setError('Server returned an unexpected response. Check backend logs.');
         return;
@@ -64,60 +66,67 @@ export function VerifyOtpScreen({
     } finally {
       setSubmitting(false);
     }
-    // Only navigate after the try/catch unwinds, so a downstream throw
-    // (router, store, etc.) doesn't get swallowed as an OTP failure.
     onVerified(user);
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View className="flex-1 bg-white">
-        <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <LinearGradient
           colors={['#0097B3', '#00C896']}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
-          className="absolute left-0 right-0 top-0 h-[276px] rounded-b-3xl"
+          style={{ height: vs(452), borderBottomLeftRadius: s(28), borderBottomRightRadius: s(28) }}
+          className="absolute left-0 right-0 top-0"
         />
         <SafeAreaView edges={['top']} className="flex-1">
-          <View className="flex-row items-center justify-between px-4 pt-2">
+          <View className="flex-row items-center" style={{ paddingHorizontal: s(16), paddingTop: vs(4) }}>
             <Pressable onPress={onBack} hitSlop={12} className="p-2">
-              <IconArrowBack width={20} height={20} color="#FFFFFF" />
+              <IconArrowBack width={s(20)} height={s(20)} color="#FFFFFF" />
             </Pressable>
           </View>
 
-          <View className="items-center">
-            <View className="h-24 w-24 overflow-hidden rounded-full bg-white">
-              <Image
-                source={logoUkcaar}
-                resizeMode="cover"
-                className="h-full w-full"
-              />
+          <View className="items-center" style={{ marginTop: vs(8) }}>
+            <View
+              className="overflow-hidden rounded-full bg-white"
+              style={{ height: s(96), width: s(96) }}
+            >
+              <Image source={logoUkcaar} resizeMode="cover" className="h-full w-full" />
             </View>
-            <Text className="mt-5 text-[30px] font-semibold text-white">
+            <Text
+              className="font-poppins-bold text-white"
+              style={{ marginTop: vs(18), fontSize: fs(30) }}
+            >
               Welcome Driver 👋
             </Text>
           </View>
 
-          <View className="mx-6 mt-6 rounded-2xl bg-white p-6 shadow-lg shadow-black/10">
-            <Text className="mb-2 text-sm font-medium text-slate-800">
+          <View
+            className="rounded-3xl bg-white shadow-lg shadow-black/10"
+            style={{ marginHorizontal: s(20), marginTop: vs(32), padding: s(22) }}
+          >
+            <Text className="font-poppins-medium text-slate-800" style={{ marginBottom: vs(8), fontSize: fs(14) }}>
               Mobile Number
             </Text>
-            <View className="relative">
-              <View className="absolute left-3 top-0 bottom-0 z-10 justify-center">
-                <IconPhone width={20} height={20} />
+            <View className="relative justify-center">
+              <View className="absolute left-3 z-10">
+                <IconPhone width={s(20)} height={s(20)} />
               </View>
-              <View className="h-12 justify-center rounded-2xl border border-slate-200 bg-[#E8F0FE] pl-12 pr-3">
-                <Text className="text-base text-slate-600">{mobile}</Text>
+              <View
+                className="justify-center rounded-2xl border border-slate-200 bg-[#E8F0FE]"
+                style={{ height: vs(50), paddingLeft: s(44), paddingRight: s(12) }}
+              >
+                <Text className="font-poppins text-slate-600" style={{ fontSize: fs(15) }}>{mobile}</Text>
               </View>
             </View>
 
-            <Text className="mt-5 mb-2 text-sm font-medium text-slate-800">
+            <Text className="font-poppins-medium text-slate-800" style={{ marginTop: vs(18), marginBottom: vs(8), fontSize: fs(14) }}>
               Enter OTP
             </Text>
-            <View className="relative">
-              <View className="absolute left-3 top-0 bottom-0 z-10 justify-center">
-                <IconLock width={20} height={20} />
+            <View className="relative justify-center">
+              <View className="absolute left-3 z-10">
+                <IconLock width={s(20)} height={s(20)} />
               </View>
               <TextInput
                 value={otp}
@@ -130,34 +139,40 @@ export function VerifyOtpScreen({
                 keyboardType="number-pad"
                 maxLength={6}
                 editable={!submitting}
-                className="h-12 rounded-2xl border border-slate-200 bg-[#F3F3F5] pl-12 pr-3 text-base text-slate-900"
+                className="rounded-2xl border border-slate-200 bg-[#F3F3F5] font-poppins text-slate-900"
+                style={{ height: vs(50), paddingLeft: s(44), paddingRight: s(12), fontSize: fs(15) }}
               />
             </View>
-            <Text className="mt-2 text-xs text-slate-500">
+            <Text className="font-poppins text-slate-500" style={{ marginTop: vs(8), fontSize: fs(12) }}>
               OTP sent to {mobile}
             </Text>
 
             {error && (
-              <Text className="mt-2 text-xs text-red-600">{error}</Text>
+              <Text className="font-poppins text-red-600" style={{ marginTop: vs(8), fontSize: fs(12) }}>{error}</Text>
             )}
 
-            <Pressable
-              disabled={!canSubmit}
+            <PrimaryButton
+              label="Login"
               onPress={handleSubmit}
-              className={`mt-5 h-12 flex-row items-center justify-center rounded-2xl shadow-md ${
-                canSubmit ? 'bg-brand-teal' : 'bg-brand-teal/60'
-              }`}
+              disabled={!canSubmit}
+              loading={submitting}
+              className="mt-5"
+            />
+
+            <TouchableOpacity
+              onPress={onRegister}
+              disabled={!onRegister}
+              className="items-center"
+              style={{ marginTop: vs(18) }}
             >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text className="text-sm font-medium text-white">Login</Text>
-              )}
-            </Pressable>
+              <Text className="font-poppins-semibold text-brand-teal" style={{ fontSize: fs(14) }}>
+                New Driver? Register Now →
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View className="flex-1" />
-          <Text className="mb-8 text-center text-xs text-slate-400">
+          <Text className="text-center font-poppins text-slate-400" style={{ marginBottom: vs(28), fontSize: fs(12) }}>
             By continuing, you agree to our Terms & Conditions
           </Text>
         </SafeAreaView>

@@ -7,6 +7,7 @@ import {
   StarIcon,
 } from '../components/icons/ServiceTypeIcons';
 import { fetchJourney, fetchJourneyPassengers } from '../services/api';
+import { fs, s, vs } from '../theme/responsive';
 
 interface JourneyRideSummaryScreenProps {
   journeyKey?: string | null;
@@ -72,7 +73,7 @@ export function JourneyRideSummaryScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -80,11 +81,17 @@ export function JourneyRideSummaryScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <CloseIcon size={22} color="white" />
+              <CloseIcon size={s(22)} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text
+              className="font-poppins-semibold text-white"
+              style={{ fontSize: fs(20) }}
+            >
               Ride Summary
             </Text>
           </View>
@@ -93,22 +100,39 @@ export function JourneyRideSummaryScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={{ padding: s(16), gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="items-center rounded-2xl bg-[#FCF9FF] py-8">
-          <Text className="text-[12px] font-medium uppercase tracking-wider text-[#6A7282]">
+        <View
+          className="items-center rounded-2xl bg-[#FCF9FF]"
+          style={{ paddingVertical: vs(32) }}
+        >
+          <Text
+            className="font-poppins-medium uppercase tracking-wider text-[#6A7282]"
+            style={{ fontSize: fs(12) }}
+          >
             Total Earnings
           </Text>
-          <Text className="mt-2 text-[60px] font-bold leading-[64px] text-[#9A15FB]">
+          <Text
+            className="font-poppins-bold text-[#9A15FB]"
+            style={{ fontSize: fs(60), lineHeight: fs(64), marginTop: vs(8) }}
+          >
             {totalEarnings}
           </Text>
-          <Text className="mt-2 text-[14px] text-[#6A7282]">{route}</Text>
+          <Text
+            className="text-[#6A7282] font-poppins-regular text-center px-4"
+            style={{ fontSize: fs(14), marginTop: vs(8) }}
+            numberOfLines={2}
+          >
+            {route}
+          </Text>
         </View>
 
         <View
-          className="rounded-2xl bg-white p-5"
+          className="bg-white"
           style={{
+            borderRadius: s(16),
+            padding: s(20),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
@@ -116,27 +140,42 @@ export function JourneyRideSummaryScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(16) }}
+          >
             Passenger Summary
           </Text>
-          <View className="mt-3 flex-row items-center justify-between">
-            <Text className="text-[14px] text-[#6A7282]">Total Passengers</Text>
-            <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <View className="flex-row items-center justify-between" style={{ marginTop: vs(12) }}>
+            <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
+              Total Passengers
+            </Text>
+            <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(16) }}>
               {totalPassengers}
             </Text>
           </View>
-          <View className="my-3 h-px bg-[#E5E7EB]" />
+          <View className="h-px bg-[#E5E7EB]" style={{ marginVertical: vs(12) }} />
           <View className="flex-row">
             <View className="flex-1 items-center">
-              <Text className="text-[12px] text-[#6A7282]">Boarded</Text>
-              <Text className="mt-1 text-[24px] font-bold text-[#9A15FB]">
+              <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(12) }}>
+                Boarded
+              </Text>
+              <Text
+                className="font-poppins-bold text-[#9A15FB]"
+                style={{ fontSize: fs(24), marginTop: vs(4) }}
+              >
                 {boarded}
               </Text>
             </View>
             <View className="h-full w-px bg-[#E5E7EB]" />
             <View className="flex-1 items-center">
-              <Text className="text-[12px] text-[#6A7282]">Marked Absent</Text>
-              <Text className="mt-1 text-[24px] font-bold text-[#F44336]">
+              <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(12) }}>
+                Marked Absent
+              </Text>
+              <Text
+                className="font-poppins-bold text-[#F44336]"
+                style={{ fontSize: fs(24), marginTop: vs(4) }}
+              >
                 {absent}
               </Text>
             </View>
@@ -144,8 +183,10 @@ export function JourneyRideSummaryScreen({
         </View>
 
         <View
-          className="rounded-2xl bg-white p-5"
+          className="bg-white"
           style={{
+            borderRadius: s(16),
+            padding: s(20),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
@@ -153,25 +194,34 @@ export function JourneyRideSummaryScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(16) }}
+          >
             Journey Details
           </Text>
-          <View className="mt-3 gap-2">
+          <View style={{ marginTop: vs(12), gap: vs(8) }}>
             <View className="flex-row justify-between">
-              <Text className="text-[14px] text-[#6A7282]">Route</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
+              <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                Route
+              </Text>
+              <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(14) }}>
                 {route}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-[14px] text-[#6A7282]">Stops</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
+              <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                Stops
+              </Text>
+              <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(14) }}>
                 {stops}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-[14px] text-[#6A7282]">Passengers Boarded</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
+              <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                Passengers Boarded
+              </Text>
+              <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(14) }}>
                 {boarded}/{totalPassengers}
               </Text>
             </View>
@@ -179,13 +229,17 @@ export function JourneyRideSummaryScreen({
         </View>
       </ScrollView>
 
-      <View className="px-4 pb-6 pt-2">
+      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
         <Pressable
           onPress={onViewFeedback}
-          className="h-[56px] flex-row items-center justify-center gap-2 rounded-[14px] bg-[#9810FA]"
+          className="flex-row items-center justify-center bg-[#9810FA]"
+          style={{ height: s(56), borderRadius: s(14), gap: s(8) }}
         >
-          <StarIcon size={18} color="white" />
-          <Text className="text-[14px] font-semibold uppercase text-white">
+          <StarIcon size={s(18)} color="white" />
+          <Text
+            className="font-poppins-semibold uppercase text-white"
+            style={{ fontSize: fs(14) }}
+          >
             View Feedback
           </Text>
         </Pressable>

@@ -215,7 +215,7 @@ export function RechargeWalletScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -227,7 +227,7 @@ export function RechargeWalletScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Recharge Wallet
             </Text>
           </View>
@@ -236,7 +236,7 @@ export function RechargeWalletScreen({
 
       <View className="items-center bg-[#0097B3] px-6 py-2">
         <Text className="text-xs text-white/90">Available Balance</Text>
-        <Text className="mt-0.5 text-[20px] font-bold text-white">
+        <Text className="mt-0.5 text-[20px] font-poppins-bold text-white">
           {balance === null ? '—' : fmtRupees(balance)}
         </Text>
       </View>
@@ -256,7 +256,7 @@ export function RechargeWalletScreen({
               maxLength={6}
               placeholder="0"
               placeholderTextColor="#99A1AF"
-              className="ml-1 min-w-[60px] text-center text-[34px] font-bold text-[#132235]"
+              className="ml-1 min-w-[60px] text-center text-[34px] font-poppins-bold text-[#132235]"
               style={{ letterSpacing: -0.4 }}
             />
           </View>
@@ -281,7 +281,7 @@ export function RechargeWalletScreen({
                 }}
               >
                 <Text
-                  className={`text-[13px] ${selected ? 'font-bold' : ''}`}
+                  className={`text-[13px] ${selected ? 'font-poppins-bold' : ''}`}
                   style={{ color: selected ? '#0097B3' : '#132235' }}
                 >
                   ₹{value}
@@ -302,7 +302,7 @@ export function RechargeWalletScreen({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-base font-bold text-white">Recharge Now</Text>
+            <Text className="text-base font-poppins-bold text-white">Recharge Now</Text>
           )}
         </Pressable>
       </SafeAreaView>

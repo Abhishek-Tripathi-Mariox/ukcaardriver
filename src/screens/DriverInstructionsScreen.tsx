@@ -53,7 +53,7 @@ export function DriverInstructionsScreen({
 
   return (
     <View className="flex-1 bg-[#FDFEFD]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -65,7 +65,7 @@ export function DriverInstructionsScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[18px] font-semibold text-white">
+            <Text className="text-[18px] font-poppins-semibold text-white">
               Driver Instructions
             </Text>
           </View>
@@ -91,7 +91,7 @@ export function DriverInstructionsScreen({
               <View className="h-10 w-10 items-center justify-center rounded-full bg-[#0097B3]/10">
                 {item.icon}
               </View>
-              <Text className="flex-1 text-[15px] font-medium text-[#132235]">
+              <Text className="flex-1 text-[15px] font-poppins-medium text-[#132235]">
                 {item.text}
               </Text>
             </View>
@@ -123,7 +123,7 @@ export function DriverInstructionsScreen({
           className="h-14 items-center justify-center rounded-2xl"
           style={{ backgroundColor: agreed ? '#0097B3' : '#D1D5DC' }}
         >
-          <Text className="text-[17px] font-bold text-white">Agree</Text>
+          <Text className="text-[17px] font-poppins-bold text-white">Agree</Text>
         </Pressable>
       </SafeAreaView>
     </View>

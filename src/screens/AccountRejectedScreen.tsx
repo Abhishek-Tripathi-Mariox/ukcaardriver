@@ -20,7 +20,7 @@ export function AccountRejectedScreen({
 }: AccountRejectedScreenProps) {
   return (
     <View className="flex-1 bg-[#F5F3F8]">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={['#0097B3', '#00C896']}
         start={{ x: 0.5, y: 0 }}
@@ -29,7 +29,7 @@ export function AccountRejectedScreen({
         <SafeAreaView edges={['top']}>
           <View className="flex-row items-center justify-between px-4 py-5">
             <View className="w-16" />
-            <Text className="flex-1 text-center text-[20px] font-semibold text-white">
+            <Text className="flex-1 text-center text-[20px] font-poppins-semibold text-white">
               Account Rejected
             </Text>
             <View className="w-16 items-end">
@@ -40,7 +40,7 @@ export function AccountRejectedScreen({
       </LinearGradient>
 
       <View className="flex-1 px-6 pt-8">
-        <Text className="text-center text-[24px] font-semibold text-slate-800">
+        <Text className="text-center text-[24px] font-poppins-semibold text-slate-800">
           Hello, {driverName}
         </Text>
         <Text className="mt-4 text-center text-sm leading-6 text-slate-500">
@@ -52,7 +52,7 @@ export function AccountRejectedScreen({
         <View className="flex-1" />
 
         <View className="rounded-2xl bg-[#E7EEF5] p-4">
-          <Text className="text-sm font-semibold text-slate-800">
+          <Text className="text-sm font-poppins-semibold text-slate-800">
             Rejection Reason:
           </Text>
           <Text className="mt-1 text-sm text-slate-600">{rejectionReason}</Text>
@@ -62,14 +62,14 @@ export function AccountRejectedScreen({
           onPress={onReupload}
           className="mt-5 h-12 items-center justify-center rounded-2xl bg-brand-teal"
         >
-          <Text className="text-sm font-medium text-white">Re-upload Documents</Text>
+          <Text className="text-sm font-poppins-medium text-white">Re-upload Documents</Text>
         </Pressable>
 
         <Pressable
           onPress={onContactSupport}
           className="mt-3 h-12 items-center justify-center rounded-2xl border border-slate-300 bg-white"
         >
-          <Text className="text-sm font-medium text-slate-700">Contact Support</Text>
+          <Text className="text-sm font-poppins-medium text-slate-700">Contact Support</Text>
         </Pressable>
 
         <Text className="mb-6 mt-4 text-center text-xs text-slate-500">

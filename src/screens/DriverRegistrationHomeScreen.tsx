@@ -1,9 +1,11 @@
-import { Image, Pressable, StatusBar, Text, View } from 'react-native';
+import { Image, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { logoUkcaar } from '../assets/images';
 import LanguageBar from '../components/LanguageBar';
 import LogoutButton from '../components/LogoutButton';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { fs, s, vs } from '../theme/responsive';
 
 interface DriverRegistrationHomeScreenProps {
   onRegisterVehicle: () => void;
@@ -24,7 +26,7 @@ export function DriverRegistrationHomeScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={['#0097B3', '#00C896']}
         start={{ x: 0.5, y: 0 }}
@@ -35,47 +37,49 @@ export function DriverRegistrationHomeScreen({
             <LanguageBar onPress={onOpenLanguage} tint="light" />
             <LogoutButton onLoggedOut={onLogout} tint="light" />
           </View>
-          <View className="px-6 pb-5 pt-1">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[20px] font-semibold text-white">
-                Driver Registration
-              </Text>
-            </View>
-            <Text className="mt-1 text-sm text-white/80">
+          <View style={{ paddingHorizontal: s(20), paddingBottom: vs(18), paddingTop: vs(2) }}>
+            <Text className="font-poppins-bold text-white" style={{ fontSize: fs(23) }}>
+              Driver Registration
+            </Text>
+            <Text className="font-poppins text-white/90" style={{ marginTop: vs(2), fontSize: fs(13) }}>
               Step {currentStep} of {totalSteps}
             </Text>
-            <View className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/30">
-              <View
-                className="h-full bg-white"
-                style={{ width: progressPct }}
-              />
+            <View
+              className="w-full overflow-hidden rounded-full bg-white/30"
+              style={{ marginTop: vs(12), height: vs(6) }}
+            >
+              <View className="h-full rounded-full bg-white" style={{ width: progressPct }} />
             </View>
           </View>
         </SafeAreaView>
       </LinearGradient>
 
-      <View className="flex-1 items-center px-6 pt-14">
-        <View className="h-24 w-24 overflow-hidden rounded-full bg-white shadow-md shadow-black/20">
-          <Image
-            source={logoUkcaar}
-            resizeMode="cover"
-            className="h-full w-full"
-          />
+      <View className="flex-1 items-center" style={{ paddingHorizontal: s(24), paddingTop: vs(56) }}>
+        <View
+          className="overflow-hidden rounded-full bg-white shadow-md shadow-black/20"
+          style={{ height: s(96), width: s(96) }}
+        >
+          <Image source={logoUkcaar} resizeMode="cover" className="h-full w-full" />
         </View>
 
-        <Text className="mt-9 px-4 text-center text-[24px] font-semibold leading-8 text-slate-800">
+        <Text
+          className="text-center font-poppins-bold text-slate-800"
+          style={{ marginTop: vs(36), fontSize: fs(24), lineHeight: fs(32), paddingHorizontal: s(16) }}
+        >
           Welcome to UKCAAR Driver Portal!
         </Text>
-        <Text className="mt-3 px-4 text-center text-base leading-6 text-slate-500">
+        <Text
+          className="text-center font-poppins text-slate-500"
+          style={{ marginTop: vs(12), fontSize: fs(15), lineHeight: fs(24), paddingHorizontal: s(16) }}
+        >
           Let's get your vehicle registered to start earning
         </Text>
 
-        <Pressable
+        <PrimaryButton
+          label="Register Vehicle"
           onPress={onRegisterVehicle}
-          className="mt-10 h-12 w-full items-center justify-center rounded-2xl bg-brand-teal shadow-md"
-        >
-          <Text className="text-sm font-medium text-white">Register Vehicle</Text>
-        </Pressable>
+          className="mt-10"
+        />
       </View>
     </View>
   );

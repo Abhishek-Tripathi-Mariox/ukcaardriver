@@ -41,7 +41,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-center justify-between py-3">
       <Text className="text-[13px] text-[#4A5565]">{label}</Text>
-      <Text className="text-[13px] font-medium text-[#101828]">{value}</Text>
+      <Text className="text-[13px] font-poppins-medium text-[#101828]">{value}</Text>
     </View>
   );
 }
@@ -123,7 +123,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
 
   return (
     <View className="flex-1 bg-[#F5F5F5]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -135,7 +135,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">Bank Details</Text>
+            <Text className="text-[20px] font-poppins-semibold text-white">Bank Details</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -160,7 +160,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                   <CheckIcon size={18} color="white" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-[#008A2E]">
+                  <Text className="text-sm font-poppins-semibold text-[#008A2E]">
                     Bank Account on File
                   </Text>
                   <Text className="mt-0.5 text-xs text-[#008A2E]">
@@ -174,7 +174,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                   <InfoCircleIcon size={18} color="white" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-semibold text-[#92400E]">
+                  <Text className="text-sm font-poppins-semibold text-[#92400E]">
                     No bank details yet
                   </Text>
                   <Text className="mt-0.5 text-xs text-[#92400E]">
@@ -194,7 +194,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                 elevation: 2,
               }}
             >
-              <Text className="text-base font-semibold text-[#101828]">
+              <Text className="text-base font-poppins-semibold text-[#101828]">
                 Registered Bank Information
               </Text>
               <View className="mt-2">
@@ -223,7 +223,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                 }}
               >
                 <EditPencilIcon size={16} color="white" />
-                <Text className="text-sm font-semibold text-white">
+                <Text className="text-sm font-poppins-semibold text-white">
                   Request Bank Details Update
                 </Text>
               </Pressable>
@@ -232,7 +232,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                 className="h-12 flex-row items-center justify-center gap-2 rounded-xl border border-[#0097B3] bg-white"
               >
                 <DocumentIcon size={16} color="#0097B3" />
-                <Text className="text-sm font-semibold text-[#0097B3]">
+                <Text className="text-sm font-poppins-semibold text-[#0097B3]">
                   View Transaction Statement
                 </Text>
               </Pressable>

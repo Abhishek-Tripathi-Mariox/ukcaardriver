@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,8 +8,10 @@ import {
   ClockSmallIcon,
   LocationPinSmallIcon,
 } from '../components/icons/ServiceTypeIcons';
+import { fetchJourney, fetchJourneyPassengers } from '../services/api';
 
 interface EmergencyDropSummaryScreenProps {
+  journeyKey?: string | null;
   passengerName?: string;
   seat?: string;
   reason?: string;
@@ -19,17 +22,50 @@ interface EmergencyDropSummaryScreenProps {
 }
 
 export function EmergencyDropSummaryScreen({
+  journeyKey,
   passengerName = 'Ramesh Kumar',
   seat = 'A1',
-  reason = 'Early Drop Request',
-  dropLocation = 'NH 48, Near Vellore - Safe Zone',
-  timestamp = '24/01/2026, 11:21:04',
+  reason = 'Early Drop Request (Emergency)',
+  dropLocation = 'Safe Highway Stop Area',
+  timestamp,
   onBack,
   onContinue,
 }: EmergencyDropSummaryScreenProps) {
+  const [liveData, setLiveData] = useState<{
+    name: string;
+    seat: string;
+    location: string;
+    time: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!journeyKey) return;
+    (async () => {
+      try {
+        const [jData, pData] = await Promise.all([
+          fetchJourney(journeyKey),
+          fetchJourneyPassengers(journeyKey),
+        ]);
+        const boardedPax = pData.passengers.find((p) => p.boarded) || pData.passengers[0];
+        setLiveData({
+          name: boardedPax?.name || passengerName,
+          seat: String(boardedPax?.seat || seat),
+          location: `${jData.journey.from} → ${jData.journey.to} (Safe Drop Zone)`,
+          time: new Date().toLocaleString('en-IN'),
+        });
+      } catch {
+        /* fallback */
+      }
+    })();
+  }, [journeyKey]);
+
+  const displayName = liveData?.name ?? passengerName;
+  const displaySeat = liveData?.seat ?? seat;
+  const displayLocation = liveData?.location ?? dropLocation;
+  const displayTime = liveData?.time ?? timestamp ?? new Date().toLocaleString('en-IN');
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -41,7 +77,7 @@ export function EmergencyDropSummaryScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Emergency Drop Complete
             </Text>
           </View>
@@ -57,7 +93,7 @@ export function EmergencyDropSummaryScreen({
           <View className="h-20 w-20 items-center justify-center rounded-full bg-[#9810FA]">
             <BigCheckIcon size={48} color="white" />
           </View>
-          <Text className="mt-4 text-[20px] font-semibold text-[#1E293B]">
+          <Text className="mt-4 text-[20px] font-poppins-semibold text-[#1E293B]">
             Passenger Dropped Safely
           </Text>
         </View>
@@ -72,25 +108,25 @@ export function EmergencyDropSummaryScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
             Passenger Information
           </Text>
           <View className="mt-3 gap-2">
             <View className="flex-row justify-between">
               <Text className="text-[14px] text-[#6A7282]">Name</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
-                {passengerName}
+              <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
+                {displayName}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-[14px] text-[#6A7282]">Seat</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
-                {seat}
+              <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
+                {displaySeat}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-[14px] text-[#6A7282]">Reason</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
+              <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
                 {reason}
               </Text>
             </View>
@@ -107,7 +143,7 @@ export function EmergencyDropSummaryScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
             Event Details
           </Text>
           <View className="mt-3 gap-3">
@@ -115,8 +151,8 @@ export function EmergencyDropSummaryScreen({
               <LocationPinSmallIcon size={18} color="#9810FA" />
               <View className="flex-1">
                 <Text className="text-[12px] text-[#6A7282]">Drop Location</Text>
-                <Text className="text-[14px] font-medium text-[#1E293B]">
-                  {dropLocation}
+                <Text className="text-[14px] font-poppins-medium text-[#1E293B]">
+                  {displayLocation}
                 </Text>
               </View>
             </View>
@@ -124,8 +160,8 @@ export function EmergencyDropSummaryScreen({
               <ClockSmallIcon size={18} color="#9810FA" />
               <View className="flex-1">
                 <Text className="text-[12px] text-[#6A7282]">Timestamp</Text>
-                <Text className="text-[14px] font-medium text-[#1E293B]">
-                  {timestamp}
+                <Text className="text-[14px] font-poppins-medium text-[#1E293B]">
+                  {displayTime}
                 </Text>
               </View>
             </View>
@@ -150,8 +186,8 @@ export function EmergencyDropSummaryScreen({
           onPress={onContinue}
           className="h-[56px] items-center justify-center rounded-[14px] bg-[#9810FA]"
         >
-          <Text className="text-[14px] font-semibold uppercase text-white">
-            Continue Journey
+          <Text className="text-[14px] font-poppins-semibold uppercase text-white">
+            End Journey & View Summary
           </Text>
         </Pressable>
       </View>

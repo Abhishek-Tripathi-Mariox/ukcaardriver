@@ -45,7 +45,7 @@ export function DocumentPreviewModal({
         >
           <View className="flex-row items-start justify-between border-b border-[#F3F4F6] px-6 py-4">
             <View className="flex-1">
-              <Text className="text-[18px] font-semibold text-[#101828]">{title}</Text>
+              <Text className="text-[18px] font-poppins-semibold text-[#101828]">{title}</Text>
               <View className="mt-1 flex-row items-center gap-2">
                 <View
                   className="flex-row items-center rounded-full px-3 py-1"
@@ -53,7 +53,7 @@ export function DocumentPreviewModal({
                 >
                   <CheckIcon size={12} color={statusColor} />
                   <Text
-                    className="ml-1 text-xs font-medium"
+                    className="ml-1 text-xs font-poppins-medium"
                     style={{ color: statusColor }}
                   >
                     {statusLabel}
@@ -84,21 +84,21 @@ export function DocumentPreviewModal({
             <View className="gap-3 rounded-xl bg-[#F9FAFB] p-4">
               <View className="flex-row items-center justify-between">
                 <Text className="text-[13px] text-[#4A5565]">Document Type</Text>
-                <Text className="text-sm font-medium text-[#101828]">{title}</Text>
+                <Text className="text-sm font-poppins-medium text-[#101828]">{title}</Text>
               </View>
               <View className="flex-row items-center justify-between">
                 <Text className="text-[13px] text-[#4A5565]">Upload Date</Text>
-                <Text className="text-sm font-medium text-[#101828]">{uploadDate}</Text>
+                <Text className="text-sm font-poppins-medium text-[#101828]">{uploadDate}</Text>
               </View>
               {expiryDate && (
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[13px] text-[#4A5565]">Expiry Date</Text>
-                  <Text className="text-sm font-medium text-[#101828]">{expiryDate}</Text>
+                  <Text className="text-sm font-poppins-medium text-[#101828]">{expiryDate}</Text>
                 </View>
               )}
               <View className="flex-row items-center justify-between">
                 <Text className="text-[13px] text-[#4A5565]">Status</Text>
-                <Text className="text-sm font-medium" style={{ color: statusColor }}>
+                <Text className="text-sm font-poppins-medium" style={{ color: statusColor }}>
                   {statusLabel}
                 </Text>
               </View>
@@ -111,14 +111,14 @@ export function DocumentPreviewModal({
               className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-[#0097B3]"
             >
               <DownloadIcon size={18} color="#0097B3" />
-              <Text className="text-sm font-medium text-[#0097B3]">Download</Text>
+              <Text className="text-sm font-poppins-medium text-[#0097B3]">Download</Text>
             </Pressable>
             <Pressable
               onPress={onShare}
               className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-[#0097B3]"
             >
               <ShareIcon size={18} color="white" />
-              <Text className="text-sm font-medium text-white">Share</Text>
+              <Text className="text-sm font-poppins-medium text-white">Share</Text>
             </Pressable>
           </View>
         </View>

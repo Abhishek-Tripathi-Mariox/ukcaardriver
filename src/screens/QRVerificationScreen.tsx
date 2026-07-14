@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import { QrScanner } from '../components/QrScanner';
 import { verifyJourneyQr } from '../services/api';
+import { fs, s, vs } from '../theme/responsive';
 
 interface QRVerificationScreenProps {
   journeyKey?: string | null;
@@ -77,17 +78,30 @@ export function QRVerificationScreen({
 
   return (
     <View className="flex-1 bg-[#0B0B0F]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient colors={['#AD46FF', '#9810FA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">QR Verification</Text>
-              <Text className="text-[14px] text-white/80">Journey ID: {journeyId}</Text>
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(20), lineHeight: fs(28) }}
+              >
+                QR Verification
+              </Text>
+              <Text
+                className="text-white/80 font-poppins-regular"
+                style={{ fontSize: fs(14) }}
+              >
+                Journey ID: {journeyId}
+              </Text>
             </View>
           </View>
         </SafeAreaView>
@@ -102,30 +116,54 @@ export function QRVerificationScreen({
 
           {/* Aiming frame overlay */}
           <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
-            <View className="h-[240px] w-[240px] rounded-[40px] border-[3px] border-white/90" />
+            <View
+              className="border-[3px] border-white/90"
+              style={{ width: s(240), height: s(240), borderRadius: s(40) }}
+            />
           </View>
 
-          <View className="absolute left-0 right-0 top-3 items-center" pointerEvents="none">
-            <View className="rounded-full bg-black/60 px-4 py-2">
-              <Text className="text-[13px] font-medium text-white">
+          <View
+            className="absolute left-0 right-0 items-center"
+            style={{ top: vs(12) }}
+            pointerEvents="none"
+          >
+            <View
+              className="rounded-full bg-black/60"
+              style={{ paddingHorizontal: s(16), paddingVertical: vs(8) }}
+            >
+              <Text
+                className="font-poppins-medium text-white"
+                style={{ fontSize: fs(13) }}
+              >
                 {verifying ? 'Verifying…' : 'Point the camera at the rider’s ticket QR'}
               </Text>
             </View>
           </View>
 
-          <View className="absolute bottom-0 left-0 right-0 px-4 pb-6">
+          <View className="absolute bottom-0 left-0 right-0" style={{ paddingHorizontal: s(16), paddingBottom: vs(24) }}>
             <Pressable
               onPress={() => setMode('manual')}
-              className="h-[48px] items-center justify-center rounded-2xl bg-white/15"
+              className="items-center justify-center bg-white/15"
+              style={{ height: s(48), borderRadius: s(16) }}
             >
-              <Text className="text-[14px] font-medium text-white">Enter code manually</Text>
+              <Text
+                className="font-poppins-medium text-white"
+                style={{ fontSize: fs(14) }}
+              >
+                Enter code manually
+              </Text>
             </Pressable>
           </View>
         </View>
       ) : (
-        <View className="flex-1 bg-[#F9FAFB] px-6 pt-10">
-          <View className="rounded-2xl border border-[#E5E7EB] bg-white p-5">
-            <Text className="mb-2 text-[14px] font-semibold text-[#1E293B]">Ticket reference</Text>
+        <View className="flex-1 bg-[#F9FAFB]" style={{ paddingHorizontal: s(24), paddingTop: vs(40) }}>
+          <View className="border border-[#E5E7EB] bg-white" style={{ borderRadius: s(16), padding: s(20) }}>
+            <Text
+              className="font-poppins-semibold text-[#1E293B]"
+              style={{ fontSize: fs(14), marginBottom: vs(8) }}
+            >
+              Ticket reference
+            </Text>
             <TextInput
               value={code}
               onChangeText={setCode}
@@ -133,24 +171,47 @@ export function QRVerificationScreen({
               placeholderTextColor="#B0B0B0"
               autoCapitalize="characters"
               autoCorrect={false}
-              className="rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-[15px] text-[#1E293B]"
+              className="border border-[#E5E7EB] bg-white text-[#1E293B]"
+              style={{
+                borderRadius: s(16),
+                paddingHorizontal: s(16),
+                paddingVertical: vs(12),
+                fontSize: fs(15),
+              }}
             />
             <Pressable
               onPress={() => verify(code)}
               disabled={verifying}
-              className="mt-4 h-[50px] items-center justify-center rounded-2xl bg-[#9810FA]"
-              style={verifying ? { opacity: 0.6 } : undefined}
+              className="items-center justify-center bg-[#9810FA]"
+              style={[
+                { marginTop: vs(16), height: s(50), borderRadius: s(16) },
+                verifying ? { opacity: 0.6 } : undefined,
+              ]}
             >
               {verifying ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-[15px] font-medium uppercase text-white">Verify & Board</Text>
+                <Text
+                  className="font-poppins-medium uppercase text-white"
+                  style={{ fontSize: fs(15) }}
+                >
+                  Verify & Board
+                </Text>
               )}
             </Pressable>
           </View>
 
-          <Pressable onPress={() => setMode('camera')} className="mt-4 items-center py-2">
-            <Text className="text-[14px] font-medium text-[#9810FA]">Scan with camera instead</Text>
+          <Pressable
+            onPress={() => setMode('camera')}
+            className="items-center"
+            style={{ marginTop: vs(16), paddingVertical: vs(8) }}
+          >
+            <Text
+              className="font-poppins-medium text-[#9810FA]"
+              style={{ fontSize: fs(14) }}
+            >
+              Scan with camera instead
+            </Text>
           </Pressable>
         </View>
       )}

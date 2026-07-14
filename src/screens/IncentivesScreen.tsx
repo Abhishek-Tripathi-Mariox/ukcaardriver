@@ -56,7 +56,7 @@ export function IncentivesScreen({ onBack }: IncentivesScreenProps) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={styles.header}>
         <Pressable onPress={onBack} hitSlop={10} style={styles.backBtn}>
           <BackArrowIcon size={22} color="#1B1D21" />

@@ -8,6 +8,7 @@ import {
   PersonSmallIcon,
   PrivateRideIcon,
 } from './icons/ServiceTypeIcons';
+import { fs, s, vs } from '../theme/responsive';
 
 export type RideRequestVariant = 'instant' | 'private';
 
@@ -107,7 +108,7 @@ function CountdownRing({
         />
       </Svg>
       <View className="absolute items-center justify-center">
-        <Text className="text-[24px] font-bold text-[#1E293B]">{seconds}</Text>
+        <Text className="text-[24px] font-poppins-bold text-[#1E293B]">{seconds}</Text>
       </View>
     </View>
   );
@@ -140,28 +141,39 @@ export function RideRequestModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onReject}>
       <View className="flex-1 justify-end bg-black/40">
-        <View className="rounded-t-3xl bg-white px-6 pb-8 pt-6">
+        <View
+          style={{ paddingHorizontal: s(24), paddingBottom: vs(32), paddingTop: vs(24) }}
+          className="rounded-t-3xl bg-white"
+        >
           <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-3">
+            <View className="flex-row items-center" style={{ gap: s(12) }}>
               <View
-                className="h-12 w-12 items-center justify-center rounded-full"
-                style={{ backgroundColor: styles.iconBg }}
+                style={{ height: s(48), width: s(48), backgroundColor: styles.iconBg }}
+                className="items-center justify-center rounded-full"
               >
                 {request.variant === 'instant' ? (
-                  <InstantRideIcon size={22} />
+                  <InstantRideIcon size={s(22)} />
                 ) : (
-                  <PrivateRideIcon size={22} />
+                  <PrivateRideIcon size={s(22)} />
                 )}
               </View>
               <View>
-                <Text className="text-[18px] font-semibold text-[#1E293B]">
+                <Text
+                  style={{ fontSize: fs(18) }}
+                  className="font-poppins-semibold text-[#1E293B]"
+                >
                   {styles.title}
                 </Text>
-                <Text className="text-sm text-[#6A7282]">Respond in {seconds}s</Text>
+                <Text
+                  style={{ fontSize: fs(14) }}
+                  className="font-poppins text-[#6A7282]"
+                >
+                  Respond in {seconds}s
+                </Text>
               </View>
             </View>
             <Pressable onPress={onReject} hitSlop={10}>
-              <CloseIcon size={22} color="#6A7282" />
+              <CloseIcon size={s(22)} color="#6A7282" />
             </Pressable>
           </View>
 
@@ -176,7 +188,7 @@ export function RideRequestModal({
               </View>
               <View>
                 <Text className="text-sm text-[#6A7282]">Passenger</Text>
-                <Text className="text-base font-semibold text-[#1E293B]">
+                <Text className="text-base font-poppins-semibold text-[#1E293B]">
                   {request.passengerName}
                 </Text>
               </View>
@@ -190,11 +202,11 @@ export function RideRequestModal({
               </View>
               <View className="flex-1">
                 <Text className="text-sm text-[#6A7282]">Pickup</Text>
-                <Text className="text-base font-medium text-[#1E293B]">
+                <Text className="text-base font-poppins-medium text-[#1E293B]">
                   {request.pickup}
                 </Text>
                 <Text className="mt-3 text-sm text-[#6A7282]">Drop</Text>
-                <Text className="text-base font-medium text-[#1E293B]">
+                <Text className="text-base font-poppins-medium text-[#1E293B]">
                   {request.drop}
                 </Text>
               </View>
@@ -204,7 +216,7 @@ export function RideRequestModal({
               <View className="flex-1">
                 <Text className="text-xs text-[#6A7282]">Fare</Text>
                 <Text
-                  className="text-base font-semibold"
+                  className="text-base font-poppins-semibold"
                   style={{ color: styles.fareColor }}
                 >
                   {request.fare}
@@ -212,34 +224,35 @@ export function RideRequestModal({
               </View>
               <View className="flex-1">
                 <Text className="text-xs text-[#6A7282]">Distance</Text>
-                <Text className="text-base font-semibold text-[#1E293B]">
+                <Text className="text-base font-poppins-semibold text-[#1E293B]">
                   {request.distance}
                 </Text>
               </View>
               <View className="flex-1">
                 <Text className="text-xs text-[#6A7282]">ETA</Text>
-                <Text className="text-base font-semibold text-[#1E293B]">
+                <Text className="text-base font-poppins-semibold text-[#1E293B]">
                   {request.eta}
                 </Text>
               </View>
             </View>
           </View>
 
-          <View className="mt-5 flex-row gap-3">
+          <View style={{ marginTop: vs(20), gap: s(12) }} className="flex-row">
             <Pressable
               onPress={onReject}
-              className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-[#FFC9C9] bg-white"
+              style={{ height: vs(54), borderRadius: s(16) }}
+              className="flex-1 flex-row items-center justify-center gap-2 border border-[#FFC9C9] bg-white"
             >
-              <CloseIcon size={16} color="#E7000B" />
-              <Text className="text-sm font-medium text-[#E7000B]">Reject</Text>
+              <CloseIcon size={s(16)} color="#E7000B" />
+              <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-[#E7000B]">Reject</Text>
             </Pressable>
             <Pressable
               onPress={onAccept}
-              className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl"
-              style={{ backgroundColor: styles.acceptBg }}
+              style={{ height: vs(54), borderRadius: s(16), backgroundColor: styles.acceptBg }}
+              className="flex-1 flex-row items-center justify-center gap-2"
             >
-              <CheckIcon size={16} color="white" />
-              <Text className="text-sm font-medium text-white">Accept</Text>
+              <CheckIcon size={s(16)} color="white" />
+              <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-white">Accept</Text>
             </Pressable>
           </View>
         </View>

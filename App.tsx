@@ -1,4 +1,4 @@
-﻿import './global.css';
+import './global.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, BackHandler, Modal, StatusBar, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,6 +21,7 @@ import {
   acceptRideRequest as apiAcceptRide,
   rejectRideRequest as apiRejectRide,
   getActiveRide,
+  getAvailableRides,
   rateRide as apiRateRide,
 } from './src/services/api';
 import RatePassengerModal from './src/components/RatePassengerModal';
@@ -83,6 +84,7 @@ import { FeedbackRatingsScreen } from './src/screens/FeedbackRatingsScreen';
 import type { RideRequest } from './src/components/RideRequestModal';
 import {
   ApiUser,
+  completeJourney,
   fetchCurrentUser,
   fetchCurrentUserFresh,
   isRegisteredDriver,
@@ -141,7 +143,7 @@ function rideToActiveRide(r: any): RideRequest {
     passengerAvatar: customer.avatar ?? null,
     pickup: r.pickup?.address ?? '',
     drop: r.dropoff?.address ?? '',
-    fare: r.estimatedFare ? `₹${Math.round(r.estimatedFare)}.00` : '₹0.00',
+    fare: r.estimatedFare ? `₹${Number(r.estimatedFare).toFixed(2)}` : '₹0.00',
     distance: `${(r.estimatedDistance ?? 0).toFixed(1)} km`,
     eta: `${Math.round(r.estimatedDuration ?? 0)} min`,
     pickupLat: r.pickup?.lat,
@@ -176,6 +178,7 @@ type Stage =
   | 'registration'
   | 'service-type'
   | 'choose-route'
+  | 'change-route'
   | 'vehicle-details'
   | 'owner-details'
   | 'driver-details'
@@ -279,6 +282,41 @@ function App() {
   } | null>(null);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [incomingVisible, setIncomingVisible] = useState(false);
+  // Every ride request currently awaiting a decision (newest first). This is
+  // what powers the in-app "Incoming Requests" list on the dashboard, so the
+  // driver can accept a ride from within the app instead of only from the
+  // transient modal / push notification. The modal (`incomingRequest`) still
+  // auto-pops the newest of these on top; dismissing/timing-out the modal
+  // leaves the request here so it stays actionable in the list.
+  const [pendingRequests, setPendingRequests] = useState<RideRequest[]>([]);
+  // rideIds we've already popped the modal + rung for this session. Lets the
+  // REST poll (getAvailableRides) keep the list fresh without re-popping the
+  // modal every few seconds for a request the driver already dismissed.
+  const surfacedRideIds = useRef<Set<string>>(new Set());
+
+  // Add a request to the pending list (deduped by rideId). The modal + ring
+  // fire only the FIRST time a given rideId is seen — via socket, FCM, or the
+  // REST poll — so a re-emit / re-poll of the same ride never resets the accept
+  // timer or re-opens a dismissed modal. Shared by every delivery path so the
+  // list and the modal stay in sync.
+  const enqueueRideRequest = useCallback((req: RideRequest) => {
+    if (!req.rideId) return;
+    const firstTime = !surfacedRideIds.current.has(req.rideId);
+    surfacedRideIds.current.add(req.rideId);
+    setPendingRequests(prev =>
+      prev.some(r => r.rideId === req.rideId) ? prev : [req, ...prev],
+    );
+    if (firstTime) {
+      setIncomingRequest(req);
+      setIncomingVisible(true);
+      buzzForRideAlert();
+    }
+  }, []);
+
+  const removePendingRequest = useCallback((rideId?: string) => {
+    setPendingRequests(prev => prev.filter(r => r.rideId !== rideId));
+  }, []);
+
   // The ride the user tapped on the History screen — handed to the detail
   // screen so it can fetch the right record.
   const [openHistoryRideId, setOpenHistoryRideId] = useState<string | null>(null);
@@ -302,31 +340,26 @@ function App() {
       return;
     }
     setStage('dashboard');
-    setIncomingRequest(prev => {
-      if (prev?.rideId === d.rideId) return prev;
-      const fare = Number(d.fare ?? 0);
-      const distance = Number(d.distance ?? 0);
-      const duration = Number(d.duration ?? 0);
-      return {
-        rideId: String(d.rideId),
-        variant: (d.variant as 'instant' | 'private') ?? 'instant',
-        passengerName: d.passengerName ?? 'Passenger',
-        pickup: d.pickup ?? '',
-        drop: d.drop ?? '',
-        fare: `₹${Math.round(fare)}.00`,
-        distance: `${distance.toFixed(1)} km`,
-        eta: `${Math.round(duration)} min`,
-        pickupLat: Number(d.pickupLat ?? 0),
-        pickupLng: Number(d.pickupLng ?? 0),
-        dropLat: Number(d.dropLat ?? 0),
-        dropLng: Number(d.dropLng ?? 0),
-      };
+    const fare = Number(d.fare ?? 0);
+    const distance = Number(d.distance ?? 0);
+    const duration = Number(d.duration ?? 0);
+    // enqueueRideRequest adds to the in-app list, pops the modal, and rings
+    // (no-ops the ring if already ringing).
+    enqueueRideRequest({
+      rideId: String(d.rideId),
+      variant: (d.variant as 'instant' | 'private') ?? 'instant',
+      passengerName: d.passengerName ?? 'Passenger',
+      pickup: d.pickup ?? '',
+      drop: d.drop ?? '',
+      fare: `₹${Number(fare).toFixed(2)}`,
+      distance: `${distance.toFixed(1)} km`,
+      eta: `${Math.round(duration)} min`,
+      pickupLat: Number(d.pickupLat ?? 0),
+      pickupLng: Number(d.pickupLng ?? 0),
+      dropLat: Number(d.dropLat ?? 0),
+      dropLng: Number(d.dropLng ?? 0),
     });
-    setIncomingVisible(true);
-    // Wake the ringtone for taps that arrive without a live foreground
-    // onMessage (killed/backgrounded launch). No-ops if already ringing.
-    buzzForRideAlert();
-  }, []);
+  }, [enqueueRideRequest]);
 
   useEffect(() => {
     // Listen for inbound FCM messages so we can react to admin events
@@ -486,29 +519,28 @@ function App() {
     });
     setSocketListeners({
       onRideRequest: payload => {
-        // Backend may re-emit the same ride to the same driver during
-        // retries — drop duplicates so we don't reset the timer.
-        setIncomingRequest(prev => {
-          if (prev?.rideId === payload.rideId) return prev;
-          return {
-            rideId: payload.rideId,
-            variant: payload.variant,
-            passengerName: payload.passengerName,
-            pickup: payload.pickup,
-            drop: payload.drop,
-            fare: `₹${Math.round(payload.fare)}.00`,
-            distance: `${payload.distance.toFixed(1)} km`,
-            eta: `${Math.round(payload.duration)} min`,
-            pickupLat: payload.pickupLat,
-            pickupLng: payload.pickupLng,
-            dropLat: payload.dropLat,
-            dropLng: payload.dropLng,
-          };
+        // enqueueRideRequest dedupes by rideId (so a backend re-emit doesn't
+        // reset the accept timer), adds it to the in-app list, and pops the
+        // modal + rings.
+        enqueueRideRequest({
+          rideId: payload.rideId,
+          variant: payload.variant,
+          passengerName: payload.passengerName,
+          pickup: payload.pickup,
+          drop: payload.drop,
+          fare: `₹${Number(payload.fare).toFixed(2)}`,
+          distance: `${payload.distance.toFixed(1)} km`,
+          eta: `${Math.round(payload.duration)} min`,
+          pickupLat: payload.pickupLat,
+          pickupLng: payload.pickupLng,
+          dropLat: payload.dropLat,
+          dropLng: payload.dropLng,
         });
-        setIncomingVisible(true);
-        buzzForRideAlert();
       },
       onRideRequestTaken: ({ rideId }) => {
+        // Another driver (or a cancel) claimed it — drop it from the list and
+        // close the modal if it was the one showing.
+        removePendingRequest(rideId);
         setIncomingRequest(prev => {
           if (prev?.rideId !== rideId) return prev;
           stopRideAlert();
@@ -525,6 +557,7 @@ function App() {
         stopRideAlert();
         setIncomingVisible(false);
         setIncomingRequest(null);
+        setPendingRequests([]); // entering a trip — clear any queued requests
         setActiveRide(rideToActiveRide(r));
         // Resume at the screen matching the ride's status (in case admin
         // assigns a ride that's already mid-trip), defaulting to verify-OTP.
@@ -533,41 +566,126 @@ function App() {
     });
   }, [stage]);
 
+  // REST poll for ride requests — the reliable, socket-independent path.
+  //
+  // The socket `ride:new-request` push only reaches the driver when their
+  // socket is on the same backend process that handled the customer's booking.
+  // On a multi-instance / split deployment it silently doesn't (only FCM does),
+  // so on the dashboard we also PULL the requests currently offered to us from
+  // shared DB state. enqueueRideRequest dedupes by rideId and pops the modal
+  // only the first time each ride is seen, so this cooperates with the socket
+  // + FCM paths without double-ringing. The server returns [] unless we're
+  // online with a location, so polling is cheap and safe on any stage.
+  useEffect(() => {
+    if (stage !== 'dashboard') return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const rides = await getAvailableRides();
+        // TEMP DIAGNOSTIC — remove after verifying the upcoming-rides fix.
+        console.log('[avail-poll] returned', rides.length, 'ride(s):', JSON.stringify(rides.map(r => r.rideId)));
+        if (cancelled) return;
+        for (const p of rides) {
+          enqueueRideRequest({
+            rideId: String(p.rideId),
+            variant: (p.variant as 'instant' | 'private') ?? 'instant',
+            passengerName: p.passengerName ?? 'Passenger',
+            pickup: p.pickup ?? '',
+            drop: p.drop ?? '',
+            fare: `₹${Number(p.fare ?? 0).toFixed(2)}`,
+            distance: `${Number(p.distance ?? 0).toFixed(1)} km`,
+            eta: `${Math.round(Number(p.duration ?? 0))} min`,
+            pickupLat: Number(p.pickupLat ?? 0),
+            pickupLng: Number(p.pickupLng ?? 0),
+            dropLat: Number(p.dropLat ?? 0),
+            dropLng: Number(p.dropLng ?? 0),
+          });
+        }
+      } catch (err: any) {
+        // TEMP DIAGNOSTIC — remove after verifying the upcoming-rides fix.
+        console.log('[avail-poll] ERROR', err?.status ?? '', err?.message ?? String(err));
+      }
+    };
+    poll(); // immediate on entering the dashboard
+    const id = setInterval(poll, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [stage, enqueueRideRequest]);
+
+  // Close the modal WITHOUT deciding — used for the accept-timer expiry. The
+  // request stays in `pendingRequests` so it remains actionable from the
+  // dashboard list (the driver just missed the pop-up, not the ride).
   const dismissIncoming = useCallback(() => {
     stopRideAlert();
     setIncomingVisible(false);
     setIncomingRequest(null);
   }, []);
 
-  const handleAcceptIncoming = useCallback(async () => {
-    if (!incomingRequest?.rideId) {
-      dismissIncoming();
-      return;
-    }
-    try {
-      await apiAcceptRide(incomingRequest.rideId);
-      stopRideAlert();
-      setIncomingVisible(false);
-      setActiveRide(incomingRequest);
-      setIncomingRequest(null);
-      setStage('verify-ride-otp');
-    } catch (err: any) {
-      Alert.alert(
-        'Ride no longer available',
-        err?.message ?? 'Another driver accepted this ride.',
-      );
-      dismissIncoming();
-    }
-  }, [incomingRequest, setStage, dismissIncoming]);
+  // Accept a specific request — works whether it came from the modal or an
+  // in-app list card. On success we enter the trip; on failure (someone else
+  // took it) we drop just that request and keep the rest of the queue.
+  const acceptRequest = useCallback(
+    async (req: RideRequest) => {
+      if (!req?.rideId) return;
+      try {
+        await apiAcceptRide(req.rideId);
+        stopRideAlert();
+        setIncomingVisible(false);
+        setIncomingRequest(null);
+        setPendingRequests([]); // entering a trip — clear the queue
+        setActiveRide(req);
+        setStage('verify-ride-otp');
+      } catch (err: any) {
+        Alert.alert(
+          'Ride no longer available',
+          err?.message ?? 'Another driver accepted this ride.',
+        );
+        removePendingRequest(req.rideId);
+        setIncomingRequest(prev => (prev?.rideId === req.rideId ? null : prev));
+        setIncomingVisible(false);
+        stopRideAlert();
+      }
+    },
+    [setStage, removePendingRequest],
+  );
+
+  // Reject a specific request — removes it from the list and tells the backend.
+  const rejectRequest = useCallback(
+    (req: RideRequest) => {
+      if (req?.rideId) {
+        apiRejectRide(req.rideId).catch(err => {
+          console.warn('[app] reject failed:', err);
+        });
+      }
+      removePendingRequest(req.rideId);
+      setIncomingRequest(prev => {
+        if (prev?.rideId !== req.rideId) return prev;
+        stopRideAlert();
+        setIncomingVisible(false);
+        return null;
+      });
+    },
+    [removePendingRequest],
+  );
+
+  // Re-open the modal for a request the driver taps in the dashboard list.
+  const openRequest = useCallback((req: RideRequest) => {
+    setIncomingRequest(req);
+    setIncomingVisible(true);
+  }, []);
+
+  // Modal button handlers just delegate to the request-based actions above.
+  const handleAcceptIncoming = useCallback(() => {
+    if (incomingRequest) acceptRequest(incomingRequest);
+    else dismissIncoming();
+  }, [incomingRequest, acceptRequest, dismissIncoming]);
 
   const handleRejectIncoming = useCallback(() => {
-    if (incomingRequest?.rideId) {
-      apiRejectRide(incomingRequest.rideId).catch(err => {
-        console.warn('[app] reject failed:', err);
-      });
-    }
-    dismissIncoming();
-  }, [incomingRequest, dismissIncoming]);
+    if (incomingRequest) rejectRequest(incomingRequest);
+    else dismissIncoming();
+  }, [incomingRequest, rejectRequest, dismissIncoming]);
 
   // `permissionsOk` gates the dashboard render below. Until notifications +
   // location are both granted, we show the PermissionsGateScreen instead of
@@ -732,7 +850,7 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar hidden translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       {stage === 'splash' && (
         <SplashScreen
           // After splash anim finishes, route to wherever the boot check
@@ -794,6 +912,14 @@ function App() {
         <ChooseScheduledRouteScreen
           onBack={goBack}
           onRegistered={() => setStage('owner-details')}
+        />
+      )}
+
+      {stage === 'change-route' && (
+        <ChooseScheduledRouteScreen
+          isChangeRequest={true}
+          onBack={goBack}
+          onRegistered={() => goBack()}
         />
       )}
 
@@ -913,6 +1039,10 @@ function App() {
 
       {stage === 'dashboard' && permissionsOk !== false && (
         <DriverDashboardScreen
+          incomingRequests={pendingRequests}
+          onAcceptRequest={acceptRequest}
+          onRejectRequest={rejectRequest}
+          onOpenRequest={openRequest}
           onAcceptRide={ride => {
             setActiveRide(ride);
             setStage('verify-ride-otp');
@@ -930,7 +1060,10 @@ function App() {
       )}
 
       {stage === 'earnings' && (
-        <EarningsScreen onBack={goBack} />
+        <EarningsScreen
+          onBack={goBack}
+          onViewPaymentHistory={() => setStage('wallet-statement')}
+        />
       )}
 
       {stage === 'profile' && (
@@ -946,6 +1079,7 @@ function App() {
           onOpenDriverInstructions={() => setStage('driver-instructions')}
           onOpenOnePass={() => setStage('onepass')}
           onOpenIncentives={() => setStage('incentives')}
+          onOpenRouteChange={() => setStage('change-route')}
         />
       )}
 
@@ -1121,6 +1255,7 @@ function App() {
 
       {stage === 'emergency-alert' && (
         <EmergencyAlertScreen
+          journeyKey={activeJourneyKey}
           onBack={goBack}
           onDecline={() => setStage('journey-in-progress')}
           onApproveSafe={() => setStage('emergency-drop-summary')}
@@ -1130,8 +1265,14 @@ function App() {
 
       {stage === 'emergency-drop-summary' && (
         <EmergencyDropSummaryScreen
+          journeyKey={activeJourneyKey}
           onBack={goBack}
-          onContinue={() => setStage('journey-in-progress')}
+          onContinue={async () => {
+            if (activeJourneyKey) {
+              await completeJourney(activeJourneyKey).catch(() => {});
+            }
+            setStage('journey-ride-summary');
+          }}
         />
       )}
 
@@ -1218,15 +1359,28 @@ function App() {
             // takes over from here: wallet/Razorpay/cash all finalise
             // the ride. For cash, the driver explicitly confirms
             // collection on the RideSummary screen below.
-            if (activeRide?.rideId) {
-              try {
-                const { updateRideStatus } = await import('./src/services/api');
-                await updateRideStatus(activeRide.rideId, 'payment_pending');
-              } catch (err) {
-                console.warn('[ride] end-trip failed:', err);
-              }
+            //
+            // Only advance to the summary once the backend has ACTUALLY
+            // recorded the transition — otherwise we'd show a receipt for a
+            // trip that's still in progress on the server (and the customer
+            // stays stuck). On failure/timeout we keep the driver here so
+            // they can retry, rather than freezing on a dead button.
+            if (!activeRide?.rideId) {
+              setStage('ride-summary');
+              return;
             }
-            setStage('ride-summary');
+            try {
+              const { updateRideStatus } = await import('./src/services/api');
+              await updateRideStatus(activeRide.rideId, 'payment_pending');
+              setStage('ride-summary');
+            } catch (err) {
+              console.warn('[ride] end-trip failed:', err);
+              const { Alert } = await import('react-native');
+              Alert.alert(
+                'Could not complete ride',
+                "We couldn't reach the server to end this trip. Please check your connection and try again.",
+              );
+            }
           }}
         />
       )}
@@ -1310,7 +1464,9 @@ function App() {
           request={incomingRequest}
           onAccept={handleAcceptIncoming}
           onReject={handleRejectIncoming}
-          onTimeout={handleRejectIncoming}
+          // Timer expiry only closes the pop-up — the request stays in the
+          // dashboard's in-app list so the driver can still act on it there.
+          onTimeout={dismissIncoming}
         />
       )}
 

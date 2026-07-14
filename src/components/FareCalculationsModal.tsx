@@ -43,7 +43,7 @@ export function FareCalculationsModal({
           </Pressable>
 
           <View className="w-full rounded-t-2xl bg-white px-4 pb-8 pt-6">
-            <Text className="text-center text-[20px] font-bold text-[#132235]">
+            <Text className="text-center text-[20px] font-poppins-bold text-[#132235]">
               Fare Calculations
             </Text>
 
@@ -51,7 +51,7 @@ export function FareCalculationsModal({
               {rows.map(row => (
                 <View key={row.label} className="flex-row items-center">
                   <Text className="flex-1 text-[15px] text-[#132235]">{row.label}</Text>
-                  <Text className="text-[15px] font-bold text-[#132235]">
+                  <Text className="text-[15px] font-poppins-bold text-[#132235]">
                     {row.plus ? '+ ' : ''}
                     {row.amount}
                   </Text>
@@ -61,20 +61,20 @@ export function FareCalculationsModal({
               <View className="h-px bg-[#E1E6EF]" />
 
               <View className="flex-row items-center">
-                <Text className="flex-1 text-[15px] font-bold text-[#132235]">Sub Total:</Text>
-                <Text className="text-[17px] font-bold text-[#132235]">{subTotal}</Text>
+                <Text className="flex-1 text-[15px] font-poppins-bold text-[#132235]">Sub Total:</Text>
+                <Text className="text-[17px] font-poppins-bold text-[#132235]">{subTotal}</Text>
               </View>
 
               <View className="flex-row items-center">
                 <Text className="flex-1 text-[15px] text-[#132235]">Rounding Up:</Text>
-                <Text className="text-[15px] font-bold text-[#132235]">+ {roundingUp}</Text>
+                <Text className="text-[15px] font-poppins-bold text-[#132235]">+ {roundingUp}</Text>
               </View>
 
               <View className="h-px bg-[#E1E6EF]" />
 
               <View className="flex-row items-center">
-                <Text className="flex-1 text-[17px] font-bold text-[#132235]">Grand Total:</Text>
-                <Text className="text-[22px] font-bold text-[#132235]">{grandTotal}</Text>
+                <Text className="flex-1 text-[17px] font-poppins-bold text-[#132235]">Grand Total:</Text>
+                <Text className="text-[22px] font-poppins-bold text-[#132235]">{grandTotal}</Text>
               </View>
             </View>
           </View>

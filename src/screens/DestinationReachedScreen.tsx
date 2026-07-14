@@ -9,6 +9,7 @@ import {
   LocationPinSmallIcon,
 } from '../components/icons/ServiceTypeIcons';
 import { completeJourney, fetchJourney, fetchJourneyPassengers } from '../services/api';
+import { fs, s, vs } from '../theme/responsive';
 
 interface DestinationReachedScreenProps {
   journeyKey?: string | null;
@@ -68,7 +69,7 @@ export function DestinationReachedScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -76,11 +77,17 @@ export function DestinationReachedScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text
+              className="font-poppins-semibold text-white"
+              style={{ fontSize: fs(20) }}
+            >
               Destination Reached
             </Text>
           </View>
@@ -89,12 +96,14 @@ export function DestinationReachedScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={{ padding: s(16), gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
         <View
-          className="items-center rounded-2xl bg-white py-8"
+          className="items-center bg-white"
           style={{
+            borderRadius: s(16),
+            paddingVertical: vs(32),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
@@ -102,21 +111,37 @@ export function DestinationReachedScreen({
             elevation: 2,
           }}
         >
-          <View className="h-[100px] w-[100px] items-center justify-center rounded-full bg-[#00C896]">
-            <BigCheckIcon size={56} color="white" />
+          <View
+            className="items-center justify-center rounded-full bg-[#00C896]"
+            style={{ width: s(100), height: s(100) }}
+          >
+            <BigCheckIcon size={s(56)} color="white" />
           </View>
-          <Text className="mt-5 text-[24px] font-bold text-[#1E293B]">
+          <Text
+            className="font-poppins-bold text-[#1E293B]"
+            style={{ fontSize: fs(24), marginTop: vs(20) }}
+          >
             Destination Reached!
           </Text>
-          <Text className="mt-1 text-[16px] text-[#6A7282]">{destination}</Text>
-          <Text className="mt-4 text-[18px] text-[#6A7282]">
+          <Text
+            className="text-[#6A7282] font-poppins-regular"
+            style={{ fontSize: fs(16), marginTop: vs(4) }}
+          >
+            {destination}
+          </Text>
+          <Text
+            className="text-[#6A7282] font-poppins-regular"
+            style={{ fontSize: fs(18), marginTop: vs(16) }}
+          >
             All passengers safely dropped off
           </Text>
         </View>
 
         <View
-          className="rounded-2xl bg-white p-5"
+          className="bg-white"
           style={{
+            borderRadius: s(16),
+            padding: s(20),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06,
@@ -124,45 +149,68 @@ export function DestinationReachedScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text
+            className="font-poppins-semibold text-[#1E293B]"
+            style={{ fontSize: fs(16) }}
+          >
             Journey Summary
           </Text>
-          <View className="mt-4 gap-3">
+          <View style={{ marginTop: vs(16), gap: vs(12) }}>
             <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <CheckCircleIcon size={20} color="#00A63E" />
-                <Text className="text-[14px] text-[#6A7282]">Passengers Boarded</Text>
+              <View className="flex-row items-center" style={{ gap: s(12) }}>
+                <CheckCircleIcon size={s(20)} color="#00A63E" />
+                <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                  Passengers Boarded
+                </Text>
               </View>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(14) }}
+              >
                 {boardedPassengers}/{totalPassengers}
               </Text>
             </View>
             <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <LocationPinSmallIcon size={20} color="#9810FA" />
-                <Text className="text-[14px] text-[#6A7282]">Stops</Text>
+              <View className="flex-row items-center" style={{ gap: s(12) }}>
+                <LocationPinSmallIcon size={s(20)} color="#9810FA" />
+                <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                  Stops
+                </Text>
               </View>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(14) }}
+              >
                 {stops}
               </Text>
             </View>
           </View>
 
-          <View className="mt-4 border-t border-[#E9D4FF] pt-4">
-            <Text className="text-center text-[13px] text-[#6A7282]">
+          <View
+            className="border-t border-[#E9D4FF]"
+            style={{ marginTop: vs(16), paddingTop: vs(16) }}
+          >
+            <Text
+              className="text-center font-poppins-regular text-[#6A7282]"
+              style={{ fontSize: fs(13) }}
+            >
               Tap End Ride to settle your earnings for this journey.
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      <View className="px-4 pb-6 pt-2">
+      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
         <Pressable
           onPress={handleEndRide}
           disabled={ending}
-          className="h-[56px] items-center justify-center rounded-[14px] bg-[#9810FA]"
+          className="items-center justify-center bg-[#9810FA]"
+          style={{ height: s(56), borderRadius: s(14) }}
         >
-          <Text className="text-[14px] font-semibold uppercase text-white">
+          <Text
+            className="font-poppins-semibold uppercase text-white"
+            style={{ fontSize: fs(14) }}
+          >
             End Ride
           </Text>
         </Pressable>

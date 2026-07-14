@@ -9,6 +9,7 @@ import {
   UsersIcon,
 } from '../components/icons/ServiceTypeIcons';
 import { fetchJourney } from '../services/api';
+import { fs, s, vs } from '../theme/responsive';
 
 interface RideActivationScreenProps {
   journeyKey?: string | null;
@@ -56,7 +57,7 @@ export function RideActivationScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -64,15 +65,24 @@ export function RideActivationScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(20), lineHeight: fs(28) }}
+              >
                 {journeyTitle}
               </Text>
-              <Text className="text-[14px] text-white/80">
+              <Text
+                className="text-white/80 font-poppins-regular"
+                style={{ fontSize: fs(14) }}
+              >
                 Journey ID: {journeyId}
               </Text>
             </View>
@@ -82,12 +92,14 @@ export function RideActivationScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={{ padding: s(16), gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
         <View
-          className="rounded-2xl bg-white p-4"
+          className="bg-white"
           style={{
+            borderRadius: s(16),
+            padding: s(16),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.08,
@@ -95,22 +107,35 @@ export function RideActivationScreen({
             elevation: 2,
           }}
         >
-          <View className="flex-row items-center gap-2">
-            <MapPinIcon size={22} color="#9810FA" />
-            <Text className="text-[20px] font-medium text-[#1E293B]">
+          <View className="flex-row items-center" style={{ gap: s(8) }}>
+            <MapPinIcon size={s(22)} color="#9810FA" />
+            <Text
+              className="font-poppins-medium text-[#1E293B]"
+              style={{ fontSize: fs(18) }}
+            >
               {routeFrom} → {routeTo}
             </Text>
           </View>
-          <View className="mt-3 gap-2">
+          <View style={{ marginTop: vs(12), gap: vs(8) }}>
             <View className="flex-row items-center justify-between">
-              <Text className="text-base text-[#4A5565]">Departure:</Text>
-              <Text className="text-base font-semibold text-[#1E293B]">
+              <Text className="text-[#4A5565] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                Departure:
+              </Text>
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(15) }}
+              >
                 {departureTime}
               </Text>
             </View>
             <View className="flex-row items-center justify-between">
-              <Text className="text-base text-[#4A5565]">Stops:</Text>
-              <Text className="text-base font-semibold text-[#1E293B]">
+              <Text className="text-[#4A5565] font-poppins-regular" style={{ fontSize: fs(14) }}>
+                Stops:
+              </Text>
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(15) }}
+              >
                 {stopCount}
               </Text>
             </View>
@@ -118,8 +143,10 @@ export function RideActivationScreen({
         </View>
 
         <View
-          className="rounded-2xl bg-white p-4"
+          className="bg-white"
           style={{
+            borderRadius: s(16),
+            padding: s(16),
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.08,
@@ -127,47 +154,75 @@ export function RideActivationScreen({
             elevation: 2,
           }}
         >
-          <View className="flex-row items-center gap-2">
-            <UsersIcon size={22} color="#9810FA" />
-            <Text className="text-[20px] font-medium text-[#1E293B]">
+          <View className="flex-row items-center" style={{ gap: s(8) }}>
+            <UsersIcon size={s(22)} color="#9810FA" />
+            <Text
+              className="font-poppins-medium text-[#1E293B]"
+              style={{ fontSize: fs(18) }}
+            >
               Passenger Count
             </Text>
           </View>
-          <View className="items-center pt-4">
-            <Text className="text-[60px] font-bold leading-[72px] text-[#9810FA]">
+          <View className="items-center" style={{ paddingTop: vs(16) }}>
+            <Text
+              className="font-poppins-bold text-[#9810FA]"
+              style={{ fontSize: fs(56), lineHeight: fs(64) }}
+            >
               {passengerCount}
             </Text>
-            <Text className="text-[14px] text-[#6A7282]">Total Passengers</Text>
+            <Text
+              className="text-[#6A7282] font-poppins-regular"
+              style={{ fontSize: fs(14) }}
+            >
+              Total Passengers
+            </Text>
           </View>
         </View>
 
-        <View className="flex-row items-start gap-2 rounded-2xl bg-[#F8F0FF] p-4">
-          <InfoCircleIcon size={22} color="#9810FA" />
+        <View
+          className="flex-row items-start bg-[#F8F0FF]"
+          style={{ borderRadius: s(16), padding: s(16), gap: s(10) }}
+        >
+          <InfoCircleIcon size={s(22)} color="#9810FA" />
           <View className="flex-1">
-            <Text className="text-[14px] font-semibold text-[#1E293B]">
+            <Text
+              className="font-poppins-semibold text-[#1E293B]"
+              style={{ fontSize: fs(14) }}
+            >
               Check-in Phase
             </Text>
-            <Text className="text-[12px] text-[#6A7282]">
+            <Text
+              className="text-[#6A7282] font-poppins-regular"
+              style={{ fontSize: fs(12), marginTop: vs(2) }}
+            >
               Available from 30 minutes before departure
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      <View className="gap-3 px-4 pb-6 pt-2">
+      <View style={{ gap: vs(12), paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
         <Pressable
           onPress={() => setConfirmOpen(true)}
-          className="h-[50px] items-center justify-center rounded-2xl bg-[#9810FA]"
+          className="items-center justify-center bg-[#9810FA]"
+          style={{ height: s(50), borderRadius: s(16) }}
         >
-          <Text className="text-[15px] font-medium uppercase text-white">
+          <Text
+            className="font-poppins-medium uppercase text-white"
+            style={{ fontSize: fs(15) }}
+          >
             Start Check-In Phase
           </Text>
         </Pressable>
         <Pressable
           onPress={onViewDetails}
-          className="h-[50px] items-center justify-center rounded-2xl border border-[#9810FA] bg-white"
+          className="items-center justify-center border border-[#9810FA] bg-white"
+          style={{ height: s(50), borderRadius: s(16) }}
         >
-          <Text className="text-[15px] font-medium uppercase text-[#9810FA]">
+          <Text
+            className="font-poppins-medium uppercase text-[#9810FA]"
+            style={{ fontSize: fs(15) }}
+          >
             View Details
           </Text>
         </Pressable>
@@ -179,21 +234,31 @@ export function RideActivationScreen({
         animationType="fade"
         onRequestClose={() => setConfirmOpen(false)}
       >
-        <View className="flex-1 items-center justify-center bg-black/50 px-8">
-          <View className="w-full rounded-2xl bg-white p-6">
-            <Text className="text-[20px] font-semibold text-[#1E293B]">
+        <View className="flex-1 items-center justify-center bg-black/50" style={{ paddingHorizontal: s(32) }}>
+          <View className="w-full bg-white" style={{ borderRadius: s(16), padding: s(24) }}>
+            <Text
+              className="font-poppins-semibold text-[#1E293B]"
+              style={{ fontSize: fs(20) }}
+            >
               Start Passenger Check-In?
             </Text>
-            <Text className="mt-3 text-[14px] leading-5 text-[#4A5565]">
+            <Text
+              className="text-[#4A5565] font-poppins-regular"
+              style={{ fontSize: fs(14), lineHeight: fs(20), marginTop: vs(12) }}
+            >
               This will allow passengers to board and scan their QR codes. Make
               sure you're ready to begin.
             </Text>
-            <View className="mt-6 flex-row gap-3">
+            <View className="flex-row" style={{ marginTop: vs(24), gap: s(12) }}>
               <Pressable
                 onPress={() => setConfirmOpen(false)}
-                className="h-[46px] flex-1 items-center justify-center rounded-2xl bg-[#F1F5F9]"
+                className="flex-1 items-center justify-center bg-[#F1F5F9]"
+                style={{ height: s(46), borderRadius: s(14) }}
               >
-                <Text className="text-[15px] font-medium text-[#1E293B]">
+                <Text
+                  className="font-poppins-medium text-[#1E293B]"
+                  style={{ fontSize: fs(15) }}
+                >
                   Cancel
                 </Text>
               </Pressable>
@@ -202,9 +267,13 @@ export function RideActivationScreen({
                   setConfirmOpen(false);
                   onStartCheckIn?.();
                 }}
-                className="h-[46px] flex-1 items-center justify-center rounded-2xl bg-[#9C1AFB]"
+                className="flex-1 items-center justify-center bg-[#9C1AFB]"
+                style={{ height: s(46), borderRadius: s(14) }}
               >
-                <Text className="text-[15px] font-medium text-white">
+                <Text
+                  className="font-poppins-medium text-white"
+                  style={{ fontSize: fs(15) }}
+                >
                   Start Check-In
                 </Text>
               </Pressable>

@@ -13,6 +13,7 @@ import {
   SOSAlertIcon,
   UsersIcon,
 } from '../components/icons/ServiceTypeIcons';
+import { fs, s, vs } from '../theme/responsive';
 
 interface JourneyStop {
   index: number;
@@ -108,7 +109,7 @@ export function JourneyInProgressScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -116,15 +117,26 @@ export function JourneyInProgressScreen({
         end={{ x: 1, y: 0 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center gap-4 px-6 pb-4 pt-2">
+          <View
+            className="flex-row items-center"
+            style={{ paddingHorizontal: s(24), paddingBottom: vs(16), paddingTop: vs(8), gap: s(16) }}
+          >
             <Pressable onPress={onBack} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
+              <BackArrowIcon size={s(22)} color="white" />
             </Pressable>
             <View className="flex-1">
-              <Text className="text-[20px] font-semibold text-white">
+              <Text
+                className="font-poppins-semibold text-white"
+                style={{ fontSize: fs(20), lineHeight: fs(28) }}
+              >
                 Journey in Progress
               </Text>
-              <Text className="text-[14px] text-white/80">{title}</Text>
+              <Text
+                className="text-white/80 font-poppins-regular"
+                style={{ fontSize: fs(14) }}
+              >
+                {title}
+              </Text>
             </View>
           </View>
         </SafeAreaView>
@@ -138,20 +150,31 @@ export function JourneyInProgressScreen({
           style={{ flex: 1 }}
         >
           <View className="flex-1 items-center justify-center">
-            <RoutingIcon size={40} color="#6E11B0" />
-            <Text className="mt-2 text-base font-medium text-[#6E11B0]">
+            <RoutingIcon size={s(40)} color="#6E11B0" />
+            <Text
+              className="font-poppins-medium text-[#6E11B0]"
+              style={{ fontSize: fs(16), marginTop: vs(8) }}
+            >
               Live Tracking
             </Text>
-            <Text className="text-[14px] text-[#9810FA]">
+            <Text
+              className="text-[#9810FA] font-poppins-medium"
+              style={{ fontSize: fs(14) }}
+            >
               Navigate to next stop
             </Text>
           </View>
         </LinearGradient>
 
-        <View className="absolute left-4 right-4 top-4">
+        <View
+          className="absolute left-0 right-0"
+          style={{ top: vs(16), paddingHorizontal: s(16) }}
+        >
           <View
-            className="rounded-2xl bg-white p-4"
+            className="bg-white"
             style={{
+              borderRadius: s(16),
+              padding: s(16),
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -160,26 +183,34 @@ export function JourneyInProgressScreen({
             }}
           >
             <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-2">
-                <View className="h-2 w-2 rounded-full bg-[#9810FA]" />
-                <Text className="text-[12px] font-medium text-[#6A7282]">
+              <View className="flex-row items-center" style={{ gap: s(8) }}>
+                <View className="rounded-full bg-[#9810FA]" style={{ width: s(8), height: s(8) }} />
+                <Text className="font-poppins-medium text-[#6A7282]" style={{ fontSize: fs(12) }}>
                   Next Stop
                 </Text>
               </View>
-              <Text className="text-[14px] font-semibold text-[#9810FA]">
+              <Text className="font-poppins-semibold text-[#9810FA]" style={{ fontSize: fs(14) }}>
                 ETA: {etaMins} mins
               </Text>
             </View>
-            <Text className="mt-2 text-base font-semibold text-[#1E293B]">
+            <Text
+              className="font-poppins-semibold text-[#1E293B]"
+              style={{ fontSize: fs(16), marginTop: vs(8) }}
+            >
               {currentStop.title}
             </Text>
           </View>
         </View>
 
-        <View className="absolute bottom-4 left-4 right-4">
+        <View
+          className="absolute left-0 right-0"
+          style={{ bottom: vs(16), paddingHorizontal: s(16) }}
+        >
           <View
-            className="rounded-2xl bg-white p-4"
+            className="bg-white"
             style={{
+              borderRadius: s(16),
+              padding: s(16),
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.1,
@@ -188,11 +219,13 @@ export function JourneyInProgressScreen({
             }}
           >
             <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <UsersIcon size={20} color="#9810FA" />
+              <View className="flex-row items-center" style={{ gap: s(12) }}>
+                <UsersIcon size={s(20)} color="#9810FA" />
                 <View>
-                  <Text className="text-[12px] text-[#6A7282]">On Board</Text>
-                  <Text className="text-base font-semibold text-[#1E293B]">
+                  <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(12) }}>
+                    On Board
+                  </Text>
+                  <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(16) }}>
                     {onBoardCount} Passengers
                   </Text>
                 </View>
@@ -203,7 +236,7 @@ export function JourneyInProgressScreen({
                   onViewOnBoardDetails?.();
                 }}
               >
-                <Text className="text-[14px] font-medium text-[#9810FA]">
+                <Text className="font-poppins-medium text-[#9810FA]" style={{ fontSize: fs(14) }}>
                   View Details
                 </Text>
               </Pressable>
@@ -213,8 +246,12 @@ export function JourneyInProgressScreen({
 
         <Pressable
           onPress={onSos}
-          className="absolute bottom-24 right-4 h-14 w-14 items-center justify-center rounded-full bg-[#E7000B]"
+          className="absolute items-center justify-center rounded-full bg-[#E7000B]"
           style={{
+            bottom: vs(96),
+            right: s(16),
+            width: s(56),
+            height: s(56),
             shadowColor: '#E7000B',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.4,
@@ -222,13 +259,16 @@ export function JourneyInProgressScreen({
             elevation: 4,
           }}
         >
-          <SOSAlertIcon size={24} color="white" />
+          <SOSAlertIcon size={s(24)} color="white" />
         </Pressable>
       </View>
 
       <View
-        className="rounded-t-3xl bg-white px-6 pb-6 pt-5"
+        className="rounded-t-3xl bg-white"
         style={{
+          paddingHorizontal: s(24),
+          paddingBottom: vs(24),
+          paddingTop: vs(20),
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.08,
@@ -236,14 +276,17 @@ export function JourneyInProgressScreen({
           elevation: 6,
         }}
       >
-        <Text className="text-[18px] font-semibold text-[#1E293B]">
+        <Text
+          className="font-poppins-semibold text-[#1E293B]"
+          style={{ fontSize: fs(18) }}
+        >
           Journey Progress
         </Text>
-        <View className="mt-4 max-h-[180px]">
+        <View style={{ marginTop: vs(16), maxHeight: vs(180) }}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            {stops.map((s, i) => {
-              const completed = s.index < currentStopIndex;
-              const active = s.index === currentStopIndex;
+            {stops.map((stop, i) => {
+              const completed = stop.index < currentStopIndex;
+              const active = stop.index === currentStopIndex;
               const dotBg = completed
                 ? '#00A63E'
                 : active
@@ -255,31 +298,31 @@ export function JourneyInProgressScreen({
                   ? '#1E293B'
                   : '#6A7282';
               return (
-                <View key={s.index} className="flex-row gap-3">
+                <View key={stop.index} className="flex-row" style={{ gap: s(12) }}>
                   <View className="items-center">
                     <View
-                      className="h-6 w-6 items-center justify-center rounded-full"
-                      style={{ backgroundColor: dotBg }}
+                      className="items-center justify-center rounded-full"
+                      style={{ width: s(24), height: s(24), backgroundColor: dotBg }}
                     >
                       {completed ? (
-                        <CheckIcon size={14} color="white" />
+                        <CheckIcon size={s(14)} color="white" />
                       ) : active ? (
-                        <View className="h-2 w-2 rounded-full bg-white" />
+                        <View className="rounded-full bg-white" style={{ width: s(8), height: s(8) }} />
                       ) : null}
                     </View>
                     {i !== stops.length - 1 && (
-                      <View className="mt-1 w-[2px] flex-1 bg-[#E5E7EB]" />
+                      <View className="flex-1 bg-[#E5E7EB]" style={{ marginTop: vs(4), width: s(2) }} />
                     )}
                   </View>
-                  <View className="flex-1 pb-3">
+                  <View className="flex-1" style={{ paddingBottom: vs(12) }}>
                     <Text
-                      className="text-[14px] font-medium"
-                      style={{ color: textColor }}
+                      className="font-poppins-medium"
+                      style={{ fontSize: fs(14), color: textColor }}
                     >
-                      {s.title}
+                      {stop.title}
                     </Text>
-                    <Text className="text-[12px] text-[#6A7282]">
-                      {s.time}
+                    <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(12) }}>
+                      {stop.time}
                     </Text>
                   </View>
                 </View>
@@ -288,22 +331,14 @@ export function JourneyInProgressScreen({
           </ScrollView>
         </View>
 
-        <View className="mt-4 flex-row gap-3">
-          <Pressable
-            onPress={onEmergencyStop}
-            className="h-[50px] flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-[#FFC9C9] bg-white"
-          >
-            <AlertCircleIcon size={18} color="#E7000B" />
-            <Text className="text-[14px] font-medium text-[#E7000B]">
-              Emergency Stop
-            </Text>
-          </Pressable>
+        <View style={{ marginTop: vs(16) }}>
           <Pressable
             onPress={handleNextStop}
             disabled={advancing}
-            className="h-[50px] flex-1 items-center justify-center rounded-2xl bg-[#9810FA]"
+            className="w-full items-center justify-center bg-[#9810FA]"
+            style={{ height: s(50), borderRadius: s(16) }}
           >
-            <Text className="text-[14px] font-medium text-white">
+            <Text className="font-poppins-medium text-white" style={{ fontSize: fs(14) }}>
               Next Stop
             </Text>
           </Pressable>
@@ -317,8 +352,11 @@ export function JourneyInProgressScreen({
             onPress={() => setShowStopDetails(false)}
           />
           <View
-            className="rounded-t-3xl bg-white px-6 pb-6 pt-5"
+            className="rounded-t-3xl bg-white"
             style={{
+              paddingHorizontal: s(24),
+              paddingBottom: vs(24),
+              paddingTop: vs(20),
               shadowColor: '#000',
               shadowOffset: { width: 0, height: -4 },
               shadowOpacity: 0.12,
@@ -327,61 +365,69 @@ export function JourneyInProgressScreen({
             }}
           >
             <View className="flex-row items-center justify-between">
-              <Text className="text-[18px] font-semibold text-[#1E293B]">
+              <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(18) }}>
                 Stop Details
               </Text>
               <Pressable
                 onPress={() => setShowStopDetails(false)}
                 hitSlop={8}
               >
-                <CloseIcon size={22} color="#6A7282" />
+                <CloseIcon size={s(22)} color="#6A7282" />
               </Pressable>
             </View>
 
-            <View className="mt-4 rounded-2xl bg-[#FAF5FF] p-4">
-              <View className="flex-row items-center gap-2">
-                <LocationPinSmallIcon size={18} color="#9810FA" />
-                <Text className="text-base font-semibold text-[#1E293B]">
+            <View
+              className="bg-[#FAF5FF]"
+              style={{ borderRadius: s(16), padding: s(16), marginTop: vs(16) }}
+            >
+              <View className="flex-row items-center" style={{ gap: s(8) }}>
+                <LocationPinSmallIcon size={s(18)} color="#9810FA" />
+                <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(16) }}>
                   {currentStop.title}
                 </Text>
               </View>
-              <View className="mt-2 flex-row gap-4">
+              <View className="flex-row" style={{ marginTop: vs(8), gap: s(16) }}>
                 {currentStop.boarding != null && (
-                  <Text className="text-[13px] text-[#00A63E]">
+                  <Text className="text-[#00A63E] font-poppins-medium" style={{ fontSize: fs(13) }}>
                     ↑ Boarding {currentStop.boarding} passengers
                   </Text>
                 )}
                 {currentStop.dropping != null && (
-                  <Text className="text-[13px] text-[#E7000B]">
+                  <Text className="text-[#E7000B] font-poppins-medium" style={{ fontSize: fs(13) }}>
                     ↓ Dropping {currentStop.dropping} passengers
                   </Text>
                 )}
               </View>
             </View>
 
-            <View className="mt-4 max-h-[220px]">
+            <View style={{ marginTop: vs(16), maxHeight: vs(220) }}>
               <ScrollView showsVerticalScrollIndicator={false}>
-                <View className="gap-2">
+                <View style={{ gap: vs(8) }}>
                   {(currentStop.passengers ?? []).map(p => (
                     <View
                       key={p.id}
-                      className="flex-row items-center justify-between rounded-2xl bg-[#F9FAFB] px-4 py-3"
+                      className="flex-row items-center justify-between bg-[#F9FAFB]"
+                      style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
                     >
-                      <View className="flex-row items-center gap-3">
-                        <View className="h-10 w-10 items-center justify-center rounded-full bg-[#E9D4FF]">
-                          <Text className="text-base font-semibold text-[#8200DB]">
+                      <View className="flex-row items-center" style={{ gap: s(12) }}>
+                        <View
+                          className="items-center justify-center rounded-full bg-[#E9D4FF]"
+                          style={{ width: s(40), height: s(40) }}
+                        >
+                          <Text className="font-poppins-semibold text-[#8200DB]" style={{ fontSize: fs(16) }}>
                             {p.initial}
                           </Text>
                         </View>
-                        <Text className="text-base font-medium text-[#1E293B]">
+                        <Text className="font-poppins-medium text-[#1E293B]" style={{ fontSize: fs(16) }}>
                           {p.name}
                         </Text>
                       </View>
                       <Pressable
                         hitSlop={8}
-                        className="h-8 w-8 items-center justify-center rounded-full bg-[#0097B3]"
+                        className="items-center justify-center rounded-full bg-[#0097B3]"
+                        style={{ width: s(32), height: s(32) }}
                       >
-                        <PhoneIcon size={16} color="white" />
+                        <PhoneIcon size={s(16)} color="white" />
                       </Pressable>
                     </View>
                   ))}
@@ -391,9 +437,10 @@ export function JourneyInProgressScreen({
 
             <Pressable
               onPress={() => setShowStopDetails(false)}
-              className="mt-4 h-[50px] items-center justify-center rounded-2xl bg-[#9810FA]"
+              className="items-center justify-center bg-[#9810FA]"
+              style={{ marginTop: vs(16), height: s(50), borderRadius: s(16) }}
             >
-              <Text className="text-[14px] font-medium text-white">
+              <Text className="font-poppins-medium text-white" style={{ fontSize: fs(14) }}>
                 Back to Journey
               </Text>
             </Pressable>

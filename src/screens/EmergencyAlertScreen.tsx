@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -6,8 +6,10 @@ import {
   CloseIcon,
   LocationPinSmallIcon,
 } from '../components/icons/ServiceTypeIcons';
+import { fetchJourney, fetchJourneyPassengers } from '../services/api';
 
 interface EmergencyAlertScreenProps {
+  journeyKey?: string | null;
   passengerName?: string;
   seat?: string;
   phone?: string;
@@ -21,22 +23,57 @@ interface EmergencyAlertScreenProps {
 }
 
 export function EmergencyAlertScreen({
+  journeyKey,
   passengerName = 'Ramesh Kumar',
   seat = 'A1',
   phone = '+91 98765 43210',
   requestTitle = 'Request: Early Drop',
   requestDescription = 'Passenger is requesting to be dropped off before the final destination due to personal emergency.',
-  currentLocation = 'NH 48, Near Vellore (Safe Zone)',
+  currentLocation = 'Safe Highway Stop Area',
   onBack,
   onDecline,
   onApproveSafe,
   onWaitNextStop,
 }: EmergencyAlertScreenProps) {
   const [safeStopDialogOpen, setSafeStopDialogOpen] = useState(false);
+  const [liveData, setLiveData] = useState<{
+    name: string;
+    seat: string;
+    phone: string;
+    location: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!journeyKey) return;
+    (async () => {
+      try {
+        const [jData, pData] = await Promise.all([
+          fetchJourney(journeyKey),
+          fetchJourneyPassengers(journeyKey),
+        ]);
+        const boardedPax = pData.passengers.find((p) => p.boarded) || pData.passengers[0];
+        if (boardedPax) {
+          setLiveData({
+            name: boardedPax.name || passengerName,
+            seat: String(boardedPax.seat || seat),
+            phone: (boardedPax as any).phone || phone,
+            location: `${jData.journey.from} → ${jData.journey.to} (Safe Drop Zone)`,
+          });
+        }
+      } catch {
+        /* use defaults */
+      }
+    })();
+  }, [journeyKey]);
+
+  const displayName = liveData?.name ?? passengerName;
+  const displaySeat = liveData?.seat ?? seat;
+  const displayPhone = liveData?.phone ?? phone;
+  const displayLocation = liveData?.location ?? currentLocation;
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View className="bg-[#F44336]">
         <SafeAreaView edges={['top']}>
@@ -44,7 +81,7 @@ export function EmergencyAlertScreen({
             <Pressable onPress={onBack} hitSlop={10}>
               <CloseIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               ⚠️ Emergency Alert
             </Text>
           </View>
@@ -58,7 +95,7 @@ export function EmergencyAlertScreen({
       >
         <View className="flex-row items-center gap-3 rounded-2xl bg-[#FDEDED] p-4">
           <AlertCircleIcon size={22} color="#D32F2F" />
-          <Text className="text-[15px] font-semibold text-[#5F2120]">
+          <Text className="text-[15px] font-poppins-semibold text-[#5F2120]">
             Passenger Emergency Request
           </Text>
         </View>
@@ -73,33 +110,33 @@ export function EmergencyAlertScreen({
             elevation: 2,
           }}
         >
-          <Text className="text-[16px] font-semibold text-[#1E293B]">
+          <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
             Passenger Details
           </Text>
           <View className="mt-3 gap-2">
             <View className="flex-row justify-between">
               <Text className="text-[14px] text-[#6A7282]">Name</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
-                {passengerName}
+              <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
+                {displayName}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-[14px] text-[#6A7282]">Seat</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
-                {seat}
+              <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
+                {displaySeat}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-[14px] text-[#6A7282]">Phone</Text>
-              <Text className="text-[14px] font-semibold text-[#1E293B]">
-                {phone}
+              <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
+                {displayPhone}
               </Text>
             </View>
           </View>
         </View>
 
         <View className="rounded-2xl bg-[#FFF3E0] p-5">
-          <Text className="text-[16px] font-semibold text-[#9A3412]">
+          <Text className="text-[16px] font-poppins-semibold text-[#9A3412]">
             {requestTitle}
           </Text>
           <Text className="mt-2 text-[13px] leading-[20px] text-[#9A3412]">
@@ -120,8 +157,8 @@ export function EmergencyAlertScreen({
           <Text className="text-[14px] text-[#6A7282]">Current Location</Text>
           <View className="mt-2 flex-row items-center gap-2">
             <LocationPinSmallIcon size={18} color="#9810FA" />
-            <Text className="flex-1 text-[14px] font-semibold text-[#1E293B]">
-              {currentLocation}
+            <Text className="flex-1 text-[14px] font-poppins-semibold text-[#1E293B]">
+              {displayLocation}
             </Text>
           </View>
         </View>
@@ -132,7 +169,7 @@ export function EmergencyAlertScreen({
           onPress={() => setSafeStopDialogOpen(true)}
           className="h-[56px] items-center justify-center rounded-2xl bg-[#00C896]"
         >
-          <Text className="text-[14px] font-semibold uppercase text-white">
+          <Text className="text-[14px] font-poppins-semibold uppercase text-white">
             Approve Drop (Safe Zone)
           </Text>
         </Pressable>
@@ -140,7 +177,7 @@ export function EmergencyAlertScreen({
           onPress={onDecline}
           className="mt-3 h-[56px] items-center justify-center rounded-2xl border border-[#D32F2F] bg-white"
         >
-          <Text className="text-[14px] font-semibold uppercase text-[#D32F2F]">
+          <Text className="text-[14px] font-poppins-semibold uppercase text-[#D32F2F]">
             Decline (Unsafe Area)
           </Text>
         </Pressable>
@@ -154,7 +191,7 @@ export function EmergencyAlertScreen({
       >
         <View className="flex-1 items-center justify-center bg-black/50 px-6">
           <View className="w-full rounded-3xl bg-white p-6">
-            <Text className="text-[18px] font-semibold text-[#1E293B]">
+            <Text className="text-[18px] font-poppins-semibold text-[#1E293B]">
               Are you at a safe location to stop?
             </Text>
             <Text className="mt-2 text-[14px] leading-[20px] text-[#6A7282]">
@@ -164,7 +201,7 @@ export function EmergencyAlertScreen({
 
             <View className="mt-4 flex-row gap-3">
               <View className="flex-1 rounded-2xl bg-[#E8F8F4] p-3">
-                <Text className="text-[12px] font-semibold text-[#00A63E]">
+                <Text className="text-[12px] font-poppins-semibold text-[#00A63E]">
                   ✓ Safe Zone
                 </Text>
                 <Text className="mt-1 text-[11px] text-[#047857]">
@@ -172,7 +209,7 @@ export function EmergencyAlertScreen({
                 </Text>
               </View>
               <View className="flex-1 rounded-2xl bg-[#FFF3E0] p-3">
-                <Text className="text-[12px] font-semibold text-[#9A3412]">
+                <Text className="text-[12px] font-poppins-semibold text-[#9A3412]">
                   ⚠ Wait for Stop
                 </Text>
                 <Text className="mt-1 text-[11px] text-[#9A3412]">
@@ -188,7 +225,7 @@ export function EmergencyAlertScreen({
               }}
               className="mt-5 h-[50px] items-center justify-center rounded-2xl bg-[#00C896]"
             >
-              <Text className="text-[14px] font-semibold uppercase text-white">
+              <Text className="text-[14px] font-poppins-semibold uppercase text-white">
                 Yes, Stop Now
               </Text>
             </Pressable>
@@ -199,7 +236,7 @@ export function EmergencyAlertScreen({
               }}
               className="mt-3 h-[50px] items-center justify-center rounded-2xl border border-[#0097B3] bg-white"
             >
-              <Text className="text-[14px] font-semibold uppercase text-[#0097B3]">
+              <Text className="text-[14px] font-poppins-semibold uppercase text-[#0097B3]">
                 Wait for Next Stop
               </Text>
             </Pressable>

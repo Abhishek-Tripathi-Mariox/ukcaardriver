@@ -94,7 +94,7 @@ function LabelledInput({
 }: LabelledInputProps) {
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-slate-800">{label}</Text>
+      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -281,7 +281,7 @@ export function CompleteProfileScreen({
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <RegistrationHeader currentStep={6} onBack={onBack} onLogout={onLogout} />
 
       <KeyboardAvoidingView
@@ -294,7 +294,7 @@ export function CompleteProfileScreen({
           contentContainerClassName="px-6 pt-6 pb-10"
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="mb-4 text-[20px] font-semibold text-slate-800">
+          <Text className="mb-4 text-[20px] font-poppins-semibold text-slate-800">
             Complete Your Profile
           </Text>
 
@@ -332,7 +332,7 @@ export function CompleteProfileScreen({
                 autoCapitalize="none"
               />
               <View className="mb-4">
-                <Text className="mb-2 text-sm font-medium text-slate-800">
+                <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
                   Date of Birth
                 </Text>
                 <Pressable
@@ -372,7 +372,7 @@ export function CompleteProfileScreen({
                     <CarIcon size={24} color="#0097B3" />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-base font-semibold text-slate-800">
+                    <Text className="text-base font-poppins-semibold text-slate-800">
                       {vehicleSummary.brandModel}
                     </Text>
                     <Text className="text-sm text-slate-500">
@@ -384,13 +384,13 @@ export function CompleteProfileScreen({
                 <View className="mt-5 flex-row">
                   <View className="flex-1">
                     <Text className="text-xs text-slate-500">Year</Text>
-                    <Text className="mt-0.5 text-sm font-semibold text-slate-800">
+                    <Text className="mt-0.5 text-sm font-poppins-semibold text-slate-800">
                       {vehicleSummary.year}
                     </Text>
                   </View>
                   <View className="flex-1">
                     <Text className="text-xs text-slate-500">Seating</Text>
-                    <Text className="mt-0.5 text-sm font-semibold text-slate-800">
+                    <Text className="mt-0.5 text-sm font-poppins-semibold text-slate-800">
                       {vehicleSummary.seating}
                     </Text>
                   </View>
@@ -399,13 +399,13 @@ export function CompleteProfileScreen({
                 <View className="mt-4 flex-row">
                   <View className="flex-1">
                     <Text className="text-xs text-slate-500">Insurance</Text>
-                    <Text className="mt-0.5 text-sm font-semibold text-slate-800">
+                    <Text className="mt-0.5 text-sm font-poppins-semibold text-slate-800">
                       {vehicleSummary.insurance}
                     </Text>
                   </View>
                   <View className="flex-1">
                     <Text className="text-xs text-slate-500">Service Type</Text>
-                    <Text className="mt-0.5 text-sm font-semibold text-slate-800">
+                    <Text className="mt-0.5 text-sm font-poppins-semibold text-slate-800">
                       {vehicleSummary.serviceType}
                     </Text>
                   </View>
@@ -417,7 +417,7 @@ export function CompleteProfileScreen({
                   onPress={onEditVehicle}
                   className="mt-4 h-12 items-center justify-center rounded-2xl border border-slate-300"
                 >
-                  <Text className="text-sm font-medium text-slate-700">
+                  <Text className="text-sm font-poppins-medium text-slate-700">
                     Edit Detail
                   </Text>
                 </Pressable>
@@ -446,13 +446,13 @@ export function CompleteProfileScreen({
                     key={type}
                     className="mb-3 flex-row items-center justify-between rounded-2xl border border-slate-200 px-4 py-3"
                   >
-                    <Text className="text-sm font-medium text-slate-800">
+                    <Text className="text-sm font-poppins-medium text-slate-800">
                       {label}
                     </Text>
                     <View
                       className={`rounded-full px-3 py-1 ${tone.bg}`}
                     >
-                      <Text className={`text-xs font-medium ${tone.text}`}>
+                      <Text className={`text-xs font-poppins-medium ${tone.text}`}>
                         {tone.label}
                       </Text>
                     </View>
@@ -493,7 +493,7 @@ export function CompleteProfileScreen({
                 autoCapitalize="characters"
               />
               <View className="mb-4">
-                <Text className="mb-2 text-sm font-medium text-slate-800">
+                <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
                   Upload Passbook/Cheque
                 </Text>
                 <Pressable
@@ -530,7 +530,7 @@ export function CompleteProfileScreen({
             {submitting ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text className="text-sm font-medium text-white">
+              <Text className="text-sm font-poppins-medium text-white">
                 {activeTab === 'bank' ? 'Save & Submit' : 'Save & Continue'}
               </Text>
             )}

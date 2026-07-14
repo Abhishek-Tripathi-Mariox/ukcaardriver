@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { LogoGlow, logoUkcaar } from '../assets/images';
+import { fs, s, vs } from '../theme/responsive';
 
 interface SplashScreenProps {
   onFinish?: () => void;
@@ -31,7 +32,7 @@ export function SplashScreen({ onFinish, duration = 2500 }: SplashScreenProps) {
 
   return (
     <View className="flex-1">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={['#0097B3', '#00C896']}
         start={{ x: 0.5, y: 0 }}
@@ -39,29 +40,44 @@ export function SplashScreen({ onFinish, duration = 2500 }: SplashScreenProps) {
         className="flex-1 items-center justify-center"
       >
         <View className="items-center">
-          <View className="h-[215px] w-[215px] items-center justify-center">
-            <View className="absolute h-[215px] w-[215px]">
+          <View
+            style={{ height: s(215), width: s(215) }}
+            className="items-center justify-center"
+          >
+            <View className="absolute inset-0">
               <LogoGlow width="100%" height="100%" />
             </View>
-            <View className="h-[160px] w-[160px] items-center justify-center overflow-hidden rounded-full bg-white">
+            <View
+              style={{ height: s(160), width: s(160) }}
+              className="items-center justify-center overflow-hidden rounded-full bg-white"
+            >
               <Image
                 source={logoUkcaar}
                 resizeMode="cover"
-                className="h-[160px] w-[160px]"
+                style={{ height: s(160), width: s(160) }}
               />
             </View>
           </View>
 
-          <View className="mt-14 items-center">
-            <Text className="text-[36px] font-bold leading-[40px] text-white">
+          <View style={{ marginTop: vs(48) }} className="items-center">
+            <Text
+              style={{ fontSize: fs(36), lineHeight: fs(40) }}
+              className="font-poppins-bold text-white"
+            >
               UKCAAR
             </Text>
-            <Text className="mt-2 text-[20px] font-light leading-7 text-white/90">
+            <Text
+              style={{ fontSize: fs(20), lineHeight: fs(28), marginTop: vs(8) }}
+              className="font-poppins-light text-white/90"
+            >
               Drive Smarter. Earn Better.
             </Text>
           </View>
 
-          <View className="mt-8 h-2 w-64 overflow-hidden rounded-full bg-white/30">
+          <View
+            style={{ marginTop: vs(32), height: vs(8), width: s(240) }}
+            className="overflow-hidden rounded-full bg-white/30"
+          >
             <Animated.View
               style={{ width: progressWidth }}
               className="h-full bg-brand-teal"

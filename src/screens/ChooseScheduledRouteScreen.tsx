@@ -21,6 +21,7 @@ import {
 } from '../services/api';
 
 interface ChooseScheduledRouteScreenProps {
+  isChangeRequest?: boolean;
   onBack?: () => void;
   /** Called once the driver has successfully registered for a route +
    *  departure. Parent should advance the registration funnel to the next
@@ -56,6 +57,7 @@ const fmtDays = (days: number[]): string => {
 };
 
 export function ChooseScheduledRouteScreen({
+  isChangeRequest,
   onBack,
   onRegistered,
 }: ChooseScheduledRouteScreenProps) {
@@ -99,18 +101,22 @@ export function ChooseScheduledRouteScreen({
         departureIndex: selectedDepartureIdx,
         roundTrip,
       });
-      // Advance the backend registrationStep so a re-login resumes at
-      // owner-details rather than re-prompting for route selection.
-      // Best-effort — the route registration above is the real success
-      // condition; this is just persistence of the funnel position.
-      try {
-        await updateRegistrationStep('owner-details');
-      } catch (stepErr) {
-        console.warn('[choose-route] step advance failed:', stepErr);
+      if (!isChangeRequest) {
+        // Advance the backend registrationStep so a re-login resumes at
+        // owner-details rather than re-prompting for route selection.
+        // Best-effort — the route registration above is the real success
+        // condition; this is just persistence of the funnel position.
+        try {
+          await updateRegistrationStep('owner-details');
+        } catch (stepErr) {
+          console.warn('[choose-route] step advance failed:', stepErr);
+        }
       }
       Alert.alert(
-        'Registration submitted',
-        'Your route registration is pending admin approval. You can continue with the rest of your profile while we review it.',
+        isChangeRequest ? 'Route Change Requested' : 'Registration submitted',
+        isChangeRequest
+          ? 'Your request to change your assigned route has been submitted. An admin can approve your new route from the admin portal.'
+          : 'Your route registration is pending admin approval. You can continue with the rest of your profile while we review it.',
         [{ text: 'Continue', onPress: () => onRegistered() }],
       );
     } catch (err: any) {
@@ -126,7 +132,7 @@ export function ChooseScheduledRouteScreen({
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={['#0097B3', '#00C896']}
         start={{ x: 0.5, y: 0 }}
@@ -140,8 +146,12 @@ export function ChooseScheduledRouteScreen({
             >
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="flex-1 text-[18px] font-semibold text-white">
-              {selectedRoute ? selectedRoute.name : 'Choose your route'}
+            <Text className="flex-1 text-[18px] font-poppins-semibold text-white">
+              {selectedRoute
+                ? selectedRoute.name
+                : isChangeRequest
+                ? 'Apply for Route Change'
+                : 'Choose your route'}
             </Text>
           </View>
         </SafeAreaView>
@@ -196,7 +206,7 @@ function RouteList({
   if (routes.length === 0) {
     return (
       <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-base font-semibold text-[#1E293B]">
+        <Text className="text-base font-poppins-semibold text-[#1E293B]">
           No routes available yet
         </Text>
         <Text className="mt-2 text-center text-sm text-[#6A7282]">
@@ -229,7 +239,7 @@ function RouteList({
               elevation: 1,
             }}
           >
-            <Text className="text-base font-bold text-[#1E293B]">{r.name}</Text>
+            <Text className="text-base font-poppins-bold text-[#1E293B]">{r.name}</Text>
             {r.description ? (
               <Text className="mt-1 text-xs text-[#6A7282]">{r.description}</Text>
             ) : null}
@@ -240,10 +250,10 @@ function RouteList({
                 <View className="h-2.5 w-2.5 rounded-full bg-[#FB2C36]" />
               </View>
               <View className="flex-1">
-                <Text className="text-sm font-medium text-[#1E293B]">
+                <Text className="text-sm font-poppins-medium text-[#1E293B]">
                   {first?.name}
                 </Text>
-                <Text className="mt-3 text-sm font-medium text-[#1E293B]">
+                <Text className="mt-3 text-sm font-poppins-medium text-[#1E293B]">
                   {last?.name}
                 </Text>
               </View>
@@ -312,7 +322,7 @@ function RouteDetail({
       </View>
 
       <View className="px-4 pt-4">
-        <Text className="text-base font-bold text-[#1E293B]">Stops</Text>
+        <Text className="text-base font-poppins-bold text-[#1E293B]">Stops</Text>
         <View className="mt-3 rounded-2xl border border-[#EBEBEB] bg-white p-4">
           <StopRow
             label={first.name}
@@ -334,7 +344,7 @@ function RouteDetail({
           />
         </View>
 
-        <Text className="mt-6 text-base font-bold text-[#1E293B]">
+        <Text className="mt-6 text-base font-poppins-bold text-[#1E293B]">
           Pick a departure time
         </Text>
         <Text className="mt-1 text-xs text-[#6A7282]">
@@ -363,7 +373,7 @@ function RouteDetail({
                   }}
                 >
                   <Text
-                    className="text-base font-bold"
+                    className="text-base font-poppins-bold"
                     style={{ color: isSelected ? '#0097B3' : '#1E293B' }}
                   >
                     {fmtTime(d.time)}
@@ -379,7 +389,7 @@ function RouteDetail({
 
         <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-[#EBEBEB] bg-white p-4">
           <View className="flex-1 pr-3">
-            <Text className="text-sm font-semibold text-[#1E293B]">
+            <Text className="text-sm font-poppins-semibold text-[#1E293B]">
               I'll do the return trip too
             </Text>
             <Text className="mt-1 text-xs text-[#6A7282]">
@@ -413,7 +423,7 @@ function RouteDetail({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-base font-bold text-white">
+            <Text className="text-base font-poppins-bold text-white">
               Register for this route
             </Text>
           )}
@@ -441,7 +451,7 @@ function StopRow({
         style={{ backgroundColor: dotColor }}
       />
       <View className="flex-1">
-        <Text className="text-sm font-semibold text-[#1E293B]">{label}</Text>
+        <Text className="text-sm font-poppins-semibold text-[#1E293B]">{label}</Text>
         {address ? (
           <Text className="mt-0.5 text-xs text-[#6A7282]">{address}</Text>
         ) : null}

@@ -2,6 +2,7 @@
  * @format
  */
 
+import './src/setupFonts'; // makes Poppins the app-wide default font
 import { AppRegistry, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';

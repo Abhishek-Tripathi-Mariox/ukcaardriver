@@ -90,7 +90,7 @@ function SectionLabel({ label }: { label: string }) {
   return (
     <View className="flex-row items-center gap-4">
       <View className="h-px flex-1 bg-[#E1E6EF]" />
-      <Text className="text-[11px] font-bold text-[#607080]">{label}</Text>
+      <Text className="text-[11px] font-poppins-bold text-[#607080]">{label}</Text>
       <View className="h-px flex-1 bg-[#E1E6EF]" />
     </View>
   );
@@ -127,7 +127,7 @@ function RideCard({
       <View className="gap-3 pt-4">
         <View className="flex-row items-start gap-3 px-4">
           <View className="flex-1">
-            <Text className="text-[15px] font-bold text-[#132235]">{passengerName}</Text>
+            <Text className="text-[15px] font-poppins-bold text-[#132235]">{passengerName}</Text>
             <Text className="mt-0.5 text-xs text-[#364B63]">ID: {rideId}</Text>
           </View>
           <View className="flex-row items-center gap-1.5">
@@ -154,15 +154,15 @@ function RideCard({
         <View className="flex-row items-center gap-3 px-4 pb-4">
           <View className="flex-row items-center gap-2">
             <CarIcon size={18} color="#364B63" />
-            <Text className="text-[13px] font-bold text-[#364B63]">{tripType}</Text>
+            <Text className="text-[13px] font-poppins-bold text-[#364B63]">{tripType}</Text>
           </View>
           <View className="flex-1 flex-row items-center justify-center gap-2">
             <RoutingIcon size={18} color="#364B63" />
-            <Text className="text-[13px] font-bold text-[#364B63]">{distance}</Text>
+            <Text className="text-[13px] font-poppins-bold text-[#364B63]">{distance}</Text>
           </View>
           <View className="flex-1 flex-row items-center justify-end gap-2">
             <ClockSmallIcon size={18} color="#364B63" />
-            <Text className="text-[13px] font-bold text-[#364B63]">{duration}</Text>
+            <Text className="text-[13px] font-poppins-bold text-[#364B63]">{duration}</Text>
           </View>
         </View>
       </View>
@@ -175,7 +175,7 @@ function RideCard({
       >
         <MoneyIcon size={18} color={paid ? 'white' : '#0097B3'} />
         <Text
-          className="text-[17px] font-bold"
+          className="text-[17px] font-poppins-bold"
           style={{ color: paid ? 'white' : '#0097B3' }}
         >
           {fare}
@@ -213,7 +213,7 @@ export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#0097B3', '#00C896']}
@@ -225,7 +225,7 @@ export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">History</Text>
+            <Text className="text-[20px] font-poppins-semibold text-white">History</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -244,7 +244,7 @@ export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
           </View>
         ) : groups.length === 0 ? (
           <View className="py-16 items-center">
-            <Text className="text-base font-semibold text-[#132235]">
+            <Text className="text-base font-poppins-semibold text-[#132235]">
               No rides yet
             </Text>
             <Text className="mt-1 text-sm text-[#6A7282]">

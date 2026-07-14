@@ -81,7 +81,7 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
 
   return (
     <View className="flex-1 bg-[#F5F3F8]">
-      <StatusBar barStyle="light-content" backgroundColor="#0097B3" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={['#0097B3', '#00C896']}
         start={{ x: 0.5, y: 0 }}
@@ -89,7 +89,7 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
       >
         <SafeAreaView edges={['top']}>
           <View className="px-4 py-6">
-            <Text className="text-center text-[22px] font-bold text-white">
+            <Text className="text-center text-[22px] font-poppins-bold text-white">
               Enable required permissions
             </Text>
             <Text className="mt-2 text-center text-[14px] text-white/90">
@@ -141,7 +141,7 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
           onPress={openAppSettings}
           className="mt-3 self-center rounded-full border border-[#0097B3] px-5 py-2"
         >
-          <Text className="text-[14px] font-semibold text-[#0097B3]">
+          <Text className="text-[14px] font-poppins-semibold text-[#0097B3]">
             Open app settings
           </Text>
         </Pressable>
@@ -155,7 +155,7 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
             notif && loc ? 'bg-[#0097B3]' : 'bg-[#CBCED4]'
           }`}
         >
-          <Text className="text-[16px] font-semibold text-white">
+          <Text className="text-[16px] font-poppins-semibold text-white">
             {notif && loc ? 'Continue to dashboard' : 'Grant permissions to continue'}
           </Text>
         </Pressable>
@@ -182,14 +182,14 @@ function PermissionRow({
   return (
     <View className="mb-3 rounded-2xl bg-white p-4 shadow-sm">
       <View className="flex-row items-center justify-between">
-        <Text className="text-[16px] font-semibold text-[#1F2937]">{title}</Text>
+        <Text className="text-[16px] font-poppins-semibold text-[#1F2937]">{title}</Text>
         <View
           className={`rounded-full px-2 py-0.5 ${
             granted ? 'bg-[#DCFCE7]' : warningTone ? 'bg-[#FEF3C7]' : 'bg-[#FEE2E2]'
           }`}
         >
           <Text
-            className={`text-[11px] font-semibold ${
+            className={`text-[11px] font-poppins-semibold ${
               granted
                 ? 'text-[#166534]'
                 : warningTone
@@ -209,7 +209,7 @@ function PermissionRow({
           onPress={onPress}
           className="mt-3 self-start rounded-full bg-[#0097B3] px-4 py-2"
         >
-          <Text className="text-[13px] font-semibold text-white">
+          <Text className="text-[13px] font-poppins-semibold text-white">
             {actionLabel}
           </Text>
         </Pressable>

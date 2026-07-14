@@ -72,7 +72,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <LinearGradient
         colors={['#AD46FF', '#9810FA']}
@@ -84,7 +84,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
             <Pressable onPress={onBack} hitSlop={10}>
               <BackArrowIcon size={22} color="white" />
             </Pressable>
-            <Text className="text-[20px] font-semibold text-white">
+            <Text className="text-[20px] font-poppins-semibold text-white">
               Earnings
             </Text>
           </View>
@@ -112,7 +112,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
               onPress={load}
               className="mt-3 rounded-2xl bg-[#9810FA] px-5 py-2"
             >
-              <Text className="text-sm font-semibold text-white">Retry</Text>
+              <Text className="text-sm font-poppins-semibold text-white">Retry</Text>
             </Pressable>
           </View>
         ) : (
@@ -129,7 +129,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
               }}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-[16px] font-semibold text-[#1E293B]">
+                <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
                   This Month
                 </Text>
                 <View
@@ -138,7 +138,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
                   }`}
                 >
                   <Text
-                    className={`text-[12px] font-semibold ${
+                    className={`text-[12px] font-poppins-semibold ${
                       isPositiveGrowth ? 'text-[#00A63E]' : 'text-[#B91C1C]'
                     }`}
                   >
@@ -146,7 +146,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
                   </Text>
                 </View>
               </View>
-              <Text className="mt-3 text-[34px] font-bold text-[#9A15FB]">
+              <Text className="mt-3 text-[34px] font-poppins-bold text-[#9A15FB]">
                 {monthTotal}
               </Text>
               <Text className="mt-1 text-[13px] text-[#6A7282]">
@@ -166,7 +166,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
                 elevation: 2,
               }}
             >
-              <Text className="text-[16px] font-semibold text-[#1E293B]">
+              <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
                 6-Month Trend
               </Text>
               <View className="mt-4 h-[140px] flex-row items-end justify-between">
@@ -200,13 +200,13 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
                 elevation: 2,
               }}
             >
-              <Text className="text-[16px] font-semibold text-[#1E293B]">
+              <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
                 Earnings Breakdown
               </Text>
               <View className="mt-4 gap-3">
                 <View className="flex-row justify-between">
                   <Text className="text-[14px] text-[#6A7282]">Total Earned</Text>
-                  <Text className="text-[14px] font-semibold text-[#1E293B]">
+                  <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
                     {formatRupees(bd?.totalEarned ?? 0)}
                   </Text>
                 </View>
@@ -214,7 +214,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
                   <Text className="text-[14px] text-[#6A7282]">
                     Platform Fee ({bd?.commissionPct ?? 0}%)
                   </Text>
-                  <Text className="text-[14px] font-semibold text-[#F44336]">
+                  <Text className="text-[14px] font-poppins-semibold text-[#F44336]">
                     -{formatRupees(bd?.platformFee ?? 0)}
                   </Text>
                 </View>
@@ -222,7 +222,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
                   <Text className="text-[14px] text-[#6A7282]">
                     Fuel Allowance ({bd?.fuelPct ?? 0}%)
                   </Text>
-                  <Text className="text-[14px] font-semibold text-[#00C896]">
+                  <Text className="text-[14px] font-poppins-semibold text-[#00C896]">
                     +{formatRupees(bd?.fuelAllowance ?? 0)}
                   </Text>
                 </View>
@@ -230,7 +230,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
               <View className="mt-4 border-t border-[#E5E7EB] pt-4">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[14px] text-[#1E293B]">Net Earnings</Text>
-                  <Text className="text-[19px] font-bold text-[#9A15FB]">
+                  <Text className="text-[19px] font-poppins-bold text-[#9A15FB]">
                     {formatRupees(bd?.netEarnings ?? 0)}
                   </Text>
                 </View>
@@ -246,7 +246,7 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
               onPress={onViewPaymentHistory}
               className="h-[50px] items-center justify-center rounded-2xl border border-[#9810FA] bg-white"
             >
-              <Text className="text-[14px] font-semibold uppercase text-[#9810FA]">
+              <Text className="text-[14px] font-poppins-semibold uppercase text-[#9810FA]">
                 View Payment History
               </Text>
             </Pressable>
