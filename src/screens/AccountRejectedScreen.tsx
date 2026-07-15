@@ -12,8 +12,12 @@ interface AccountRejectedScreenProps {
 }
 
 export function AccountRejectedScreen({
-  driverName = 'Ravi',
-  rejectionReason = 'Your driving license image was unclear.',
+  // Neutral defaults — never invent a specific rejection reason or a stranger's
+  // name. The previous "Ravi" / "driving license image was unclear" defaults
+  // were shown to every rejected driver (props were never passed) and could
+  // make them re-upload the wrong document.
+  driverName = 'there',
+  rejectionReason = 'Some of your submitted documents could not be verified. Please review and re-upload them, or contact support.',
   onReupload,
   onContactSupport,
   onLogout,

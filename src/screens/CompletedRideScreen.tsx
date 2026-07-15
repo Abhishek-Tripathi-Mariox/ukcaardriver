@@ -25,9 +25,9 @@ interface Stop {
 interface Passenger {
   id: string;
   name: string;
-  gender: 'F' | 'M';
-  age: number;
-  stop: number;
+  seat: number;
+  boarded: boolean;
+  noShow: boolean;
 }
 
 interface CompletedRideScreenProps {
@@ -68,6 +68,7 @@ function StopRow({ stop, isLast }: { stop: Stop; isLast: boolean }) {
         <Text
           className="font-poppins-medium text-[#1E293B]"
           style={{ fontSize: fs(16), lineHeight: fs(22) }}
+          numberOfLines={2}
         >
           {stop.title}
         </Text>
@@ -119,9 +120,14 @@ function PassengerRow({
         >
           <Text
             className="font-poppins-semibold text-[#8200DB]"
-            style={{ fontSize: fs(16) }}
+            style={{ fontSize: fs(15) }}
           >
-            {passenger.gender}
+            {passenger.name
+              .split(' ')
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((w) => w[0]?.toUpperCase() ?? '')
+              .join('') || '?'}
           </Text>
         </View>
         <View className="flex-1">
@@ -135,7 +141,8 @@ function PassengerRow({
             className="text-[#6A7282] font-poppins-regular"
             style={{ fontSize: fs(14) }}
           >
-            {passenger.age} years • Stop {passenger.stop}
+            Seat {passenger.seat} •{' '}
+            {passenger.noShow ? 'No-show' : passenger.boarded ? 'Boarded' : 'Not boarded'}
           </Text>
         </View>
       </View>
@@ -176,12 +183,14 @@ export function CompletedRideScreen({
     fetchJourneyPassengers(journeyKey)
       .then((r) =>
         setPax(
+          // Real fields only — the API never returns gender/age/stop, so the
+          // old defaults invented M / 28 / Stop 1 for every rider.
           r.passengers.map((p) => ({
             id: `${p.bookingId}-${p.seat}`,
             name: p.name,
-            gender: p.gender ?? 'M',
-            age: p.age && p.age > 0 ? p.age : 28,
-            stop: p.stop ?? 1,
+            seat: p.seat,
+            boarded: p.boarded,
+            noShow: p.noShow,
           })),
         ),
       )
@@ -249,8 +258,9 @@ export function CompletedRideScreen({
             Route Map
           </Text>
           <Text
-            className="text-[#9810FA] font-poppins-medium"
+            className="text-[#9810FA] font-poppins-medium text-center px-4"
             style={{ fontSize: fs(14) }}
+            numberOfLines={2}
           >
             {routeFrom} → {routeTo}
           </Text>

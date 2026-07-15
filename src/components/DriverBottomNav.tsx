@@ -3,11 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   TabEarningsIcon,
   TabHomeIcon,
+  TabMenuIcon,
   TabProfileIcon,
   TabRidesIcon,
 } from './icons/ServiceTypeIcons';
 
-export type DriverTab = 'home' | 'rides' | 'earnings' | 'profile';
+export type DriverTab = 'home' | 'rides' | 'earnings' | 'profile' | 'menu';
 
 interface DriverBottomNavProps {
   active: DriverTab;
@@ -29,6 +30,7 @@ export function DriverBottomNav({ active, onChange }: DriverBottomNavProps) {
     { id: 'rides' as const, label: 'Rides', Icon: TabRidesIcon },
     { id: 'earnings' as const, label: 'Earnings', Icon: TabEarningsIcon },
     { id: 'profile' as const, label: 'Profile', Icon: TabProfileIcon },
+    { id: 'menu' as const, label: 'Menu', Icon: TabMenuIcon },
   ];
 
   return (

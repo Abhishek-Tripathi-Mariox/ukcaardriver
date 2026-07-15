@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,63 +5,37 @@ import {
   BackArrowIcon,
   BigCheckIcon,
   ClockSmallIcon,
-  LocationPinSmallIcon,
 } from '../components/icons/ServiceTypeIcons';
-import { fetchJourney, fetchJourneyPassengers } from '../services/api';
 
 interface EmergencyDropSummaryScreenProps {
-  journeyKey?: string | null;
-  passengerName?: string;
-  seat?: string;
+  /** The passenger dropped (real data from the request). */
+  passenger?: { name?: string; seat?: number; contact?: string } | null;
   reason?: string;
-  dropLocation?: string;
-  timestamp?: string;
+  /** The recomputed fare + refund returned by the approve call. */
+  result?: {
+    originalFare?: number;
+    partialFare?: number;
+    refund?: number;
+    refundMethod?: string;
+    dropStopName?: string;
+  } | null;
   onBack?: () => void;
   onContinue?: () => void;
 }
 
 export function EmergencyDropSummaryScreen({
-  journeyKey,
-  passengerName = 'Ramesh Kumar',
-  seat = 'A1',
-  reason = 'Early Drop Request (Emergency)',
-  dropLocation = 'Safe Highway Stop Area',
-  timestamp,
+  passenger,
+  reason = 'Early Drop Request',
+  result,
   onBack,
   onContinue,
 }: EmergencyDropSummaryScreenProps) {
-  const [liveData, setLiveData] = useState<{
-    name: string;
-    seat: string;
-    location: string;
-    time: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!journeyKey) return;
-    (async () => {
-      try {
-        const [jData, pData] = await Promise.all([
-          fetchJourney(journeyKey),
-          fetchJourneyPassengers(journeyKey),
-        ]);
-        const boardedPax = pData.passengers.find((p) => p.boarded) || pData.passengers[0];
-        setLiveData({
-          name: boardedPax?.name || passengerName,
-          seat: String(boardedPax?.seat || seat),
-          location: `${jData.journey.from} → ${jData.journey.to} (Safe Drop Zone)`,
-          time: new Date().toLocaleString('en-IN'),
-        });
-      } catch {
-        /* fallback */
-      }
-    })();
-  }, [journeyKey]);
-
-  const displayName = liveData?.name ?? passengerName;
-  const displaySeat = liveData?.seat ?? seat;
-  const displayLocation = liveData?.location ?? dropLocation;
-  const displayTime = liveData?.time ?? timestamp ?? new Date().toLocaleString('en-IN');
+  const displayName = passenger?.name ?? 'Passenger';
+  const displaySeat = passenger?.seat != null ? String(passenger.seat) : '—';
+  const displayTime = new Date().toLocaleString('en-IN');
+  const original = Math.max(0, Math.round(result?.originalFare ?? 0));
+  const partial = Math.max(0, Math.round(result?.partialFare ?? 0));
+  const refund = Math.max(0, Math.round(result?.refund ?? 0));
   return (
     <View className="flex-1 bg-[#F9FAFB]">
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -144,39 +117,36 @@ export function EmergencyDropSummaryScreen({
           }}
         >
           <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
-            Event Details
+            Fare Adjustment
           </Text>
-          <View className="mt-3 gap-3">
-            <View className="flex-row items-start gap-3">
-              <LocationPinSmallIcon size={18} color="#9810FA" />
-              <View className="flex-1">
-                <Text className="text-[12px] text-[#6A7282]">Drop Location</Text>
-                <Text className="text-[14px] font-poppins-medium text-[#1E293B]">
-                  {displayLocation}
-                </Text>
-              </View>
+          <View className="mt-3 gap-2">
+            <View className="flex-row justify-between">
+              <Text className="text-[14px] text-[#6A7282]">Original fare</Text>
+              <Text className="text-[14px] font-poppins-medium text-[#1E293B]">₹{original}</Text>
             </View>
-            <View className="flex-row items-start gap-3">
-              <ClockSmallIcon size={18} color="#9810FA" />
-              <View className="flex-1">
-                <Text className="text-[12px] text-[#6A7282]">Timestamp</Text>
-                <Text className="text-[14px] font-poppins-medium text-[#1E293B]">
-                  {displayTime}
-                </Text>
-              </View>
+            <View className="flex-row justify-between">
+              <Text className="text-[14px] text-[#6A7282]">Partial fare (distance covered)</Text>
+              <Text className="text-[14px] font-poppins-medium text-[#1E293B]">₹{partial}</Text>
             </View>
+            <View className="my-1 h-px bg-[#EEF0F3]" />
+            <View className="flex-row justify-between">
+              <Text className="text-[15px] font-poppins-semibold text-[#1E293B]">Refunded to rider</Text>
+              <Text className="text-[16px] font-poppins-semibold text-[#00A67E]">₹{refund}</Text>
+            </View>
+          </View>
+          <View className="mt-3 flex-row items-center gap-2">
+            <ClockSmallIcon size={16} color="#9810FA" />
+            <Text className="text-[12px] text-[#6A7282]">{displayTime}</Text>
           </View>
         </View>
 
-        <View className="rounded-2xl bg-[#E3F2FD] p-5">
-          <Text className="text-[13px] text-[#1E40AF]">
-            ✓ Event logged and passenger notified
-          </Text>
-          <Text className="mt-2 text-[13px] text-[#1E40AF]">
-            ✓ Admin has been alerted
-          </Text>
-          <Text className="mt-2 text-[13px] text-[#1E40AF]">
-            ✓ GPS coordinates recorded
+        <View className="rounded-2xl bg-[#E8F7F1] p-5">
+          <Text className="text-[13px] text-[#0B6B52]">
+            {refund > 0
+              ? `The early drop for ${displayName} is recorded and ₹${refund} has been refunded${
+                  result?.refundMethod === 'wallet' ? ' to their wallet' : ''
+                }. Your earnings are settled on the distance actually covered.`
+              : `The early drop for ${displayName} is recorded. No refund was due. The rest of the journey continues as normal.`}
           </Text>
         </View>
       </ScrollView>
@@ -187,7 +157,7 @@ export function EmergencyDropSummaryScreen({
           className="h-[56px] items-center justify-center rounded-[14px] bg-[#9810FA]"
         >
           <Text className="text-[14px] font-poppins-semibold uppercase text-white">
-            End Journey & View Summary
+            Continue Journey
           </Text>
         </Pressable>
       </View>

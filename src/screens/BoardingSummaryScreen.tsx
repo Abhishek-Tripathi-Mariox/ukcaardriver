@@ -186,45 +186,51 @@ export function BoardingSummaryScreen({
           </View>
         </View>
 
-        <View
-          className="bg-[#FFE5E5]"
-          style={{ borderRadius: s(16), padding: s(20) }}
-        >
-          <Text
-            className="font-poppins-semibold text-[#1E293B]"
-            style={{ fontSize: fs(18) }}
+        {/* Only render the red "Absent Passengers" card when there actually
+            are no-shows — it used to show unconditionally, so an all-boarded
+            trip still displayed an empty red "Absent Passengers" box. */}
+        {absent.length > 0 && (
+          <View
+            className="bg-[#FFE5E5]"
+            style={{ borderRadius: s(16), padding: s(20) }}
           >
-            Absent Passengers
-          </Text>
-          <View style={{ marginTop: vs(12), gap: vs(8) }}>
-            {absent.map(p => (
-              <View
-                key={p.id}
-                className="flex-row items-center justify-between bg-white"
-                style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
-              >
-                <Text
-                  className="font-poppins-medium text-[#1E293B]"
-                  style={{ fontSize: fs(16) }}
+            <Text
+              className="font-poppins-semibold text-[#1E293B]"
+              style={{ fontSize: fs(18) }}
+            >
+              Absent Passengers
+            </Text>
+            <View style={{ marginTop: vs(12), gap: vs(8) }}>
+              {absent.map(p => (
+                <View
+                  key={p.id}
+                  className="flex-row items-center justify-between bg-white"
+                  style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
                 >
-                  {p.name}
-                </Text>
-                <Text
-                  className="text-[#6A7282] font-poppins-regular"
-                  style={{ fontSize: fs(14) }}
-                >
-                  Seat {p.seat}
-                </Text>
-              </View>
-            ))}
+                  <Text
+                    className="flex-1 font-poppins-medium text-[#1E293B]"
+                    style={{ fontSize: fs(16) }}
+                    numberOfLines={1}
+                  >
+                    {p.name}
+                  </Text>
+                  <Text
+                    className="text-[#6A7282] font-poppins-regular"
+                    style={{ fontSize: fs(14), marginLeft: s(8) }}
+                  >
+                    Seat {p.seat}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text
+              className="text-[#991B1B] font-poppins-regular"
+              style={{ fontSize: fs(12), marginTop: vs(12) }}
+            >
+              Excluded from earnings • Refunds reviewed by admin
+            </Text>
           </View>
-          <Text
-            className="text-[#991B1B] font-poppins-regular"
-            style={{ fontSize: fs(12), marginTop: vs(12) }}
-          >
-            Excluded from earnings • Refunds reviewed by admin
-          </Text>
-        </View>
+        )}
       </ScrollView>
 
       <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>

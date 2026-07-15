@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View, ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { getDirections } from '../services/api';
 
 export interface LatLng {
   lat: number;
@@ -57,6 +58,27 @@ async function fetchRoute(
   from: LatLng,
   to: LatLng,
 ): Promise<{ coords: LatLng[]; info: RouteInfo }> {
+  // 1) Backend /geo/directions first (Google Directions → OSRM server-side).
+  // The public OSRM demo server below is rate-limited and flaky when called
+  // straight from a handset — it was the main reason drivers saw no route /
+  // no ETA. The backend route is authenticated, keyed, and shared with the
+  // customer app so both sides quote the same road distance.
+  try {
+    const d = await getDirections(from, to);
+    if (d && Array.isArray(d.polyline) && d.polyline.length >= 2) {
+      return {
+        coords: d.polyline.map(p => ({ lat: p.lat, lng: p.lng })),
+        info: {
+          distanceKm: d.distanceMeters / 1000,
+          durationMin: d.durationSeconds / 60,
+        },
+      };
+    }
+  } catch (e) {
+    console.warn('[map] backend directions failed:', e);
+  }
+
+  // 2) Direct public-OSRM fallback (works even if our backend is down).
   try {
     const url = `${OSRM}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
     const res = await fetch(url);
@@ -79,9 +101,9 @@ async function fetchRoute(
   } catch (e) {
     console.warn('[map] route failed:', e);
   }
-  // Straight-line fallback so the driver still sees something useful when
-  // OSRM is unreachable (low-signal areas, OSRM rate-limit, etc). Distance is
-  // great-circle; time is a rough ~24 km/h city estimate (2.5 min/km).
+  // 3) Straight-line fallback so the driver still sees something useful when
+  // both routers are unreachable (low-signal areas, OSRM rate-limit, etc).
+  // Distance is great-circle; time is a rough ~24 km/h city estimate (2.5 min/km).
   const d = haversineKm(from, to);
   return { coords: [from, to], info: { distanceKm: d, durationMin: d * 2.5 } };
 }
@@ -158,6 +180,13 @@ export const OsmMap: React.FC<OsmMapProps> = ({
 }) => {
   const [route, setRoute] = useState<LatLng[]>([]);
   const [loading, setLoading] = useState(false);
+  // Origin+target of the last successful route fetch. Screens feed us GPS
+  // ticks every ~10 m (watchPosition distanceFilter), and each route fetch can
+  // now hit the backend's Google Directions — so don't re-route on every tick.
+  // The car marker still moves every tick (html rebuild below); only the
+  // polyline/ETA refresh is throttled.
+  const lastFetchRef = React.useRef<{ from: LatLng; to: LatLng } | null>(null);
+  const REROUTE_MIN_KM = 0.15; // refetch once the driver drifts >150 m off the last route origin
 
   // The route's destination is whichever leg the driver is on. Recompute
   // whenever the driver's location moves meaningfully or the target flips
@@ -170,6 +199,16 @@ export const OsmMap: React.FC<OsmMapProps> = ({
     let cancelled = false;
     if (!driver || !target) {
       setRoute([]);
+      lastFetchRef.current = null;
+      return () => {
+        cancelled = true;
+      };
+    }
+    const last = lastFetchRef.current;
+    const sameTarget =
+      last && last.to.lat === target.lat && last.to.lng === target.lng;
+    if (sameTarget && haversineKm(last.from, driver) < REROUTE_MIN_KM) {
+      // Driver hasn't moved far enough to justify a re-route.
       return () => {
         cancelled = true;
       };
@@ -178,6 +217,7 @@ export const OsmMap: React.FC<OsmMapProps> = ({
     (async () => {
       const r = await fetchRoute(driver, target);
       if (!cancelled) {
+        lastFetchRef.current = { from: driver, to: target };
         setRoute(r.coords);
         setLoading(false);
         onRouteInfo?.(r.info);

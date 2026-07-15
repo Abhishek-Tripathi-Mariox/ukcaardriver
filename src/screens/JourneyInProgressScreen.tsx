@@ -71,7 +71,9 @@ export function JourneyInProgressScreen({
         setDetail({
           title: d.journey.routeName,
           current: d.journey.currentStopIndex,
-          boarded: pax.boarded,
+          // "On board" = boarded and not yet dropped off early. Falls back to
+          // the raw boarded count on older backends that don't send onBoard.
+          boarded: pax.onBoard ?? pax.boarded,
           stops: d.stops.map((s) => ({ index: s.index, title: s.name, time: '' })),
         });
       } catch {

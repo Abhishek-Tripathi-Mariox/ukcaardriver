@@ -1,6 +1,6 @@
 import './global.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, BackHandler, Modal, StatusBar, View } from 'react-native';
+import { Alert, AppState, BackHandler, Linking, Modal, StatusBar, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import DriverBottomNav from './src/components/DriverBottomNav';
@@ -17,14 +17,31 @@ import {
   connectSocket,
   setSocketListeners,
 } from './src/services/socketService';
+import { startLocationReporting } from './src/services/locationReporter';
 import {
   acceptRideRequest as apiAcceptRide,
   rejectRideRequest as apiRejectRide,
   getActiveRide,
   getAvailableRides,
   rateRide as apiRateRide,
+  logout as apiLogout,
+  approveEarlyDrop,
+  declineEarlyDrop,
+  fetchPendingEarlyDrops,
+  type EarlyDropApproveResult,
 } from './src/services/api';
 import RatePassengerModal from './src/components/RatePassengerModal';
+import { DriverMenuSheet, type DriverMenuItem } from './src/components/DriverMenuSheet';
+import {
+  WalletIcon,
+  BellIcon,
+  DocumentIcon,
+  BankIcon,
+  GiftIcon,
+  HelpIcon,
+  LogoutIcon,
+  TicketIcon,
+} from './src/components/icons/ServiceTypeIcons';
 import {
   hasCriticalDriverPermissions,
   requestAllDriverPermissions,
@@ -76,8 +93,9 @@ import { QRVerificationScreen } from './src/screens/QRVerificationScreen';
 import { QRVerifiedScreen } from './src/screens/QRVerifiedScreen';
 import { BoardingSummaryScreen } from './src/screens/BoardingSummaryScreen';
 import { JourneyInProgressScreen } from './src/screens/JourneyInProgressScreen';
-import { EmergencyAlertScreen } from './src/screens/EmergencyAlertScreen';
+import { EmergencyAlertScreen, type IncomingEarlyDrop } from './src/screens/EmergencyAlertScreen';
 import { EmergencyDropSummaryScreen } from './src/screens/EmergencyDropSummaryScreen';
+import { RatePassengersScreen } from './src/screens/RatePassengersScreen';
 import { DestinationReachedScreen } from './src/screens/DestinationReachedScreen';
 import { JourneyRideSummaryScreen } from './src/screens/JourneyRideSummaryScreen';
 import { FeedbackRatingsScreen } from './src/screens/FeedbackRatingsScreen';
@@ -158,6 +176,14 @@ function rideToActiveRide(r: any): RideRequest {
  * ride status. Returns null for statuses with no dedicated resume screen
  * (driver stays on the dashboard).
  */
+// Human-readable journey id derived from the composite journey key
+// (`<routeId>_<index>_<date>`) — the last 6 chars of the route id, upper-cased.
+// Matches RideActivationScreen's derivation so every scheduled screen shows the
+// SAME real id instead of the hardcoded "SCH001"/"SCH098" placeholders.
+function journeyIdFromKey(key?: string | null): string | undefined {
+  return key ? key.split('_')[0].slice(-6).toUpperCase() : undefined;
+}
+
 function stageForRideStatus(status?: string): Stage | null {
   switch (status) {
     case 'driver_assigned':
@@ -166,6 +192,10 @@ function stageForRideStatus(status?: string): Stage | null {
       return 'verify-ride-otp';
     case 'in_progress':
       return 'ride-in-progress';
+    case 'payment_pending':
+      // Trip ended, awaiting payment — resume to the cash-collection summary
+      // so a driver who killed the app there can still confirm cash.
+      return 'ride-summary';
     default:
       return null;
   }
@@ -220,6 +250,7 @@ type Stage =
   | 'emergency-drop-summary'
   | 'destination-reached'
   | 'journey-ride-summary'
+  | 'rate-passengers'
   | 'feedback-ratings'
   | 'completed-ride';
 
@@ -267,6 +298,14 @@ function App() {
   // <routeId>_<departureIndex>_<YYYY-MM-DD>). Threaded through the whole
   // scheduled-flow stage chain so each screen fetches the right trip.
   const [activeJourneyKey, setActiveJourneyKey] = useState<string | null>(null);
+  // A customer-initiated early-drop request awaiting this driver's approval
+  // (delivered over the socket / FCM). Drives the Emergency Alert screen.
+  const [earlyDropReq, setEarlyDropReq] = useState<IncomingEarlyDrop | null>(null);
+  const [earlyDropApproving, setEarlyDropApproving] = useState(false);
+  // The approve result (recomputed fare + refund) shown on the drop summary.
+  const [earlyDropResult, setEarlyDropResult] = useState<EarlyDropApproveResult | null>(null);
+  // Slide-in driver menu (hamburger / bottom "Menu" tab).
+  const [menuOpen, setMenuOpen] = useState(false);
   // Passenger from the last successful QR scan, shown on the QR-verified screen.
   const [verifiedPax, setVerifiedPax] = useState<{ name?: string; seat?: string } | null>(null);
   // Incoming ride request shown over every authenticated screen — not just
@@ -312,6 +351,28 @@ function App() {
       buzzForRideAlert();
     }
   }, []);
+
+  // Mirror activeRide into a ref so the socket listeners (registered once,
+  // keyed on `stage`) always read the CURRENT active ride without a stale
+  // closure — needed for the ride:cancelled / ride:status / ride:reassigned
+  // handlers below.
+  const activeRideRef = useRef<RideRequest | null>(null);
+  useEffect(() => {
+    activeRideRef.current = activeRide;
+  }, [activeRide]);
+
+  // Keep GPS reporting alive for the whole trip. The reporter was previously
+  // start/stopped only by DriverDashboardScreen, whose unmount cleanup fired
+  // the instant a ride was accepted (dashboard → verify-otp) — so the backend
+  // got no driver:location for the entire trip, freezing the customer's map
+  // and killing the geofence "arriving/arrived" auto-transitions. Starting is
+  // idempotent; we intentionally do NOT stop on cleanup (the dashboard's
+  // online-toggle effect and logout own stopping).
+  useEffect(() => {
+    if (activeRide) {
+      startLocationReporting().catch(() => {});
+    }
+  }, [activeRide]);
 
   const removePendingRequest = useCallback((rideId?: string) => {
     setPendingRequests(prev => prev.filter(r => r.rideId !== rideId));
@@ -385,6 +446,45 @@ function App() {
         }
       } else if (kind === 'ride:new-request') {
         surfaceRideRequestFromData((msg.data as any) ?? {});
+      } else if (kind === 'scheduled:early-drop-request') {
+        // A rider requested an early drop while the app was backgrounded. Pull
+        // the pending request (the FCM data is minimal) and surface the alert.
+        try {
+          const reqs = await fetchPendingEarlyDrops();
+          const bId = (msg.data as any)?.bookingId;
+          const r = reqs.find(x => x.bookingId === bId) ?? reqs[0];
+          if (r) {
+            setEarlyDropReq({
+              bookingId: r.bookingId,
+              customerName: r.customerName,
+              contact: r.contact,
+              seats: r.seats ?? [],
+              reason: r.reason,
+            });
+            setEarlyDropResult(null);
+            setStage('emergency-alert');
+          }
+        } catch (err) {
+          console.warn('[fcm] early-drop resume failed:', err);
+        }
+      } else if (kind === 'ride:assigned') {
+        // Admin force-assigned a ride while our socket was down (the exact
+        // case FCM exists for). Fetch the active ride and resume its screen —
+        // previously this FCM kind was ignored, so a socket-down assignment
+        // only recovered on a full app restart.
+        try {
+          const ride = await getActiveRide();
+          if (ride) {
+            stopRideAlert();
+            setIncomingVisible(false);
+            setIncomingRequest(null);
+            setPendingRequests([]);
+            setActiveRide(rideToActiveRide(ride));
+            setStage(stageForRideStatus(ride.status) ?? 'verify-ride-otp');
+          }
+        } catch (err) {
+          console.warn('[fcm] ride:assigned resume failed:', err);
+        }
       }
     }).catch(() => {});
   }, [surfaceRideRequestFromData]);
@@ -563,8 +663,100 @@ function App() {
         // assigns a ride that's already mid-trip), defaulting to verify-OTP.
         setStage(stageForRideStatus(r.status) ?? 'verify-ride-otp');
       },
+      // Customer or admin cancelled. Previously there was NO handler, so a
+      // driver mid-way to pickup saw nothing and kept driving to a dead ride.
+      onRideCancelled: ({ rideId, reason, message }) => {
+        removePendingRequest(rideId);
+        setIncomingRequest(prev => {
+          if (prev?.rideId !== rideId) return prev;
+          stopRideAlert();
+          setIncomingVisible(false);
+          return null;
+        });
+        if (activeRideRef.current?.rideId === rideId) {
+          stopRideAlert();
+          setActiveRide(null);
+          setStage('dashboard');
+          Alert.alert(
+            'Ride cancelled',
+            message || reason || 'The rider cancelled this ride.',
+          );
+        }
+      },
+      // Ride reached `completed` — usually because the customer just paid
+      // online (wallet/Razorpay). Move the driver off the "collect cash"
+      // summary so they don't demand cash for an already-paid ride.
+      onRideStatus: ({ rideId, status }) => {
+        if (activeRideRef.current?.rideId !== rideId) return;
+        if (status === 'completed') {
+          const name = activeRideRef.current?.passengerName || 'Passenger';
+          setActiveRide(null);
+          setStage('dashboard');
+          setRatePassenger({ rideId, name });
+          Alert.alert('Payment received', 'The rider has paid. Trip complete.');
+        }
+      },
+      // Admin reassigned this ride to another driver.
+      onRideReassigned: ({ rideId, message }) => {
+        if (activeRideRef.current?.rideId === rideId) {
+          stopRideAlert();
+          setActiveRide(null);
+          setStage('dashboard');
+          Alert.alert(
+            'Ride reassigned',
+            message || 'This ride was reassigned by support.',
+          );
+        }
+      },
+      // A rider on this driver's scheduled shuttle requested an early drop.
+      // Surface the Emergency Alert (approve/decline) screen over whatever's
+      // showing so the driver can respond immediately.
+      onEarlyDropRequest: payload => {
+        setEarlyDropReq({
+          bookingId: payload.bookingId,
+          customerName: payload.customerName,
+          contact: payload.contact,
+          seats: payload.seats ?? [],
+          reason: payload.reason,
+        });
+        setEarlyDropResult(null);
+        setStage('emergency-alert');
+      },
+      // Rider withdrew the request before the driver acted — dismiss the alert.
+      onEarlyDropCancelled: ({ bookingId }) => {
+        setEarlyDropReq(prev => (prev?.bookingId === bookingId ? null : prev));
+        if (stage === 'emergency-alert') setStage('journey-in-progress');
+      },
     });
   }, [stage]);
+
+  // On resume (any authenticated stage), pull any early-drop request that
+  // arrived while the app was backgrounded so it isn't missed. The socket push
+  // only lands when the app is foregrounded on the same backend instance.
+  useEffect(() => {
+    const UNAUTH_STAGES: Stage[] = ['splash', 'login', 'otp'];
+    if (UNAUTH_STAGES.includes(stage)) return;
+    let cancelled = false;
+    fetchPendingEarlyDrops()
+      .then(reqs => {
+        if (cancelled || reqs.length === 0) return;
+        const r = reqs[0];
+        setEarlyDropReq(prev =>
+          prev ?? {
+            bookingId: r.bookingId,
+            customerName: r.customerName,
+            contact: r.contact,
+            seats: r.seats ?? [],
+            reason: r.reason,
+          },
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // Re-check whenever the driver lands on the journey screen (resume point).
+  }, [stage === 'journey-in-progress']);
 
   // REST poll for ride requests — the reliable, socket-independent path.
   //
@@ -630,12 +822,17 @@ function App() {
     async (req: RideRequest) => {
       if (!req?.rideId) return;
       try {
-        await apiAcceptRide(req.rideId);
+        // The accept response carries the populated customer (incl. phone),
+        // which the modal's RideRequest doesn't have. Merge it in so the
+        // in-ride Call button + chat header actually work — previously the
+        // response was discarded and every normally-accepted ride had no phone.
+        const accepted = await apiAcceptRide(req.rideId);
+        const phone = (accepted as any)?.customer?.phone;
         stopRideAlert();
         setIncomingVisible(false);
         setIncomingRequest(null);
         setPendingRequests([]); // entering a trip — clear the queue
-        setActiveRide(req);
+        setActiveRide({ ...req, passengerPhone: phone || req.passengerPhone || '' });
         setStage('verify-ride-otp');
       } catch (err: any) {
         Alert.alert(
@@ -848,6 +1045,33 @@ function App() {
     setStageRaw('login');
   };
 
+  // Full logout for screens that DON'T wrap their button in <LogoutButton>
+  // (e.g. ProfileScreen). Clears the server session + tokens + FCM token +
+  // cache via api.logout() before wiping local React state. Profile's logout
+  // previously just did setStage('login'), leaving the session fully alive —
+  // the next user on the device inherited it.
+  const performLogout = useCallback(async () => {
+    try {
+      await apiLogout();
+    } catch (err) {
+      console.warn('[logout] failed (continuing):', err);
+    }
+    handleLogout();
+  }, []);
+
+  // Resume the driver's in-progress ride (Current Ride card on the dashboard).
+  const resumeActiveRide = useCallback(async () => {
+    try {
+      const ride = await getActiveRide();
+      if (ride) {
+        setActiveRide(rideToActiveRide(ride));
+        setStage(stageForRideStatus(ride.status) ?? 'verify-ride-otp');
+      }
+    } catch (err) {
+      console.warn('[dashboard] resume active ride failed:', err);
+    }
+  }, [setStage]);
+
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
@@ -1018,6 +1242,14 @@ function App() {
 
       {stage === 'account-rejected' && (
         <AccountRejectedScreen
+          driverName={
+            [currentUser?.firstName, currentUser?.lastName]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }
+          rejectionReason={
+            (currentUser?.driverProfile as any)?.disabledReason || undefined
+          }
           onReupload={() => setStage('driver-details')}
           onContactSupport={() => {
             import('react-native').then(({ Linking }) =>
@@ -1052,6 +1284,9 @@ function App() {
           onOpenNotifications={() => setStage('notifications')}
           onOpenWallet={() => setStage('wallet')}
           onOpenScheduledJourneys={() => setStage('scheduled-journeys')}
+          onOpenActiveRide={resumeActiveRide}
+          onOpenMenu={() => setMenuOpen(true)}
+          onOpenReviews={() => setStage('feedback-ratings')}
         />
       )}
 
@@ -1069,7 +1304,7 @@ function App() {
       {stage === 'profile' && (
         <ProfileScreen
           onBack={goBack}
-          onLogout={() => setStage('login')}
+          onLogout={performLogout}
           onOpenDocuments={() => setStage('documents')}
           onOpenBankDetails={() => setStage('bank-details')}
           onOpenHistory={() => setStage('history')}
@@ -1193,6 +1428,7 @@ function App() {
       {stage === 'upcoming-booking-details' && (
         <UpcomingBookingDetailsScreen
           journeyKey={activeJourneyKey}
+          journeyId={journeyIdFromKey(activeJourneyKey)}
           onBack={goBack}
           onStartJourney={() => setStage('ride-activation')}
         />
@@ -1210,6 +1446,7 @@ function App() {
       {stage === 'passenger-checkin' && (
         <PassengerCheckInScreen
           journeyKey={activeJourneyKey}
+          journeyId={journeyIdFromKey(activeJourneyKey)}
           onBack={goBack}
           onScanQr={() => setStage('qr-verification')}
           onViewSummary={() => setStage('boarding-summary')}
@@ -1219,6 +1456,7 @@ function App() {
       {stage === 'qr-verification' && (
         <QRVerificationScreen
           journeyKey={activeJourneyKey}
+          journeyId={journeyIdFromKey(activeJourneyKey)}
           onBack={goBack}
           onVerified={pax => {
             setVerifiedPax(pax ?? null);
@@ -1239,6 +1477,7 @@ function App() {
       {stage === 'boarding-summary' && (
         <BoardingSummaryScreen
           journeyKey={activeJourneyKey}
+          journeyId={journeyIdFromKey(activeJourneyKey)}
           onBack={goBack}
           onStartJourney={() => setStage('journey-in-progress')}
         />
@@ -1249,29 +1488,83 @@ function App() {
           journeyKey={activeJourneyKey}
           onBack={goBack}
           onNextStop={() => setStage('destination-reached')}
-          onSos={() => setStage('emergency-alert')}
+          onSos={() =>
+            // Genuine driver SOS — call emergency services. (Early drops are
+            // now customer-initiated and arrive as their own alert.)
+            Alert.alert(
+              'Emergency',
+              'Call emergency services now?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Call 100',
+                  style: 'destructive',
+                  onPress: () => Linking.openURL('tel:100').catch(() => {}),
+                },
+              ],
+            )
+          }
         />
       )}
 
+      {/* Customer-initiated early-drop request → driver approves or declines.
+          Entered by the socket/FCM handler that sets `earlyDropReq`, NOT by a
+          driver button. */}
       {stage === 'emergency-alert' && (
         <EmergencyAlertScreen
-          journeyKey={activeJourneyKey}
-          onBack={goBack}
-          onDecline={() => setStage('journey-in-progress')}
-          onApproveSafe={() => setStage('emergency-drop-summary')}
-          onWaitNextStop={() => setStage('journey-in-progress')}
+          request={earlyDropReq}
+          approving={earlyDropApproving}
+          onBack={() =>
+            setStage(activeJourneyKey ? 'journey-in-progress' : 'dashboard')
+          }
+          onApprove={async req => {
+            setEarlyDropApproving(true);
+            try {
+              const res = await approveEarlyDrop(req.bookingId);
+              setEarlyDropResult(res);
+              setStage('emergency-drop-summary');
+            } catch (err) {
+              Alert.alert(
+                'Could not approve',
+                err instanceof Error ? err.message : 'Please try again.',
+              );
+            } finally {
+              setEarlyDropApproving(false);
+            }
+          }}
+          onDecline={async req => {
+            try {
+              await declineEarlyDrop(req.bookingId);
+            } catch (err) {
+              console.warn('[early-drop] decline failed:', err);
+            }
+            setEarlyDropReq(null);
+            setStage(activeJourneyKey ? 'journey-in-progress' : 'dashboard');
+          }}
         />
       )}
 
       {stage === 'emergency-drop-summary' && (
         <EmergencyDropSummaryScreen
-          journeyKey={activeJourneyKey}
-          onBack={goBack}
-          onContinue={async () => {
-            if (activeJourneyKey) {
-              await completeJourney(activeJourneyKey).catch(() => {});
-            }
-            setStage('journey-ride-summary');
+          passenger={
+            earlyDropReq
+              ? {
+                  name: earlyDropReq.customerName,
+                  seat: earlyDropReq.seats?.[0],
+                  contact: earlyDropReq.contact,
+                }
+              : null
+          }
+          result={earlyDropResult}
+          onBack={() =>
+            setStage(activeJourneyKey ? 'journey-in-progress' : 'dashboard')
+          }
+          onContinue={() => {
+            // The approve call already recorded the drop + refund; just clear
+            // and return to the journey.
+            setEarlyDropReq(null);
+            setEarlyDropResult(null);
+            setStage(activeJourneyKey ? 'journey-in-progress' : 'dashboard');
           }}
         />
       )}
@@ -1288,7 +1581,15 @@ function App() {
         <JourneyRideSummaryScreen
           journeyKey={activeJourneyKey}
           onBack={goBack}
-          onViewFeedback={() => setStage('feedback-ratings')}
+          onViewFeedback={() => setStage('rate-passengers')}
+        />
+      )}
+
+      {stage === 'rate-passengers' && (
+        <RatePassengersScreen
+          journeyKey={activeJourneyKey}
+          onBack={() => setStage('journey-ride-summary')}
+          onDone={() => setStage('feedback-ratings')}
         />
       )}
 
@@ -1303,6 +1604,7 @@ function App() {
       {stage === 'completed-ride' && (
         <CompletedRideScreen
           journeyKey={activeJourneyKey}
+          journeyId={journeyIdFromKey(activeJourneyKey)}
           onBack={goBack}
         />
       )}
@@ -1314,7 +1616,10 @@ function App() {
           pickup={activeRide?.pickup}
           drop={activeRide?.drop}
           pickupCoord={
-            activeRide?.pickupLat != null && activeRide?.pickupLng != null
+            // Truthiness (not just != null) — the FCM/poll ingest paths coerce
+            // missing coords to 0, and routing to (0,0) draws a bogus route to
+            // the Gulf of Guinea. 0 is never a real coordinate for our ops.
+            activeRide?.pickupLat && activeRide?.pickupLng
               ? { lat: activeRide.pickupLat, lng: activeRide.pickupLng }
               : null
           }
@@ -1331,12 +1636,13 @@ function App() {
               : 'Instant Ride Confirmed'
           }
           pickup={
-            activeRide?.pickupLat != null && activeRide?.pickupLng != null
+            // Truthiness — see VerifyRideOtpScreen pickupCoord note (0 = missing).
+            activeRide?.pickupLat && activeRide?.pickupLng
               ? { lat: activeRide.pickupLat, lng: activeRide.pickupLng }
               : null
           }
           dropoff={
-            activeRide?.dropLat != null && activeRide?.dropLng != null
+            activeRide?.dropLat && activeRide?.dropLng
               ? { lat: activeRide.dropLat, lng: activeRide.dropLng }
               : null
           }
@@ -1517,10 +1823,35 @@ function App() {
               else if (tab === 'rides') setStage('history');
               else if (tab === 'earnings') setStage('earnings');
               else if (tab === 'profile') setStage('profile');
+              else if (tab === 'menu') setMenuOpen(true);
             }}
           />
         </View>
       )}
+
+      {/* Slide-in menu (hamburger + bottom "Menu" tab). Hosts the destinations
+          that don't have a dedicated bottom tab. */}
+      <DriverMenuSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={
+          [
+            { key: 'wallet', label: 'Wallet', Icon: WalletIcon, onPress: () => setStage('wallet') },
+            {
+              key: 'notifications',
+              label: 'Notifications',
+              Icon: BellIcon,
+              onPress: () => setStage('notifications'),
+            },
+            { key: 'documents', label: 'Documents', Icon: DocumentIcon, onPress: () => setStage('documents') },
+            { key: 'bank', label: 'Bank Details', Icon: BankIcon, onPress: () => setStage('bank-details') },
+            { key: 'onepass', label: 'One Pass', Icon: TicketIcon, onPress: () => setStage('onepass') },
+            { key: 'refer', label: 'Refer & Earn', Icon: GiftIcon, onPress: () => setStage('refer-earn') },
+            { key: 'help', label: 'Help & Support', Icon: HelpIcon, onPress: () => setStage('help-support') },
+            { key: 'logout', label: 'Logout', Icon: LogoutIcon, danger: true, onPress: performLogout },
+          ] as DriverMenuItem[]
+        }
+      />
     </SafeAreaProvider>
   );
 }

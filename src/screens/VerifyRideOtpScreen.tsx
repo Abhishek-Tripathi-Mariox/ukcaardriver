@@ -19,7 +19,7 @@ import {
   PhoneIcon,
   SOSAlertIcon,
 } from '../components/icons/ServiceTypeIcons';
-import { OsmMap, type LatLng } from '../components/OsmMap';
+import { OsmMap, type LatLng, type RouteInfo } from '../components/OsmMap';
 import { openGoogleMapsNavigation } from '../utils/navigation';
 import { updateRideStatus, verifyRideOtp } from '../services/api';
 
@@ -50,6 +50,10 @@ export function VerifyRideOtpScreen({
   const [sosVisible, setSosVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [driverPos, setDriverPos] = useState<LatLng | null>(null);
+  // Live driving distance + ETA to the pickup, reported by the map each time
+  // it (re)routes. Shown as a pill over the map so the driver knows how far
+  // the rider is — previously this screen drew the route but never showed ETA.
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const isValid = otp.length === 4 && !submitting;
   const displayRideId = rideId ? `#${rideId.slice(-8).toUpperCase()}` : '—';
@@ -172,7 +176,28 @@ export function VerifyRideOtpScreen({
                 pickup={pickupCoord}
                 routeTarget="pickup"
                 fallbackCenter={pickupCoord}
+                onRouteInfo={setRouteInfo}
               />
+              {routeInfo && (
+                <View
+                  className="absolute left-3 top-3 flex-row items-center gap-2 rounded-full bg-white px-4 py-2"
+                  pointerEvents="none"
+                  style={{
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                    elevation: 4,
+                  }}
+                >
+                  <Text className="text-sm font-poppins-semibold text-brand-teal">
+                    {Math.max(1, Math.round(routeInfo.durationMin))} min
+                  </Text>
+                  <Text className="text-xs text-[#6A7282]">
+                    • {routeInfo.distanceKm.toFixed(1)} km to pickup
+                  </Text>
+                </View>
+              )}
             </View>
           ) : (
             <View className="flex-1 items-center justify-center">

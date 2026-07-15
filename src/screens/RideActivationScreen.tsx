@@ -110,8 +110,9 @@ export function RideActivationScreen({
           <View className="flex-row items-center" style={{ gap: s(8) }}>
             <MapPinIcon size={s(22)} color="#9810FA" />
             <Text
-              className="font-poppins-medium text-[#1E293B]"
+              className="flex-1 font-poppins-medium text-[#1E293B]"
               style={{ fontSize: fs(18) }}
+              numberOfLines={2}
             >
               {routeFrom} → {routeTo}
             </Text>

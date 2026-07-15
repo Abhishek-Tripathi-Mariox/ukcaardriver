@@ -25,9 +25,10 @@ interface Stop {
 interface Passenger {
   id: string;
   name: string;
-  gender: 'F' | 'M';
-  age: number;
-  stop: number;
+  seat: number;
+  contact: string;
+  boarded: boolean;
+  noShow: boolean;
 }
 
 interface UpcomingBookingDetailsScreenProps {
@@ -111,6 +112,18 @@ function PassengerRow({
   passenger: Passenger;
   onCall?: () => void;
 }) {
+  const initials =
+    passenger.name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? '')
+      .join('') || '?';
+  const status = passenger.noShow
+    ? { label: 'No-show', color: '#E7000B' }
+    : passenger.boarded
+      ? { label: 'Boarded', color: '#00A63E' }
+      : { label: 'Not boarded yet', color: '#6A7282' };
   return (
     <View
       className="flex-row items-center justify-between bg-[#F9FAFB]"
@@ -123,9 +136,9 @@ function PassengerRow({
         >
           <Text
             className="font-poppins-semibold text-[#8200DB]"
-            style={{ fontSize: fs(16) }}
+            style={{ fontSize: fs(15) }}
           >
-            {passenger.gender}
+            {initials}
           </Text>
         </View>
         <View className="flex-1 pr-2">
@@ -141,7 +154,7 @@ function PassengerRow({
             style={{ fontSize: fs(14) }}
             numberOfLines={1}
           >
-            {passenger.age} years • Stop {passenger.stop}
+            Seat {passenger.seat} • <Text style={{ color: status.color }}>{status.label}</Text>
           </Text>
         </View>
       </View>
@@ -185,12 +198,17 @@ export function UpcomingBookingDetailsScreen({
     fetchJourneyPassengers(journeyKey)
       .then((r) =>
         setPax(
+          // Map only the fields the backend actually returns. The API never
+          // populates gender/age/stop, so the old code defaulted them to
+          // M / 28 / Stop 1 for every rider — fabricated data the driver
+          // would read as real. Show the seat + live boarding status instead.
           r.passengers.map((p) => ({
             id: `${p.bookingId}-${p.seat}`,
             name: p.name,
-            gender: p.gender ?? 'M',
-            age: p.age && p.age > 0 ? p.age : 28,
-            stop: p.stop ?? 1,
+            seat: p.seat,
+            contact: p.contact,
+            boarded: p.boarded,
+            noShow: p.noShow,
           })),
         ),
       )

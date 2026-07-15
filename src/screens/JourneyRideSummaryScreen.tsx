@@ -201,11 +201,15 @@ export function JourneyRideSummaryScreen({
             Journey Details
           </Text>
           <View style={{ marginTop: vs(12), gap: vs(8) }}>
-            <View className="flex-row justify-between">
+            <View className="flex-row justify-between" style={{ gap: s(12) }}>
               <Text className="text-[#6A7282] font-poppins-regular" style={{ fontSize: fs(14) }}>
                 Route
               </Text>
-              <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(14) }}>
+              <Text
+                className="flex-1 text-right font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(14) }}
+                numberOfLines={2}
+              >
                 {route}
               </Text>
             </View>
@@ -240,7 +244,7 @@ export function JourneyRideSummaryScreen({
             className="font-poppins-semibold uppercase text-white"
             style={{ fontSize: fs(14) }}
           >
-            View Feedback
+            Rate Passengers
           </Text>
         </Pressable>
       </View>

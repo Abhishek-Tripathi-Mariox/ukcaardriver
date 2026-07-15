@@ -127,7 +127,11 @@ export function ProfileScreen({
       const fresh = await updateProfile({
         firstName: editFirst.trim(),
         lastName: editLast.trim(),
-        email: editEmail.trim(),
+        // Blank → undefined so the backend leaves/unsets the field. Sending
+        // '' used to *write* an empty string, which collides on the sparse
+        // unique email index once a second user does the same (E11000 → the
+        // "Profile update failed" everyone was seeing).
+        email: editEmail.trim() || undefined,
       });
       if (fresh) setUser(fresh);
       setEditOpen(false);

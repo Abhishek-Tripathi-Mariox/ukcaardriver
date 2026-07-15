@@ -29,7 +29,11 @@ import {
   fetchUnreadNotificationCount,
   setOnlineStatus,
   fetchJourneys,
+  getActiveRide,
+  fetchMyRatings,
   type JourneySummary,
+  type ActiveRide,
+  type DriverRatings,
 } from '../services/api';
 import {
   ensureLocationPermission,
@@ -86,6 +90,12 @@ interface DriverDashboardScreenProps {
   onOpenNotifications?: () => void;
   onOpenWallet?: () => void;
   onOpenScheduledJourneys?: () => void;
+  /** Resume the driver's in-progress ride from the Current Ride card. */
+  onOpenActiveRide?: () => void;
+  /** Open the slide-in menu (hamburger / bottom "Menu" tab). */
+  onOpenMenu?: () => void;
+  /** Open the full ratings & reviews screen ("View All"). */
+  onOpenReviews?: () => void;
 }
 
 interface CounterCardProps {
@@ -109,7 +119,7 @@ function CounterCard({ value, label, icon }: CounterCardProps) {
         </Text>
         <Text
           style={{ fontSize: fs(12), marginTop: vs(6) }}
-          className="font-poppins-bold uppercase text-[#6C757D]"
+          className="font-poppins-bold text-[#6C757D]"
         >
           {label}
         </Text>
@@ -123,6 +133,23 @@ function CounterCard({ value, label, icon }: CounterCardProps) {
     </View>
   );
 }
+
+const formatReviewDate = (iso?: string | null): string => {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  } catch {
+    return '';
+  }
+};
+
+const initialsFor = (name?: string): string =>
+  (name || '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('') || 'R';
 
 const formatRupees = (n: number): string => {
   // Indian-style number formatting (1,23,456). Falls back to plain if locale support missing.
@@ -144,6 +171,9 @@ export function DriverDashboardScreen({
   onOpenNotifications,
   onOpenWallet,
   onOpenScheduledJourneys,
+  onOpenActiveRide,
+  onOpenMenu,
+  onOpenReviews,
 }: DriverDashboardScreenProps) {
   const [data, setData] = useState<DriverDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +181,10 @@ export function DriverDashboardScreen({
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [upcomingJourneys, setUpcomingJourneys] = useState<JourneySummary[]>([]);
+  // Real active ride (Current Ride card) + real reviews (Reviews list) — both
+  // fetched live so neither renders fabricated placeholder people/trips.
+  const [activeRide, setActiveRide] = useState<ActiveRide | null>(null);
+  const [reviews, setReviews] = useState<DriverRatings['comments']>([]);
 
   const refreshUnread = useCallback(async () => {
     try {
@@ -163,13 +197,17 @@ export function DriverDashboardScreen({
 
   const load = useCallback(async () => {
     try {
-      const [fresh, journeys] = await Promise.all([
+      const [fresh, journeys, active, ratings] = await Promise.all([
         fetchMyDashboardFresh(),
         fetchJourneys('upcoming').catch(() => [] as JourneySummary[]),
+        getActiveRide().catch(() => null),
+        fetchMyRatings().catch(() => null),
         refreshUnread(),
       ]);
       setData(fresh);
       setUpcomingJourneys(journeys);
+      setActiveRide(active);
+      setReviews(ratings?.comments ?? []);
     } catch (err) {
       console.warn('[dashboard] fetch failed:', err);
     } finally {
@@ -334,40 +372,34 @@ export function DriverDashboardScreen({
                   {driverName} 👋
                 </Text>
               </View>
-              <View className="flex-row items-center" style={{ gap: s(12) }}>
-                <Pressable
-                  onPress={onOpenWallet}
-                  style={{ height: s(44), width: s(44) }}
-                  className="items-center justify-center rounded-full bg-white/20"
-                  hitSlop={8}
-                >
-                  <WalletIcon size={s(20)} color="white" />
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    onOpenNotifications?.();
-                    setUnreadNotifs(0);
-                  }}
-                  style={{ height: s(44), width: s(44) }}
-                  className="items-center justify-center rounded-full bg-white/20"
-                  hitSlop={8}
-                >
-                  <BellIcon size={s(20)} color="white" />
-                  {unreadNotifs > 0 && (
-                    <View
-                      className="absolute -right-0.5 -top-0.5 items-center justify-center rounded-full border-[1.5px] border-[#0097B3] bg-[#E02D3C] px-1"
-                      style={{ height: s(18), minWidth: s(18) }}
-                    >
-                      <Text
-                        style={{ fontSize: fs(10) }}
-                        className="font-poppins-bold text-white"
-                      >
-                        {unreadNotifs > 99 ? '99+' : unreadNotifs}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              </View>
+              {/* Figma header: a single hamburger "menu" button (top-right).
+                  It opens the slide-in menu, which contains Wallet,
+                  Notifications (with the unread count), and the rest of the
+                  destinations. The unread badge is mirrored here so the count
+                  is still visible on Home. */}
+              <Pressable
+                onPress={onOpenMenu}
+                style={{ height: s(44), width: s(52) }}
+                className="items-center justify-center rounded-2xl bg-white/20"
+                hitSlop={8}
+                accessibilityLabel="Open menu"
+              >
+                <View style={{ gap: s(4) }}>
+                  <View style={{ width: s(20), height: 2, borderRadius: 2 }} className="bg-white" />
+                  <View style={{ width: s(20), height: 2, borderRadius: 2 }} className="bg-white" />
+                  <View style={{ width: s(20), height: 2, borderRadius: 2 }} className="bg-white" />
+                </View>
+                {unreadNotifs > 0 && (
+                  <View
+                    className="absolute -right-1 -top-1 items-center justify-center rounded-full border-[1.5px] border-[#0097B3] bg-[#E02D3C] px-1"
+                    style={{ height: s(18), minWidth: s(18) }}
+                  >
+                    <Text style={{ fontSize: fs(10) }} className="font-poppins-bold text-white">
+                      {unreadNotifs > 99 ? '99+' : unreadNotifs}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
             </View>
 
             <View
@@ -586,6 +618,80 @@ export function DriverDashboardScreen({
               </View>
             </View>
 
+            {/* Current Ride — real in-progress/assigned ride (getActiveRide).
+                Only rendered when one actually exists; no placeholder trip. */}
+            {activeRide && (
+              <Pressable onPress={onOpenActiveRide} className="mt-4">
+                <LinearGradient
+                  colors={['#0097B3', '#00C896']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ borderRadius: s(16), padding: s(16) }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-poppins-semibold text-white" style={{ fontSize: fs(18) }}>
+                      Current Ride
+                    </Text>
+                    <View
+                      className="rounded-full bg-white/25"
+                      style={{ paddingHorizontal: s(10), paddingVertical: vs(3) }}
+                    >
+                      <Text className="font-poppins-semibold text-white" style={{ fontSize: fs(13) }}>
+                        ₹{Number(activeRide.estimatedFare ?? 0).toFixed(0)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    className="font-poppins-medium text-white/90"
+                    style={{ fontSize: fs(14), marginTop: vs(4) }}
+                    numberOfLines={1}
+                  >
+                    {[activeRide.customer?.firstName, activeRide.customer?.lastName]
+                      .filter(Boolean)
+                      .join(' ') || 'Passenger'}
+                  </Text>
+                  <View className="flex-row items-center" style={{ marginTop: vs(10), gap: s(8) }}>
+                    <View
+                      style={{ width: s(8), height: s(8), borderRadius: s(4) }}
+                      className="bg-[#B9F8CF]"
+                    />
+                    <Text
+                      className="flex-1 font-poppins-regular text-white/90"
+                      style={{ fontSize: fs(13) }}
+                      numberOfLines={1}
+                    >
+                      {activeRide.pickup?.address || 'Pickup'}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center" style={{ marginTop: vs(4), gap: s(8) }}>
+                    <View
+                      style={{ width: s(8), height: s(8), borderRadius: s(4) }}
+                      className="bg-white"
+                    />
+                    <Text
+                      className="flex-1 font-poppins-regular text-white/90"
+                      style={{ fontSize: fs(13) }}
+                      numberOfLines={1}
+                    >
+                      {activeRide.dropoff?.address || 'Drop'}
+                    </Text>
+                  </View>
+                  <View
+                    className="items-center justify-center rounded-xl bg-white"
+                    style={{ marginTop: vs(14), height: vs(44) }}
+                  >
+                    <Text className="font-poppins-semibold text-brand-teal" style={{ fontSize: fs(15) }}>
+                      {activeRide.status === 'in_progress'
+                        ? 'Continue Ride'
+                        : activeRide.status === 'payment_pending'
+                          ? 'Collect Payment'
+                          : 'Start Ride'}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </Pressable>
+            )}
+
             <View className="mt-4 flex-row items-center justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
               <View>
                 <Text className="text-[13px] text-[#6A7282]">Your Rating</Text>
@@ -611,56 +717,82 @@ export function DriverDashboardScreen({
             {upcomingJourneys.length > 0 ? (
               <View className="mt-6">
                 <View className="mb-3 flex-row items-center justify-between">
-                  <Text className="text-base font-poppins-semibold text-[#0A0A0A]">
-                    Upcoming Scheduled Rides
-                  </Text>
-                  <Pressable onPress={onOpenScheduledJourneys}>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-base font-poppins-semibold text-[#0A0A0A]">
+                      Upcoming Scheduled Rides
+                    </Text>
+                    <View className="min-w-[20px] items-center justify-center rounded-full bg-brand-teal px-1.5 py-0.5">
+                      <Text className="text-[11px] font-poppins-bold text-white">
+                        {upcomingJourneys.length}
+                      </Text>
+                    </View>
+                  </View>
+                  <Pressable onPress={onOpenScheduledJourneys} hitSlop={8}>
                     <Text className="text-sm font-poppins-medium text-brand-teal">
                       View All
                     </Text>
                   </Pressable>
                 </View>
-                {upcomingJourneys.slice(0, 3).map(j => (
-                  <Pressable
-                    key={j.journeyKey}
-                    onPress={onOpenScheduledJourneys}
-                    className="mb-3 rounded-2xl border border-[#EBEBEB] bg-white p-4 shadow-sm"
-                  >
-                    <View className="flex-row items-center justify-between">
+                {/* Figma "Upcoming Scheduled Rides" — tinted cards (alternating
+                    blue/pink), a seat pill, calendar + time, a coloured route
+                    dot and a "View Details" button. All fields are real journey
+                    data; the tint/dot alternate purely for visual rhythm. */}
+                {upcomingJourneys.slice(0, 3).map((j, idx) => {
+                  const tint = idx % 2 === 0 ? '#EFF6FF' : '#FDF2F8';
+                  const dot = idx % 2 === 0 ? '#0097B3' : '#9810FA';
+                  return (
+                    <Pressable
+                      key={j.journeyKey}
+                      onPress={onOpenScheduledJourneys}
+                      style={{ backgroundColor: tint }}
+                      className="mb-3 rounded-2xl border border-[#EBEBEB] p-4"
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-1 flex-row items-center gap-1.5 pr-2">
+                          <CalendarIcon size={14} color="#0097B3" />
+                          <Text
+                            className="font-poppins-medium text-xs text-[#6A7282]"
+                            numberOfLines={1}
+                          >
+                            {j.departureDate}, {j.departureTime}
+                          </Text>
+                        </View>
+                        <View className="rounded-full bg-[#F3E8FF] px-2.5 py-1">
+                          <Text className="font-poppins-semibold text-xs text-[#9810FA]">
+                            {j.passengerCount}/{j.totalSeats} seats
+                          </Text>
+                        </View>
+                      </View>
+                      <View className="mt-2.5 flex-row items-center gap-2">
+                        <View
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: dot }}
+                        />
+                        <Text
+                          className="flex-1 font-poppins-semibold text-[#1E293B]"
+                          style={{ fontSize: fs(14) }}
+                          numberOfLines={1}
+                        >
+                          {j.from} → {j.to}
+                        </Text>
+                      </View>
                       <Text
-                        className="flex-1 font-poppins-semibold text-[#1E293B]"
-                        style={{ fontSize: fs(15) }}
+                        className="mt-1 font-poppins-regular text-xs text-[#6A7282]"
                         numberOfLines={1}
                       >
-                        {j.routeName}
+                        {j.routeName} • ₹{j.seatPrice}/seat
                       </Text>
-                      <View className="rounded-full bg-[#EBF8FA] px-2.5 py-1">
-                        <Text className="font-poppins-semibold text-xs text-brand-teal">
-                          ₹{j.seatPrice} / seat
+                      <Pressable
+                        onPress={onOpenScheduledJourneys}
+                        className="mt-3 h-10 items-center justify-center rounded-xl border border-brand-teal bg-white"
+                      >
+                        <Text className="font-poppins-semibold text-sm text-brand-teal">
+                          View Details
                         </Text>
-                      </View>
-                    </View>
-                    <View className="mt-2 flex-row items-center gap-4">
-                      <View className="flex-row items-center gap-1.5">
-                        <CalendarIcon size={14} color="#0097B3" />
-                        <Text className="font-poppins-medium text-xs text-[#6A7282]">
-                          {j.departureDate}
-                        </Text>
-                      </View>
-                      <View className="flex-row items-center gap-1.5">
-                        <Text className="font-poppins-semibold text-xs text-[#0A0A0A]">
-                          {j.departureTime}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text
-                      className="mt-2 font-poppins-regular text-xs text-[#6A7282]"
-                      numberOfLines={1}
-                    >
-                      {j.from} → {j.to}
-                    </Text>
-                  </Pressable>
-                ))}
+                      </Pressable>
+                    </Pressable>
+                  );
+                })}
               </View>
             ) : (stats?.upcomingServices ?? 0) === 0 ? (
               <View className="mt-6 rounded-2xl bg-white p-5 shadow-sm items-center">
@@ -673,6 +805,110 @@ export function DriverDashboardScreen({
                 </Text>
               </View>
             ) : null}
+
+            {/* Reviews — real rider reviews (name • stars • date • text) from
+                /drivers/me/ratings. Placed AFTER Upcoming Scheduled Rides.
+                Populated when the driver has reviews; clean empty state
+                otherwise. No placeholder reviewers. */}
+            <View className="mt-6">
+              <View className="mb-3 flex-row items-center justify-between">
+                <Text className="text-base font-poppins-semibold text-[#0A0A0A]">Reviews</Text>
+                {reviews.length > 0 && (
+                  <Pressable onPress={onOpenReviews} hitSlop={8}>
+                    <Text className="text-sm font-poppins-medium text-brand-teal">View All</Text>
+                  </Pressable>
+                )}
+              </View>
+              {reviews.length === 0 ? (
+                <View
+                  className="items-center rounded-2xl border border-[#EBEBEB] bg-white"
+                  style={{ paddingVertical: vs(28), paddingHorizontal: s(16) }}
+                >
+                  <View
+                    className="items-center justify-center rounded-full bg-[#FFF7E6]"
+                    style={{ width: s(48), height: s(48) }}
+                  >
+                    <StarIcon size={22} color="#FFB100" />
+                  </View>
+                  <Text
+                    className="mt-3 font-poppins-semibold text-[#1E293B]"
+                    style={{ fontSize: fs(15) }}
+                  >
+                    No reviews yet
+                  </Text>
+                  <Text
+                    className="mt-1 text-center font-poppins-regular text-[#6A7282]"
+                    style={{ fontSize: fs(13) }}
+                  >
+                    Reviews from your riders will appear here after your trips.
+                  </Text>
+                </View>
+              ) : (
+                reviews.slice(0, 4).map(r => (
+                  <View
+                    key={r.id}
+                    className="mb-3 rounded-2xl border border-[#EBEBEB] bg-white p-4"
+                  >
+                    <View className="flex-row items-center" style={{ gap: s(12) }}>
+                      <View
+                        className="items-center justify-center rounded-full bg-[#E9D4FF]"
+                        style={{ width: s(40), height: s(40) }}
+                      >
+                        <Text
+                          className="font-poppins-semibold text-[#8200DB]"
+                          style={{ fontSize: fs(15) }}
+                        >
+                          {initialsFor(r.reviewerName)}
+                        </Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text
+                          className="font-poppins-semibold text-[#1E293B]"
+                          style={{ fontSize: fs(15) }}
+                          numberOfLines={1}
+                        >
+                          {r.reviewerName || 'Rider'}
+                        </Text>
+                        <View
+                          className="flex-row items-center"
+                          style={{ gap: s(2), marginTop: vs(2) }}
+                        >
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <StarIcon
+                              key={i}
+                              size={12}
+                              color={i <= Math.round(r.stars) ? '#FFB100' : '#E5E7EB'}
+                            />
+                          ))}
+                          <Text
+                            className="font-poppins-medium text-[#6A7282]"
+                            style={{ fontSize: fs(12), marginLeft: s(4) }}
+                          >
+                            {r.stars.toFixed(1)}
+                          </Text>
+                        </View>
+                      </View>
+                      {!!formatReviewDate(r.date) && (
+                        <Text
+                          className="font-poppins-regular text-[#9CA3AF]"
+                          style={{ fontSize: fs(12) }}
+                        >
+                          {formatReviewDate(r.date)}
+                        </Text>
+                      )}
+                    </View>
+                    {!!r.text && (
+                      <Text
+                        className="font-poppins-regular text-[#6A7282]"
+                        style={{ fontSize: fs(13), marginTop: vs(8) }}
+                      >
+                        {r.text}
+                      </Text>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
           </>
         )}
       </ScrollView>

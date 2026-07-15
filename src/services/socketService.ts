@@ -51,6 +51,9 @@ type Listeners = {
   /** Ride cancelled by another party (customer/admin) — driver-side
    *  cleanup so any open in-progress / accept modal can dismiss. */
   onRideCancelled?: (payload: { rideId: string; reason?: string; message?: string }) => void;
+  /** Admin reassigned this ride to a DIFFERENT driver — the (old) driver
+   *  should drop it so they stop heading to a pickup that's no longer theirs. */
+  onRideReassigned?: (payload: { rideId: string; message?: string }) => void;
   /** Chat message from the rider, scoped to the joined ride room. */
   onChatMessage?: (payload: {
     rideId: string;
@@ -59,6 +62,20 @@ type Listeners = {
     type?: string;
     timestamp: number;
   }) => void;
+  /** A rider on this driver's scheduled shuttle asked to be dropped off early.
+   *  The app surfaces the Emergency Alert (approve/decline) screen. */
+  onEarlyDropRequest?: (payload: {
+    bookingId: string;
+    customerName: string;
+    contact?: string;
+    seats: number[];
+    reason?: string;
+    routeId?: string;
+    departureIndex?: number;
+    departureDate?: string;
+  }) => void;
+  /** The rider withdrew their still-pending early-drop request. */
+  onEarlyDropCancelled?: (payload: { bookingId: string }) => void;
 };
 
 let listeners: Listeners = {};
@@ -134,6 +151,10 @@ export async function connectSocket(): Promise<Socket | null> {
     listeners.onRideCancelled?.(payload);
   });
 
+  s.on('ride:reassigned', (payload: { rideId: string; message?: string }) => {
+    listeners.onRideReassigned?.(payload);
+  });
+
   s.on('chat:new-message', (payload: {
     rideId: string;
     sender: string;
@@ -142,6 +163,14 @@ export async function connectSocket(): Promise<Socket | null> {
     timestamp: number;
   }) => {
     listeners.onChatMessage?.(payload);
+  });
+
+  s.on('scheduled:early-drop-request', (payload: any) => {
+    listeners.onEarlyDropRequest?.(payload);
+  });
+
+  s.on('scheduled:early-drop-cancelled', (payload: { bookingId: string }) => {
+    listeners.onEarlyDropCancelled?.(payload);
   });
 
   socket = s;

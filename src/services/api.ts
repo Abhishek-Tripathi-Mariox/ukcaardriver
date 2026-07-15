@@ -985,7 +985,15 @@ export interface DriverRatings {
   totalRides: number;
   weeklyTrend: number[];
   metrics: { label: string; value: number }[];
-  comments: { id: string; stars: number; text: string; source: string }[];
+  comments: {
+    id: string;
+    stars: number;
+    text: string;
+    source: string;
+    reviewerName?: string;
+    reviewerAvatar?: string | null;
+    date?: string | null;
+  }[];
 }
 
 export async function fetchMyRatings(): Promise<DriverRatings> {
@@ -1033,6 +1041,8 @@ export interface JourneyPassenger {
   contact: string;
   boarded: boolean;
   noShow: boolean;
+  /** Got off early (before their booked stop) — no longer on board. */
+  dropped?: boolean;
   gender?: 'F' | 'M';
   age?: number;
   stop?: number;
@@ -1058,10 +1068,10 @@ export async function fetchJourney(
 
 export async function fetchJourneyPassengers(
   key: string,
-): Promise<{ passengers: JourneyPassenger[]; total: number; boarded: number; noShow: number }> {
+): Promise<{ passengers: JourneyPassenger[]; total: number; boarded: number; noShow: number; dropped?: number; onBoard?: number }> {
   const res = await request<{
     success: boolean;
-    data: { passengers: JourneyPassenger[]; total: number; boarded: number; noShow: number };
+    data: { passengers: JourneyPassenger[]; total: number; boarded: number; noShow: number; dropped?: number; onBoard?: number };
   }>(`/drivers/journeys/${key}/passengers`, { method: 'GET', auth: true });
   return res.data;
 }
@@ -1096,6 +1106,86 @@ export async function markNoShow(
     auth: true,
     body: JSON.stringify({ bookingId, seats }),
   });
+}
+
+/** Record an early drop for a boarded passenger (rider got off before their
+ *  booked stop). The seat stays boarded (still earns); does not end the trip. */
+export async function dropPassengerEarly(
+  key: string,
+  bookingId: string,
+  seats?: number[],
+): Promise<void> {
+  await request(`/drivers/journeys/${key}/drop`, {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify({ bookingId, seats }),
+  });
+}
+
+/** A pending customer-initiated early-drop request awaiting the driver's
+ *  approval. Delivered live over the socket + fetchable on resume. */
+export interface EarlyDropRequest {
+  bookingId: string;
+  customerName: string;
+  contact?: string;
+  seats: number[];
+  reason?: string;
+  routeId?: string;
+  departureIndex?: number;
+  departureDate?: string;
+  requestedAt?: string | null;
+}
+
+/** Summary returned when the driver approves — the recomputed partial fare +
+ *  refund, shown on the drop-complete screen. */
+export interface EarlyDropApproveResult {
+  originalFare: number;
+  partialFare: number;
+  refund: number;
+  refundMethod?: string;
+  dropStopName?: string;
+}
+
+/** Approve a rider's early-drop request: recomputes the partial fare, refunds
+ *  the difference, and records the drop. */
+export async function approveEarlyDrop(bookingId: string): Promise<EarlyDropApproveResult> {
+  const res = await request<{ success: boolean; data: EarlyDropApproveResult }>(
+    `/drivers/journeys/early-drop/${bookingId}/approve`,
+    { method: 'POST', auth: true },
+  );
+  return res.data;
+}
+
+/** Decline a rider's early-drop request (can't safely stop). */
+export async function declineEarlyDrop(bookingId: string, reason?: string): Promise<void> {
+  await request(`/drivers/journeys/early-drop/${bookingId}/decline`, {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
+
+/** Early-drop requests currently awaiting this driver — fetched on app resume
+ *  so a request that arrived while backgrounded isn't missed. */
+export async function fetchPendingEarlyDrops(): Promise<EarlyDropRequest[]> {
+  const res = await request<{ success: boolean; data: { requests: EarlyDropRequest[] } }>(
+    `/drivers/journeys/early-drop/pending`,
+    { method: 'GET', auth: true },
+  );
+  return res.data?.requests ?? [];
+}
+
+/** The driver's rating of the riders on their trip. Each entry is stored on
+ *  the matching booking (scoped to this driver's journey). */
+export async function rateJourneyPassengers(
+  key: string,
+  ratings: { bookingId: string; rating: number; comment?: string }[],
+): Promise<{ updated: number }> {
+  const res = await request<{ success: boolean; data: { updated: number } }>(
+    `/drivers/journeys/${key}/rate-passengers`,
+    { method: 'POST', auth: true, body: JSON.stringify({ ratings }) },
+  );
+  return res.data;
 }
 
 export async function verifyJourneyQr(
@@ -1649,6 +1739,58 @@ export async function searchAddress(
     { method: 'GET', auth: true },
   );
   return res.data.results ?? [];
+}
+
+export interface GeoDirections {
+  polyline: { lat: number; lng: number }[];
+  distanceMeters: number;
+  durationSeconds: number;
+  /** Which routing engine produced this: 'google' | 'osrm' | 'straight'. */
+  provider?: string;
+}
+
+/**
+ * Driving directions via the backend `/geo/directions` (Google Directions →
+ * OSRM → straight-line fallback, same route the customer app uses). Preferred
+ * over hitting the public OSRM demo server straight from the handset — that
+ * server is rate-limited and unauthenticated, which is why drivers sometimes
+ * saw no route at all. Returns null on failure so callers can fall back.
+ */
+export async function getDirections(
+  origin: { lat: number; lng: number },
+  dest: { lat: number; lng: number },
+): Promise<GeoDirections | null> {
+  try {
+    const params = new URLSearchParams({
+      originLat: String(origin.lat),
+      originLng: String(origin.lng),
+      destLat: String(dest.lat),
+      destLng: String(dest.lng),
+    });
+    const res = await request<{ success: boolean; data: GeoDirections }>(
+      `/geo/directions?${params.toString()}`,
+      { method: 'GET', auth: true },
+    );
+    return res?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Raise a safety SOS. Opens an urgent 'safety' support ticket for ops (with the
+ * driver's live location + emergency contacts) and, during a ride, pushes to
+ * the ride room so the live map flags it. Best-effort location.
+ */
+export async function sendSos(
+  loc?: { lat?: number; lng?: number } | null,
+  rideId?: string,
+): Promise<void> {
+  await request('/safety/sos', {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify({ lat: loc?.lat, lng: loc?.lng, rideId }),
+  });
 }
 
 // ── Scheduled routes (driver registration + browsing) ──
