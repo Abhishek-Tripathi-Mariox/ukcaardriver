@@ -72,10 +72,20 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
   const growthPct = data ? formatDelta(data.thisMonth.growthPct) : '—';
   const isPositiveGrowth = (data?.thisMonth.growthPct ?? 0) >= 0;
   const completedRides = data?.thisMonth.completedRides ?? 0;
-  const trend = data?.trend ?? [];
+  // Trend chart is period-aware: Daily → today's 4-hour buckets, Weekly → last
+  // 7 days, Monthly → 6-month trend. All three share the {label,value}[] shape,
+  // so the same bar chart below renders each without change.
+  const series =
+    period === 'today'
+      ? data?.hourlySeries ?? []
+      : period === 'week'
+      ? data?.weekSeries ?? []
+      : data?.trend ?? [];
   // Cap the bar denominator at 1 so a brand-new account (all zeros) doesn't
   // produce NaN heights and crash the layout.
-  const maxTrend = Math.max(1, ...trend.map(t => t.value));
+  const maxTrend = Math.max(1, ...series.map(t => t.value));
+  const trendTitle =
+    period === 'today' ? "Today's Earnings" : period === 'week' ? 'This Week' : '6-Month Trend';
 
   const bd = data?.breakdown;
 
@@ -202,10 +212,10 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
               }}
             >
               <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
-                6-Month Trend
+                {trendTitle}
               </Text>
               <View className="mt-4 h-[140px] flex-row items-end justify-between">
-                {trend.map((t, i) => {
+                {series.map((t, i) => {
                   // Show at least a sliver (4%) for non-zero months so the
                   // user sees the bar exists; zeros stay flat.
                   const h = t.value > 0 ? Math.max(4, (t.value / maxTrend) * 100) : 0;

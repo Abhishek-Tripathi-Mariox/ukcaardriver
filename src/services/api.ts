@@ -291,6 +291,7 @@ async function fetchCurrentUserUncached(): Promise<ApiUser | null> {
             vehicleModel: u.driverProfile.vehicleModel,
             vehicleYear: u.driverProfile.vehicleYear,
             vehicleColor: u.driverProfile.vehicleColor,
+            seatingCapacity: u.driverProfile.seatingCapacity,
             plateNumber: u.driverProfile.plateNumber,
             insuranceExpiry: u.driverProfile.insuranceExpiry ?? null,
             rating: u.driverProfile.rating,
@@ -384,6 +385,52 @@ export async function logout(): Promise<void> {
 
 export async function getStoredAccessToken(): Promise<string | null> {
   return AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+// ── App settings (public, admin-configured) ──
+// The referral amounts, support contacts, etc. must come from the admin panel,
+// not be hardcoded per screen (Refer & Earn used to hardcode ₹200 for both
+// sides even though the referrer and joiner rewards differ). Public endpoint —
+// no auth. 5-min TTL so an admin change shows up on the next visit.
+export interface DriverAppSettings {
+  /** Credited to the JOINER when they sign up with a code. */
+  referralBonus: number;
+  /** Paid to the referring DRIVER once their referee completes a first ride. */
+  referrerRewardDriver: number;
+  referrerRewardCustomer: number;
+  supportEmail: string;
+  supportPhone: string;
+  currencySymbol: string;
+}
+
+const APP_SETTINGS_TTL_MS = 5 * 60 * 1000;
+let cachedAppSettings: DriverAppSettings | null = null;
+let cachedAppSettingsAt = 0;
+
+export async function fetchAppSettings(force = false): Promise<DriverAppSettings | null> {
+  if (!force && cachedAppSettings && Date.now() - cachedAppSettingsAt < APP_SETTINGS_TTL_MS) {
+    return cachedAppSettings;
+  }
+  try {
+    const res = await request<{ success: boolean; data: any }>('/settings/app', {
+      method: 'GET',
+    });
+    const d = res?.data ?? {};
+    const next: DriverAppSettings = {
+      referralBonus: Number(d.referralBonus ?? 0),
+      referrerRewardDriver: Number(d.referrerRewardDriver ?? 0),
+      referrerRewardCustomer: Number(d.referrerRewardCustomer ?? 0),
+      supportEmail: String(d.supportEmail ?? ''),
+      supportPhone: String(d.supportPhone ?? ''),
+      currencySymbol: String(d.currencySymbol ?? '₹'),
+    };
+    cachedAppSettings = next;
+    cachedAppSettingsAt = Date.now();
+    return next;
+  } catch (err) {
+    console.warn('[api] fetchAppSettings failed:', err);
+    return cachedAppSettings; // last-known value, or null on cold failure
+  }
 }
 
 /**
@@ -570,6 +617,8 @@ export interface DriverEarnings {
     completedRides: number;
   };
   trend: { label: string; value: number }[];
+  hourlySeries?: { label: string; value: number }[]; // Daily tab — today, 4h buckets
+  weekSeries?: { label: string; value: number }[]; // Weekly tab — last 7 days
   breakdown: {
     totalEarned: number;
     platformFee: number;

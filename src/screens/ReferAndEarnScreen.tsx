@@ -17,7 +17,7 @@ import {
   CopyIcon,
   GiftIcon,
 } from '../components/icons/ServiceTypeIcons';
-import { fetchCurrentUser } from '../services/api';
+import { fetchCurrentUser, fetchAppSettings } from '../services/api';
 
 interface ReferAndEarnScreenProps {
   onBack?: () => void;
@@ -26,14 +26,26 @@ interface ReferAndEarnScreenProps {
 export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState<number>(0);
+  // Amounts are admin-configured and differ per side: the referring driver
+  // earns `driverReward`, the friend who joins gets `joinerBonus`. Never
+  // hardcode them (they used to both read a flat ₹200).
+  const [driverReward, setDriverReward] = useState<number | null>(null);
+  const [joinerBonus, setJoinerBonus] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const u = await fetchCurrentUser();
+      const [u, settings] = await Promise.all([
+        fetchCurrentUser(),
+        fetchAppSettings(),
+      ]);
       setReferralCode(u?.referralCode ?? null);
       setReferralCount(u?.referralCount ?? 0);
+      if (settings) {
+        setDriverReward(settings.referrerRewardDriver);
+        setJoinerBonus(settings.referralBonus);
+      }
     } catch (err) {
       console.warn('[refer] fetch failed:', err);
     } finally {
@@ -72,10 +84,12 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
     );
   };
 
-  // Earnings = ₹200 per successful referral. Surface this at the top so
-  // the headline number isn't a hardcoded ₹1000.
-  const PER_REFERRAL_REWARD = 200;
-  const earnings = referralCount * PER_REFERRAL_REWARD;
+  // The driver's total earned so far = successful referrals × their per-referral
+  // reward. Amounts render as a placeholder until settings load, so we never
+  // flash a wrong hardcoded figure.
+  const earnings = referralCount * (driverReward ?? 0);
+  const rewardText = driverReward != null ? `₹${driverReward}` : '₹…';
+  const bonusText = joinerBonus != null ? `₹${joinerBonus}` : '₹…';
 
   return (
     <View className="flex-1 bg-[#FFF2EA]">
@@ -107,7 +121,7 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
         }
       >
         <Text className="mt-6 px-6 text-center text-[24px] font-poppins-semibold text-black">
-          Invite your friends &{'\n'}Earn ₹{PER_REFERRAL_REWARD} each
+          Invite your friends &{'\n'}Earn {rewardText}
         </Text>
 
         <View className="mt-6 items-center px-6">
@@ -117,7 +131,10 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
             </View>
           </View>
           <Text className="mt-4 text-[24px] font-poppins-bold text-black">
-            ₹{PER_REFERRAL_REWARD}
+            {rewardText}
+          </Text>
+          <Text className="mt-1 text-[13px] font-poppins-medium text-black/60">
+            Your friend gets {bonusText}
           </Text>
         </View>
 
@@ -168,10 +185,11 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
             </View>
             <View className="flex-1">
               <Text className="text-[14px] font-poppins-medium leading-5 text-[#0B0A08]">
-                You earn ₹{PER_REFERRAL_REWARD} per successful referral
+                You earn {rewardText} per successful referral
               </Text>
               <Text className="mt-1 text-[14px] font-poppins-light leading-5 text-[#0B0A08]/60">
-                Credited after their account is approved.
+                Your friend gets {bonusText}. Your reward is credited after they
+                complete their first ride.
               </Text>
             </View>
           </View>
