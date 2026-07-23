@@ -83,7 +83,7 @@ function NotificationThumb({ type }: { type: NotificationApi['type'] }) {
   if (type === 'promo') {
     return (
       <View className="h-[70px] w-[70px] items-center justify-center rounded-2xl bg-[#F4E1E1]">
-        <Text className="text-[28px]">🎉</Text>
+        <BellIcon size={28} color="#0097B3" />
       </View>
     );
   }

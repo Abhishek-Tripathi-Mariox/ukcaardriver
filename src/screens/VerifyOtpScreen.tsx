@@ -98,7 +98,7 @@ export function VerifyOtpScreen({
               className="font-poppins-bold text-white"
               style={{ marginTop: vs(18), fontSize: fs(30) }}
             >
-              Welcome Driver 👋
+              Welcome Driver
             </Text>
           </View>
 
@@ -159,16 +159,9 @@ export function VerifyOtpScreen({
               className="mt-5"
             />
 
-            <TouchableOpacity
-              onPress={onRegister}
-              disabled={!onRegister}
-              className="items-center"
-              style={{ marginTop: vs(18) }}
-            >
-              <Text className="font-poppins-semibold text-brand-teal" style={{ fontSize: fs(14) }}>
-                New Driver? Register Now →
-              </Text>
-            </TouchableOpacity>
+            {/* "New Driver? Register Now" removed — accounts are created by
+                the OTP login itself; vehicle registration starts from the
+                Home popup after sign-in. */}
           </View>
 
           <View className="flex-1" />

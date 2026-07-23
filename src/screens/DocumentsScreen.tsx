@@ -21,6 +21,12 @@ import {
   EyeIcon,
   HourglassIcon,
   InfoCircleIcon,
+  CarIcon,
+  ClipboardListIcon,
+  CardAddIcon,
+  TabProfileIcon,
+  CheckCircleIcon,
+  DocumentIcon,
 } from '../components/icons/ServiceTypeIcons';
 import {
   DriverDocument,
@@ -46,11 +52,13 @@ interface DocumentItem {
   /** Backend doc.type — used as the upload key when re-uploading. */
   type: DocumentType;
   title: string;
-  emoji: string;
+  icon: string;
   status: UiStatus;
   url?: string;
   expiryDate?: string;
   uploadedDate?: string;
+  /** Admin's reason when this doc was rejected. */
+  rejectionReason?: string;
   /** True if a doc-update support ticket is currently open for this type. */
   hasOpenChangeRequest?: boolean;
 }
@@ -61,16 +69,37 @@ interface DocumentsScreenProps {
 
 // Order + labels for the standard registration documents. Anything else the
 // driver has uploaded later (PAN, etc.) gets appended below.
-const DOC_DISPLAY: Record<string, { title: string; emoji: string }> = {
-  licence: { title: 'Driving License', emoji: '🪪' },
-  vehicle: { title: 'Vehicle RC', emoji: '🚗' },
-  insurance: { title: 'Insurance', emoji: '📋' },
-  aadhaar: { title: 'Aadhaar', emoji: '🆔' },
-  'profile-photo': { title: 'Profile Photo', emoji: '🧑' },
-  pan: { title: 'PAN', emoji: '💳' },
-  dbs: { title: 'DBS Check', emoji: '✅' },
-  phv: { title: 'PHV Licence', emoji: '🚖' },
+// icon: keys into DocTypeIcon below — vector icons only, emoji are banned.
+const DOC_DISPLAY: Record<string, { title: string; icon: string }> = {
+  licence: { title: 'Driving License', icon: 'card' },
+  vehicle: { title: 'Vehicle RC', icon: 'car' },
+  insurance: { title: 'Insurance', icon: 'clipboard' },
+  'aadhaar-front': { title: 'Aadhaar (Front)', icon: 'card' },
+  'aadhaar-back': { title: 'Aadhaar (Back)', icon: 'card' },
+  'profile-photo': { title: 'Profile Photo', icon: 'profile' },
+  pan: { title: 'PAN', icon: 'card' },
+  dbs: { title: 'DBS Check', icon: 'check' },
+  phv: { title: 'PHV Licence', icon: 'car' },
+  puc: { title: 'Pollution Certificate (PUC)', icon: 'document' },
 };
+
+function DocTypeIcon({ kind }: { kind: string }) {
+  const color = '#0097B3';
+  switch (kind) {
+    case 'car':
+      return <CarIcon size={22} color={color} />;
+    case 'clipboard':
+      return <ClipboardListIcon size={22} color={color} />;
+    case 'card':
+      return <CardAddIcon size={22} color={color} />;
+    case 'profile':
+      return <TabProfileIcon size={22} color={color} />;
+    case 'check':
+      return <CheckCircleIcon size={22} color={color} />;
+    default:
+      return <DocumentIcon size={22} color={color} />;
+  }
+}
 
 // Documents the driver should always see in the list, even if they were not
 // captured during onboarding (older accounts may be missing RC/Insurance —
@@ -79,7 +108,11 @@ const STANDARD_TYPES: DocumentType[] = [
   'licence',
   'vehicle',
   'insurance',
-  'aadhaar',
+  // Aadhaar is captured as two files. The old single 'aadhaar' entry always
+  // showed "not uploaded" (drivers only ever upload front + back), so it was
+  // a permanent phantom missing-doc — replaced with the two real ones.
+  'aadhaar-front',
+  'aadhaar-back',
   'profile-photo',
 ];
 
@@ -169,13 +202,20 @@ function DocumentCard({
     >
       <View className="flex-row items-start gap-3">
         <View className="h-12 w-12 items-center justify-center rounded-xl bg-[#0097B3]/10">
-          <Text className="text-2xl">{item.emoji}</Text>
+          <DocTypeIcon kind={item.icon} />
         </View>
         <View className="flex-1">
           <Text className="text-base font-poppins-semibold text-[#101828]">{item.title}</Text>
           <View className="mt-1">
             <StatusBadge status={item.status} />
           </View>
+          {item.status === 'rejected' && !!item.rejectionReason && (
+            <View className="mt-2 rounded-lg bg-[#FEF2F2] px-3 py-2">
+              <Text className="text-[12px] font-poppins-medium text-[#B91C1C]">
+                Reason: {item.rejectionReason}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -289,7 +329,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
     // Standard set first, in fixed order. Missing docs are surfaced so the
     // driver knows what's still owed.
     for (const t of STANDARD_TYPES) {
-      const display = DOC_DISPLAY[t] ?? { title: t, emoji: '📄' };
+      const display = DOC_DISPLAY[t] ?? { title: t, icon: 'document' };
       const found = byType.get(t);
       const hasOpenChangeRequest = openRequestTypes.has(t);
       const baseStatus: UiStatus = found
@@ -302,7 +342,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
       items.push({
         type: t,
         title: display.title,
-        emoji: display.emoji,
+        icon: display.icon,
         // Show "change requested" only for docs that exist — for missing /
         // rejected ones the user should just upload instead.
         status:
@@ -312,6 +352,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
         url: found?.url,
         expiryDate: fmtDate(found?.expiry),
         uploadedDate: undefined,
+        rejectionReason: found?.rejectionReason,
         hasOpenChangeRequest,
       });
       byType.delete(t);
@@ -319,7 +360,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
 
     // Anything else the driver has uploaded (PAN, DBS, etc.).
     for (const [type, d] of byType) {
-      const display = DOC_DISPLAY[type] ?? { title: type, emoji: '📄' };
+      const display = DOC_DISPLAY[type] ?? { title: type, icon: 'document' };
       const hasOpenChangeRequest = openRequestTypes.has(type);
       const baseStatus: UiStatus =
         d.status === 'verified'
@@ -330,7 +371,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
       items.push({
         type: type as DocumentType,
         title: display.title,
-        emoji: display.emoji,
+        icon: display.icon,
         status:
           hasOpenChangeRequest && (baseStatus === 'verified' || baseStatus === 'under-review')
             ? 'change-requested'

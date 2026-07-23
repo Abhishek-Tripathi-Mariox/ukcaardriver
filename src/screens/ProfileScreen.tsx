@@ -49,6 +49,8 @@ interface ProfileScreenProps {
   onOpenOnePass?: () => void;
   onOpenIncentives?: () => void;
   onOpenRouteChange?: () => void;
+  /** Route change only applies to scheduled-shuttle drivers. */
+  serviceType?: 'instant' | 'private' | 'scheduled';
 }
 
 const formatRupees = (n: number): string => {
@@ -94,6 +96,7 @@ export function ProfileScreen({
   onOpenOnePass,
   onOpenIncentives,
   onOpenRouteChange,
+  serviceType,
 }: ProfileScreenProps) {
   const [idCardOpen, setIdCardOpen] = useState(false);
   const [user, setUser] = useState<Awaited<ReturnType<typeof fetchCurrentUser>>>(null);
@@ -215,9 +218,9 @@ export function ProfileScreen({
   const vehicleColor = dp?.vehicleColor || '—';
   const totalEarning = stats ? formatRupees(stats.totalEarnings) : '—';
   const totalTrips = stats ? String(stats.totalServices) : '—';
-  // Rating is a number 0–5 stored on driverProfile. Show one decimal so a
-  // brand-new driver's seeded 5.0 reads like a rating, not a count.
-  const rating = dp?.rating !== undefined ? dp.rating.toFixed(1) : '—';
+  // Real average is 0 until the first rating; show a neutral 5.0 until then
+  // (matches the customer app + dashboard). A real average is always >= 1.
+  const rating = (dp?.rating && dp.rating > 0 ? dp.rating : 5).toFixed(1);
 
   const formatDate = (iso?: string | null) => {
     if (!iso) return '—';
@@ -369,11 +372,15 @@ export function ProfileScreen({
             label="Edit Profile"
             onPress={openEdit}
           />
-          <MenuRow
-            icon={<MapPinIcon size={20} color="#0097B3" />}
-            label="Apply for Route Change"
-            onPress={onOpenRouteChange}
-          />
+          {/* Route change is a scheduled-shuttle concept — instant/private
+              drivers have no fixed route, so it's hidden for them. */}
+          {(serviceType ?? dp?.serviceType) === 'scheduled' && (
+            <MenuRow
+              icon={<MapPinIcon size={20} color="#0097B3" />}
+              label="Apply for Route Change"
+              onPress={onOpenRouteChange}
+            />
+          )}
           <MenuRow
             icon={<ClockSmallIcon size={20} color="#0097B3" />}
             label="History"

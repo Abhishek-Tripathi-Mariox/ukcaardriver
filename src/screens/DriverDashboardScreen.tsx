@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,6 +13,12 @@ import Geolocation from '@react-native-community/geolocation';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { RideRequest } from '../components/RideRequestModal';
+import {
+  AlertCircleIcon,
+  CarIcon as CarGlyphIcon,
+  ClipboardListIcon,
+  HourglassIcon,
+} from '../components/icons/ServiceTypeIcons';
 import {
   CalendarIcon,
   InstantRideIcon,
@@ -96,6 +103,11 @@ interface DriverDashboardScreenProps {
   onOpenMenu?: () => void;
   /** Open the full ratings & reviews screen ("View All"). */
   onOpenReviews?: () => void;
+  /** Where the driver is in vehicle registration — drives the Home banner /
+   *  popup. 'approved' renders the normal dashboard. */
+  registrationStatus?: 'none' | 'in-progress' | 'pending' | 'rejected' | 'approved';
+  /** Tap on the registration banner / popup CTA. */
+  onRegistrationAction?: () => void;
 }
 
 interface CounterCardProps {
@@ -174,8 +186,57 @@ export function DriverDashboardScreen({
   onOpenActiveRide,
   onOpenMenu,
   onOpenReviews,
+  registrationStatus = 'approved',
+  onRegistrationAction,
 }: DriverDashboardScreenProps) {
   const [data, setData] = useState<DriverDashboard | null>(null);
+  const isApprovedDriver = registrationStatus === 'approved';
+  // One-shot "register your vehicle" popup for drivers who haven't started.
+  const [showRegPopup, setShowRegPopup] = useState(registrationStatus === 'none');
+
+  // Banner copy per registration state.
+  const regBanner = (() => {
+    switch (registrationStatus) {
+      case 'none':
+        return {
+          icon: 'car',
+          title: 'Register your vehicle',
+          body: 'Add your vehicle and documents to start receiving bookings.',
+          cta: 'Register Now',
+          bg: '#FFFFFF',
+          accent: '#0097B3',
+        };
+      case 'in-progress':
+        return {
+          icon: 'clipboard',
+          title: 'Finish your registration',
+          body: 'Your vehicle registration is incomplete. Pick up where you left off.',
+          cta: 'Continue',
+          bg: '#FFFFFF',
+          accent: '#E17100',
+        };
+      case 'pending':
+        return {
+          icon: 'hourglass',
+          title: 'Waiting for approval',
+          body: 'Your documents are under review. You can explore the app meanwhile — bookings start once you are approved.',
+          cta: 'View status',
+          bg: '#FFFBEB',
+          accent: '#E17100',
+        };
+      case 'rejected':
+        return {
+          icon: 'alert',
+          title: 'Action needed on your documents',
+          body: 'One or more documents were rejected. Re-upload them to continue.',
+          cta: 'Fix documents',
+          bg: '#FEF2F2',
+          accent: '#E02D3C',
+        };
+      default:
+        return null;
+    }
+  })();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
@@ -369,7 +430,7 @@ export function DriverDashboardScreen({
                   style={{ fontSize: fs(18) }}
                   className="font-poppins text-white/90"
                 >
-                  {driverName} 👋
+                  {driverName}
                 </Text>
               </View>
               {/* Figma header: a single hamburger "menu" button (top-right).
@@ -402,6 +463,53 @@ export function DriverDashboardScreen({
               </Pressable>
             </View>
 
+            {!isApprovedDriver && regBanner ? (
+              <Pressable
+                onPress={onRegistrationAction}
+                style={{
+                  marginTop: vs(24),
+                  paddingHorizontal: s(16),
+                  paddingVertical: vs(12),
+                  borderRadius: s(16),
+                  backgroundColor: regBanner.bg,
+                }}
+                className="flex-row items-center shadow-sm"
+              >
+                <View style={{ marginRight: s(10) }}>
+                  {regBanner.icon === 'car' && <CarGlyphIcon size={s(24)} color={regBanner.accent} />}
+                  {regBanner.icon === 'clipboard' && <ClipboardListIcon size={s(24)} color={regBanner.accent} />}
+                  {regBanner.icon === 'hourglass' && <HourglassIcon size={s(24)} color={regBanner.accent} />}
+                  {regBanner.icon === 'alert' && <AlertCircleIcon size={s(24)} color={regBanner.accent} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: fs(14.5) }}
+                    className="font-poppins-semibold text-[#1E293B]"
+                  >
+                    {regBanner.title}
+                  </Text>
+                  <Text
+                    style={{ fontSize: fs(11.5), marginTop: vs(2) }}
+                    className="font-poppins text-[#6C757D]"
+                  >
+                    {regBanner.body}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    paddingHorizontal: s(12),
+                    paddingVertical: vs(7),
+                    borderRadius: s(10),
+                    backgroundColor: regBanner.accent,
+                    marginLeft: s(8),
+                  }}
+                >
+                  <Text style={{ fontSize: fs(12) }} className="font-poppins-semibold text-white">
+                    {regBanner.cta}
+                  </Text>
+                </View>
+              </Pressable>
+            ) : (
             <View
               style={{ marginTop: vs(24), height: vs(56), paddingHorizontal: s(16) }}
               className="flex-row items-center justify-between rounded-2xl bg-white shadow-sm"
@@ -452,6 +560,7 @@ export function DriverDashboardScreen({
                 />
               </Pressable>
             </View>
+            )}
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -692,27 +801,31 @@ export function DriverDashboardScreen({
               </Pressable>
             )}
 
-            <View className="mt-4 flex-row items-center justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
-              <View>
-                <Text className="text-[13px] text-[#6A7282]">Your Rating</Text>
-                <Text className="text-[22px] font-poppins-semibold leading-[22px] text-brand-teal">
-                  {(data?.driver?.rating ?? 0).toFixed(1)}
-                </Text>
-              </View>
-              <View className="flex-row items-center gap-1">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <StarIcon
-                    key={i}
-                    size={20}
-                    color={
-                      i <= Math.round(data?.driver?.rating ?? 0)
-                        ? '#FFB100'
-                        : '#E5E7EB'
-                    }
-                  />
-                ))}
-              </View>
-            </View>
+            {(() => {
+              // A brand-new driver's true average is 0; show a neutral 5.0
+              // until the first real rating arrives (real averages are >= 1).
+              const real = data?.driver?.rating ?? 0;
+              const shown = real > 0 ? real : 5;
+              return (
+                <View className="mt-4 flex-row items-center justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
+                  <View>
+                    <Text className="text-[13px] text-[#6A7282]">Your Rating</Text>
+                    <Text className="text-[22px] font-poppins-semibold leading-[22px] text-brand-teal">
+                      {shown.toFixed(1)}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center gap-1">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <StarIcon
+                        key={i}
+                        size={20}
+                        color={i <= Math.round(shown) ? '#FFB100' : '#E5E7EB'}
+                      />
+                    ))}
+                  </View>
+                </View>
+              );
+            })()}
 
             {upcomingJourneys.length > 0 ? (
               <View className="mt-6">
@@ -912,6 +1025,59 @@ export function DriverDashboardScreen({
           </>
         )}
       </ScrollView>
+
+      {/* One-time "register your vehicle" popup for fresh accounts. The
+          driver can dismiss it and keep exploring — the header banner stays
+          as the persistent entry point. */}
+      <Modal
+        visible={showRegPopup && registrationStatus === 'none'}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRegPopup(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/50" style={{ padding: s(28) }}>
+          <View className="w-full rounded-3xl bg-white" style={{ padding: s(24) }}>
+            <View className="items-center">
+              <CarGlyphIcon size={s(48)} color="#0097B3" />
+            </View>
+            <Text
+              style={{ fontSize: fs(18), marginTop: vs(10), textAlign: 'center' }}
+              className="font-poppins-semibold text-[#1E293B]"
+            >
+              Register your vehicle
+            </Text>
+            <Text
+              style={{ fontSize: fs(13), marginTop: vs(8), textAlign: 'center' }}
+              className="font-poppins text-[#6C757D]"
+            >
+              Your account is ready! Add your vehicle and documents to start
+              receiving bookings. You can explore the app first — registration
+              takes about 10 minutes.
+            </Text>
+            <Pressable
+              onPress={() => {
+                setShowRegPopup(false);
+                onRegistrationAction?.();
+              }}
+              style={{ marginTop: vs(18), paddingVertical: vs(13), borderRadius: s(12) }}
+              className="items-center bg-brand-teal"
+            >
+              <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-white">
+                Register Vehicle
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowRegPopup(false)}
+              style={{ marginTop: vs(10), paddingVertical: vs(10) }}
+              className="items-center"
+            >
+              <Text style={{ fontSize: fs(13) }} className="font-poppins text-[#6C757D]">
+                Explore the app first
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       {/* The ride-request modal is rendered globally from App.tsx. */}
     </View>

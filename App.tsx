@@ -99,6 +99,7 @@ import { RatePassengersScreen } from './src/screens/RatePassengersScreen';
 import { DestinationReachedScreen } from './src/screens/DestinationReachedScreen';
 import { JourneyRideSummaryScreen } from './src/screens/JourneyRideSummaryScreen';
 import { FeedbackRatingsScreen } from './src/screens/FeedbackRatingsScreen';
+import { NotVerifiedScreen } from './src/screens/NotVerifiedScreen';
 import type { RideRequest } from './src/components/RideRequestModal';
 import {
   ApiUser,
@@ -113,10 +114,17 @@ import {
  * Decides which screen to show when a returning user finishes OTP login.
  * Mirrors the registrationStep enum on the backend.
  */
-function resolveStageForUser(user: ApiUser): Stage {
-  if (isRegisteredDriver(user)) return 'dashboard';
+function resolveStageForUser(_user: ApiUser): Stage {
+  // Account-first flow: creating the account (OTP login) is all it takes to
+  // reach Home. Vehicle registration is started from a Home banner/popup and
+  // can be resumed at any time — the driver explores the app freely but gets
+  // no bookings until an admin approves them (server hard-gates acceptance).
+  return 'dashboard';
+}
 
-  switch (user.registrationStep) {
+/** Where the "Continue registration" banner resumes the funnel. */
+function registrationResumeStage(user: ApiUser | null): Stage {
+  switch (user?.registrationStep) {
     case 'service-type':
       return 'service-type';
     case 'choose-route':
@@ -129,18 +137,39 @@ function resolveStageForUser(user: ApiUser): Stage {
       return 'driver-details';
     case 'complete-profile':
       return 'complete-profile';
-    case 'pending':
-      return 'registration-pending';
-    case 'rejected':
-      return 'account-rejected';
-    case 'approved':
-      // Approved but profile not setup is a weird state â€” fall through to
-      // dashboard since admin signed off.
-      return 'dashboard';
     default:
-      // null / undefined â†’ never started registration â†’ show the
-      // "Register Vehicle" landing screen.
+      // Never started → the "Register Vehicle" landing screen.
       return 'registration';
+  }
+}
+
+/** Registration state the dashboard surfaces as a banner / popup. */
+export type RegistrationStatus =
+  | 'none'
+  | 'in-progress'
+  | 'pending'
+  | 'rejected'
+  | 'approved';
+
+function registrationStatusForUser(user: ApiUser | null): RegistrationStatus {
+  if (!user) return 'none';
+  if (isRegisteredDriver(user)) return 'approved';
+  switch (user.registrationStep) {
+    case 'pending':
+      return 'pending';
+    case 'rejected':
+      return 'rejected';
+    case 'approved':
+      return 'approved';
+    case 'service-type':
+    case 'choose-route':
+    case 'vehicle-details':
+    case 'owner-details':
+    case 'driver-details':
+    case 'complete-profile':
+      return 'in-progress';
+    default:
+      return 'none';
   }
 }
 
@@ -290,6 +319,12 @@ function App() {
     return false;
   }, []);
 
+  // Menu/tab DESTINATIONS return straight to Home rather than popping the
+  // history stack — a driver who opened Earnings then Profile expects Back to
+  // land on Home, not walk them back through every screen. Multi-step flows
+  // (registration, ride, wallet sub-flows) keep goBack.
+  const goHome = useCallback(() => setStage('dashboard'), [setStage]);
+
   const [mobile, setMobile] = useState('');
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
   const [languageModalOpen, setLanguageModalOpen] = useState(false);
@@ -428,13 +463,14 @@ function App() {
     initFcm(async (msg) => {
       const kind = (msg.data as any)?.kind;
       if (kind === 'document:rejected') {
-        // Pull the latest profile + docs and bounce the user back to the
-        // doc-upload step so they can re-pick the rejected file. Must be a
-        // FRESH read — the cached /auth/me would still show the old status.
+        // Pull the latest profile + docs and take the driver to the profile
+        // DOCUMENTS section — the rejected items are flagged there with a
+        // one-tap re-upload. Must be a FRESH read — the cached /auth/me
+        // would still show the old status.
         const fresh = await fetchCurrentUserFresh();
         if (fresh) {
           setCurrentUser(fresh);
-          setStage('driver-details');
+          setStage('documents');
         }
       } else if (kind === 'application:approved') {
         // FRESH read: the cached user still says registrationStep 'pending',
@@ -998,24 +1034,64 @@ function App() {
   // for 5 min (CACHE_TTL.CURRENT_USER), so the plain version would keep
   // returning the stale 'pending' snapshot and the driver would never move
   // to the dashboard until the cache happened to expire.
+  const regStatus = registrationStatusForUser(currentUser);
+
+  // Money/work screens locked until the driver is approved. Before this they
+  // rendered normally: the wallet actually let an UNVERIFIED driver load
+  // money, and Earnings just surfaced the API's raw "Insufficient
+  // permissions" error. One friendly gate screen replaces all of that.
+  const GATED_WHEN_UNVERIFIED: Stage[] = [
+    'earnings',
+    'wallet',
+    'recharge-wallet',
+    'wallet-statement',
+    'cashout',
+    'cashout-success',
+    'received-amount',
+    'onepass',
+    'incentives',
+    'scheduled-journeys',
+  ];
+  const GATED_FEATURE_NAMES: Partial<Record<Stage, string>> = {
+    earnings: 'Earnings',
+    wallet: 'Wallet',
+    'recharge-wallet': 'Wallet',
+    'wallet-statement': 'Wallet',
+    cashout: 'Cashout',
+    'cashout-success': 'Cashout',
+    'received-amount': 'Received Amounts',
+    onepass: 'OnePass',
+    incentives: 'Incentives',
+    'scheduled-journeys': 'My Journeys',
+  };
+  const gatedBlocked =
+    regStatus !== 'approved' && GATED_WHEN_UNVERIFIED.includes(stage);
+
   useEffect(() => {
-    if (stage !== 'registration-pending') return;
+    // Poll while the registration is under review (the driver now waits on
+    // the DASHBOARD, not a parking screen) so approval/rejection flips the
+    // banner without an app restart. FCM is the fast path; this is fallback.
+    const watching =
+      regStatus === 'pending' &&
+      (stage === 'dashboard' || stage === 'registration-pending');
+    if (!watching) return;
     const interval = setInterval(async () => {
       try {
         const fresh = await fetchCurrentUserFresh();
         if (!fresh) return;
         setCurrentUser(fresh);
-        if (fresh.registrationStep === 'approved' || isRegisteredDriver(fresh)) {
+        if (
+          (fresh.registrationStep === 'approved' || isRegisteredDriver(fresh)) &&
+          stage === 'registration-pending'
+        ) {
           setStage('dashboard');
-        } else if (fresh.registrationStep === 'rejected') {
-          setStage('account-rejected');
         }
       } catch {
         // Ignore transient errors â€” the next tick will retry.
       }
     }, 15000); // 15s â€” gentle on the backend, fast enough for human-scale
     return () => clearInterval(interval);
-  }, [stage]);
+  }, [stage, regStatus]);
 
   // Edge case: the splash finished and dropped us at 'login' before
   // /auth/me resolved. When the boot check lands afterwards, redirect
@@ -1188,7 +1264,14 @@ function App() {
       {stage === 'complete-profile' && (
         <CompleteProfileScreen
           onBack={goBack}
-          onSubmit={() => setStage('registration-pending')}
+          onSubmit={() => {
+            // Under-review drivers live on Home now (waiting-approval banner),
+            // not a parking screen. Refresh so the banner state is correct.
+            fetchCurrentUserFresh()
+              .then(u => u && setCurrentUser(u))
+              .catch(() => {});
+            setStage('dashboard');
+          }}
           onEditVehicle={() => setStage('vehicle-details')}
           onLogout={handleLogout}
           vehicleSummary={(() => {
@@ -1207,7 +1290,7 @@ function App() {
               brandModel: [dp.vehicleMake, dp.vehicleModel].filter(Boolean).join(' ') || 'â€”',
               registrationNo: dp.plateNumber || 'â€”',
               year: dp.vehicleYear || 'â€”',
-              seating: 'â€”',
+              seating: dp.seatingCapacity ? String(dp.seatingCapacity) : '—',
               insurance: insuranceExpiryLabel,
               serviceType: serviceLabel,
             };
@@ -1230,6 +1313,7 @@ function App() {
 
       {stage === 'registration-pending' && (
         <RegistrationPendingScreen
+          onBack={() => setStage('dashboard')}
           driverName={
             (() => {
               const fl = `${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`.trim();
@@ -1260,6 +1344,19 @@ function App() {
         />
       )}
 
+      {gatedBlocked && (
+        <NotVerifiedScreen
+          status={regStatus}
+          featureName={GATED_FEATURE_NAMES[stage]}
+          onBack={() => setStage('dashboard')}
+          onAction={() => {
+            if (regStatus === 'pending') setStage('registration-pending');
+            else if (regStatus === 'rejected') setStage('documents');
+            else setStage(registrationResumeStage(currentUser));
+          }}
+        />
+      )}
+
       {stage === 'dashboard' && permissionsOk === false && (
         <PermissionsGateScreen
           onAllGranted={async () => {
@@ -1271,6 +1368,15 @@ function App() {
 
       {stage === 'dashboard' && permissionsOk !== false && (
         <DriverDashboardScreen
+          registrationStatus={regStatus}
+          onRegistrationAction={() => {
+            // Banner / popup tap routes by state: start or resume the funnel,
+            // open the review screen while pending, or jump to the profile
+            // documents section after a rejection to re-upload.
+            if (regStatus === 'pending') setStage('registration-pending');
+            else if (regStatus === 'rejected') setStage('documents');
+            else setStage(registrationResumeStage(currentUser));
+          }}
           incomingRequests={pendingRequests}
           onAcceptRequest={acceptRequest}
           onRejectRequest={rejectRequest}
@@ -1291,19 +1397,19 @@ function App() {
       )}
 
       {stage === 'notifications' && (
-        <NotificationsScreen onBack={goBack} />
+        <NotificationsScreen onBack={goHome} />
       )}
 
-      {stage === 'earnings' && (
+      {stage === 'earnings' && !gatedBlocked && (
         <EarningsScreen
-          onBack={goBack}
+          onBack={goHome}
           onViewPaymentHistory={() => setStage('wallet-statement')}
         />
       )}
 
       {stage === 'profile' && (
         <ProfileScreen
-          onBack={goBack}
+          onBack={goHome}
           onLogout={performLogout}
           onOpenDocuments={() => setStage('documents')}
           onOpenBankDetails={() => setStage('bank-details')}
@@ -1315,24 +1421,30 @@ function App() {
           onOpenOnePass={() => setStage('onepass')}
           onOpenIncentives={() => setStage('incentives')}
           onOpenRouteChange={() => setStage('change-route')}
+          serviceType={currentUser?.driverProfile?.serviceType}
         />
       )}
 
-      {stage === 'onepass' && <OnePassScreen onBack={goBack} />}
+      {stage === 'onepass' && !gatedBlocked && <OnePassScreen onBack={goHome} />}
 
-      {stage === 'incentives' && <IncentivesScreen onBack={goBack} />}
+      {stage === 'incentives' && !gatedBlocked && <IncentivesScreen onBack={goHome} />}
 
       {stage === 'documents' && (
-        <DocumentsScreen onBack={goBack} />
+        <DocumentsScreen onBack={goHome} />
       )}
 
       {stage === 'bank-details' && (
-        <BankDetailsScreen onBack={goBack} />
+        <BankDetailsScreen
+          onBack={goHome}
+          // "View Transaction Statement" did nothing — the handler was never
+          // passed. Route it to the wallet statement screen.
+          onViewStatement={() => setStage('wallet-statement')}
+        />
       )}
 
       {stage === 'history' && (
         <HistoryScreen
-          onBack={goBack}
+          onBack={goHome}
           onOpenRide={(rideId) => {
             setOpenHistoryRideId(rideId);
             setStage('history-detail');
@@ -1344,9 +1456,9 @@ function App() {
         <HistoryDetailScreen rideId={openHistoryRideId} onBack={goBack} />
       )}
 
-      {stage === 'wallet' && (
+      {stage === 'wallet' && !gatedBlocked && (
         <WalletScreen
-          onBack={goBack}
+          onBack={goHome}
           onRecharge={() => setStage('recharge-wallet')}
           onStatement={() => setStage('wallet-statement')}
           onCashout={() => setStage('cashout')}
@@ -1354,18 +1466,18 @@ function App() {
         />
       )}
 
-      {stage === 'recharge-wallet' && (
+      {stage === 'recharge-wallet' && !gatedBlocked && (
         <RechargeWalletScreen
           onBack={goBack}
           onLaunched={() => setStage('wallet')}
         />
       )}
 
-      {stage === 'wallet-statement' && (
+      {stage === 'wallet-statement' && !gatedBlocked && (
         <WalletStatementScreen onBack={goBack} />
       )}
 
-      {stage === 'cashout' && (
+      {stage === 'cashout' && !gatedBlocked && (
         <CashoutFundsScreen
           onBack={goBack}
           onEditBank={() => setStage('bank-details')}
@@ -1376,7 +1488,7 @@ function App() {
         />
       )}
 
-      {stage === 'cashout-success' && (
+      {stage === 'cashout-success' && !gatedBlocked && (
         <CashoutSuccessScreen
           amount={
             cashoutInfo
@@ -1392,28 +1504,28 @@ function App() {
         />
       )}
 
-      {stage === 'received-amount' && (
-        <ReceivedAmountScreen onBack={goBack} />
+      {stage === 'received-amount' && !gatedBlocked && (
+        <ReceivedAmountScreen onBack={goHome} />
       )}
 
       {stage === 'refer-earn' && (
-        <ReferAndEarnScreen onBack={goBack} />
+        <ReferAndEarnScreen onBack={goHome} />
       )}
 
       {stage === 'help-support' && (
-        <HelpSupportScreen onBack={goBack} />
+        <HelpSupportScreen onBack={goHome} />
       )}
 
       {stage === 'driver-instructions' && (
         <DriverInstructionsScreen
-          onBack={goBack}
+          onBack={goHome}
           onAgree={() => setStage('profile')}
         />
       )}
 
-      {stage === 'scheduled-journeys' && (
+      {stage === 'scheduled-journeys' && !gatedBlocked && (
         <ScheduledJourneysScreen
-          onBack={goBack}
+          onBack={goHome}
           onOpenUpcoming={(key: string) => {
             setActiveJourneyKey(key);
             setStage('upcoming-booking-details');

@@ -45,7 +45,7 @@ export function QRVerifiedScreen({
           <BigCheckIcon size={80} color="white" />
         </View>
         <Text className="mt-6 text-[24px] font-poppins-semibold text-[#00A63E]">
-          ✅ Passenger Verified
+          Passenger Verified
         </Text>
         <Text className="mt-4 text-[20px] font-poppins-medium text-[#1E293B]">
           {passengerName}

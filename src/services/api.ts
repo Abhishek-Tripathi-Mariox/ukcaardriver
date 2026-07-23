@@ -99,6 +99,7 @@ export interface ApiUser {
     vehicleModel?: string;
     vehicleYear?: string;
     vehicleColor?: string;
+    seatingCapacity?: number;
     plateNumber?: string;
     insuranceExpiry?: string | null;
     rating?: number;
@@ -561,6 +562,8 @@ export async function markAllNotificationsRead(): Promise<void> {
 }
 
 export interface DriverEarnings {
+  today?: { total: number; completedRides: number };
+  thisWeek?: { total: number; completedRides: number };
   thisMonth: {
     total: number;
     growthPct: number;
@@ -1605,13 +1608,20 @@ export type DocumentType =
   | 'vehicle'
   | 'insurance'
   | 'dbs'
-  | 'phv';
+  | 'phv'
+  // Pollution Under Control certificate (vehicle document).
+  | 'puc';
 
 export interface DriverDocument {
   type: string;
   url: string;
   status: 'pending' | 'verified' | 'rejected';
   expiry?: string;
+  /** Why an admin rejected this doc — shown to the driver so they know what
+   *  to fix. */
+  rejectionReason?: string;
+  reviewedAt?: string;
+  resubmittedAt?: string;
 }
 
 export interface UploadedFile {

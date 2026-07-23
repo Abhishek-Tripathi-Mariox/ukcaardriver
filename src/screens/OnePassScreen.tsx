@@ -145,7 +145,7 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
           {/* Status banner */}
           <View style={[styles.statusCard, status?.isActive ? styles.statusActive : styles.statusInactive]}>
             <Text style={styles.statusTitle}>
-              {status?.isActive ? '✅ OnePass Active' : 'OnePass Inactive'}
+              {status?.isActive ? 'OnePass Active' : 'OnePass Inactive'}
             </Text>
             <Text style={styles.statusSub}>
               {status?.isActive && expiryLabel

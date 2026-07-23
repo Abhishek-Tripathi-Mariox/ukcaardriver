@@ -1,3 +1,4 @@
+import { DocumentIcon } from './icons/ServiceTypeIcons';
 import { Modal, Pressable, Text, View } from 'react-native';
 import {
   CheckIcon,
@@ -75,7 +76,7 @@ export function DocumentPreviewModal({
 
           <View className="gap-5 px-6 pt-6">
             <View className="h-[280px] items-center justify-center rounded-xl bg-[#F3F4F6]">
-              <Text className="text-[64px]">📄</Text>
+              <DocumentIcon size={64} color="#9CA3AF" />
               <Text className="mt-3 text-sm text-[#4A5565]">{title}</Text>
               <Text className="mt-2 text-xs text-[#6A7282]">Document Preview</Text>
               <Text className="text-xs text-[#6A7282]">(Full resolution in production)</Text>

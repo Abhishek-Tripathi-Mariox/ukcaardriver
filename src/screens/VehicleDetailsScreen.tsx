@@ -49,6 +49,8 @@ export interface VehicleDetails {
   // mandatory at this step so admins have proof against the numbers above.
   vehicleRcUrl: string | null;
   insuranceUrl: string | null;
+  /** Pollution Under Control certificate — optional at submit. */
+  pucUrl: string | null;
 }
 
 interface VehicleDetailsScreenProps {
@@ -109,7 +111,9 @@ function TextField({
       maxLength={maxLength}
       autoCapitalize={autoCapitalize}
       className="rounded-2xl bg-[#F3F3F5] font-poppins text-slate-900"
-      style={{ height: vs(50), paddingHorizontal: s(14), fontSize: fs(15) }}
+      // fontFamily pinned explicitly: Android drops the className font on
+      // number-pad inputs (the Seating field rendered in the system font).
+      style={{ height: vs(50), paddingHorizontal: s(14), fontSize: fs(15), fontFamily: 'Poppins-Regular' }}
     />
   );
 }
@@ -242,6 +246,7 @@ export function VehicleDetailsScreen({
     insuranceExpiry: '',
     vehicleRcUrl: initialRc?.url ?? null,
     insuranceUrl: initialInsurance?.url ?? null,
+    pucUrl: initialDocs?.find(d => d.type === 'puc')?.url ?? null,
   });
   const [uploading, setUploading] = useState<{ [k in DocumentType]?: boolean }>({});
   const [typePickerOpen, setTypePickerOpen] = useState(false);
@@ -298,7 +303,7 @@ export function VehicleDetailsScreen({
   // Upload a picked asset (from camera or gallery) and stash the returned
   // S3 URL against the right field. Shared by both source pickers below.
   const uploadAsset = async (
-    type: 'vehicle' | 'insurance',
+    type: 'vehicle' | 'insurance' | 'puc',
     asset: { uri?: string; fileName?: string; type?: string } | undefined,
   ) => {
     if (!asset?.uri) return;
@@ -309,6 +314,7 @@ export function VehicleDetailsScreen({
         type,
       );
       if (type === 'vehicle') update('vehicleRcUrl', url);
+      else if (type === 'puc') update('pucUrl', url);
       else update('insuranceUrl', url);
     } catch (err: any) {
       console.warn('[vehicle-details] upload', type, 'failed:', err);
@@ -320,9 +326,14 @@ export function VehicleDetailsScreen({
 
   // Tapping an upload tile offers Camera (capture a photo) or Gallery
   // (pick an existing document image) via the shared source chooser.
-  const chooseUploadSource = async (type: 'vehicle' | 'insurance') => {
+  const chooseUploadSource = async (type: 'vehicle' | 'insurance' | 'puc') => {
     if (uploading[type]) return;
-    const label = type === 'vehicle' ? 'Vehicle RC' : 'Insurance Certificate';
+    const label =
+      type === 'vehicle'
+        ? 'Vehicle RC'
+        : type === 'puc'
+        ? 'Pollution Certificate (PUC)'
+        : 'Insurance Certificate';
     const asset = await pickImageFromSource(`Upload ${label}`);
     if (asset) await uploadAsset(type, asset);
   };
@@ -340,6 +351,7 @@ export function VehicleDetailsScreen({
         vehicleModel: details.model,
         vehicleYear: details.year,
         vehicleColor: details.color,
+        seatingCapacity: Number(details.seating) || undefined,
         plateNumber: details.registrationNo,
         insuranceNumber: details.insuranceNo,
         insuranceExpiry: expiryIso,
@@ -417,11 +429,25 @@ export function VehicleDetailsScreen({
           </Field>
 
           <Field label="Color of vehicle">
-            <SelectField
-              value={details.color}
-              placeholder="e.g., Red"
-              onPress={() => setColorPickerOpen(true)}
-            />
+            {/* Free-text + preset picker: the fixed list couldn't describe
+                two-tone or uncommon colors, so typing is now allowed too. */}
+            <View className="flex-row" style={{ gap: s(8) }}>
+              <View className="flex-1">
+                <TextField
+                  value={details.color}
+                  placeholder="Type color, e.g. Pearl White"
+                  onChangeText={v => update('color', v)}
+                />
+              </View>
+              <Pressable
+                onPress={() => setColorPickerOpen(true)}
+                className="items-center justify-center rounded-2xl bg-[#F3F3F5]"
+                style={{ height: vs(50), width: vs(50) }}
+                accessibilityLabel="Pick from common colors"
+              >
+                <ChevronDownIcon size={s(20)} color="#717182" />
+              </Pressable>
+            </View>
           </Field>
 
           <View className="mb-4 flex-row gap-4">
@@ -485,6 +511,14 @@ export function VehicleDetailsScreen({
             uploadedUrl={details.insuranceUrl}
             uploading={!!uploading.insurance}
             onPress={() => chooseUploadSource('insurance')}
+          />
+
+          <DocUploadField
+            label="Upload Pollution Certificate (PUC)"
+            prompt="Click to upload PUC certificate"
+            uploadedUrl={details.pucUrl}
+            uploading={!!uploading.puc}
+            onPress={() => chooseUploadSource('puc')}
           />
 
           {catalogueError && (

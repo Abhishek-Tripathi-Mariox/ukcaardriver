@@ -145,7 +145,7 @@ export function RequestBankDetailsUpdateModal({
 
             <View className="rounded-xl bg-[#FFF3E0] p-3">
               <Text className="text-[11px] leading-[17px] text-[#364153]">
-                ⚠️ All changes will be verified by the admin team before they take effect. You
+                All changes will be verified by the admin team before they take effect. You
                 will be notified once approved.
               </Text>
             </View>

@@ -16,7 +16,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { pickImageFromSource } from '../services/imagePicker';
 import RegistrationHeader from '../components/RegistrationHeader';
-import { CarIcon } from '../components/icons/ServiceTypeIcons';
+import { CarIcon, TabProfileIcon, DocumentIcon, BankIcon } from '../components/icons/ServiceTypeIcons';
 import {
   DriverDocument,
   updateRegistrationStep,
@@ -55,12 +55,27 @@ export interface VehicleSummary {
   serviceType: string;
 }
 
-const TABS: { id: TabId; emoji: string; label: string }[] = [
-  { id: 'personal', emoji: '👤', label: 'Personal' },
-  { id: 'vehicle', emoji: '🚗', label: 'Vehicle' },
-  { id: 'documents', emoji: '📄', label: 'Documents' },
-  { id: 'bank', emoji: '🏦', label: 'Bank' },
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'personal', label: 'Personal' },
+  { id: 'vehicle', label: 'Vehicle' },
+  { id: 'documents', label: 'Documents' },
+  { id: 'bank', label: 'Bank' },
 ];
+
+/** Vector icon per tab — emoji are banned in this app's UI. */
+function TabIcon({ id, active }: { id: TabId; active: boolean }) {
+  const color = active ? '#0097B3' : '#6C757D';
+  switch (id) {
+    case 'personal':
+      return <TabProfileIcon size={18} color={color} />;
+    case 'vehicle':
+      return <CarIcon size={18} color={color} />;
+    case 'documents':
+      return <DocumentIcon size={18} color={color} />;
+    case 'bank':
+      return <BankIcon size={18} color={color} />;
+  }
+}
 
 const DEFAULT_VEHICLE: VehicleSummary = {
   brandModel: '—',
@@ -309,7 +324,7 @@ export function CompleteProfileScreen({
                     isActive ? 'bg-white' : ''
                   }`}
                 >
-                  <Text className="text-base">{tab.emoji}</Text>
+                  <TabIcon id={tab.id} active={isActive} />
                 </Pressable>
               );
             })}

@@ -34,7 +34,12 @@ export function DriverRegistrationHomeScreen({
       >
         <SafeAreaView edges={['top']}>
           <View className="flex-row items-center justify-between px-4">
-            <LanguageBar onPress={onOpenLanguage} tint="light" />
+            {/* LanguageBar is w-full internally — unwrapped it consumed the
+                whole row and pushed the Logout button off-screen (the exact
+                "logout not visible" bug). flex-1 confines it. */}
+            <View className="flex-1">
+              <LanguageBar onPress={onOpenLanguage} tint="light" />
+            </View>
             <LogoutButton onLoggedOut={onLogout} tint="light" />
           </View>
           <View style={{ paddingHorizontal: s(20), paddingBottom: vs(18), paddingTop: vs(2) }}>

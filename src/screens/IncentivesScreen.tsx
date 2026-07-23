@@ -103,7 +103,7 @@ export function IncentivesScreen({ onBack }: IncentivesScreenProps) {
                   </View>
                   <Text style={styles.progressText}>
                     {current} / {threshold} {incentive.target === 'earnings' ? '₹ earned' : 'rides'}
-                    {done ? ' · target reached 🎉' : ''}
+                    {done ? ' · target reached' : ''}
                   </Text>
                 </View>
               );

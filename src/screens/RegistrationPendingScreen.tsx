@@ -1,24 +1,27 @@
 import {
-  Image,
+  Pressable,
   StatusBar,
   Text,
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { illustrationPendingApproval } from '../assets/images';
-import { ClockSmallIcon } from '../components/icons/ServiceTypeIcons';
+import { ClockSmallIcon, HourglassIcon } from '../components/icons/ServiceTypeIcons';
 import LogoutButton from '../components/LogoutButton';
 import { fs, s, vs } from '../theme/responsive';
 
 interface RegistrationPendingScreenProps {
   driverName?: string;
   onLogout: () => void;
+  /** Back to Home — under-review drivers live on the dashboard now and open
+   *  this screen from the waiting-approval banner. */
+  onBack?: () => void;
 }
 
 export function RegistrationPendingScreen({
   driverName,
   onLogout,
+  onBack,
 }: RegistrationPendingScreenProps) {
   const greetingName = driverName?.trim() || 'Driver';
   return (
@@ -34,7 +37,13 @@ export function RegistrationPendingScreen({
             style={{ paddingHorizontal: s(16), paddingVertical: vs(16) }}
             className="flex-row items-center justify-between"
           >
-            <View style={{ width: s(64) }} />
+            <View style={{ width: s(64) }}>
+              {onBack && (
+                <Pressable onPress={onBack} hitSlop={10} accessibilityLabel="Back to home">
+                  <Text style={{ fontSize: fs(22) }} className="text-white">←</Text>
+                </Pressable>
+              )}
+            </View>
             <Text
               style={{ fontSize: fs(20) }}
               className="flex-1 text-center font-poppins-semibold text-white"
@@ -59,12 +68,11 @@ export function RegistrationPendingScreen({
           Thank You, {greetingName}
         </Text>
 
-        <View style={{ marginTop: vs(24), height: vs(220), width: s(256) }}>
-          <Image
-            source={illustrationPendingApproval}
-            resizeMode="contain"
-            className="h-full w-full"
-          />
+        <View
+          style={{ marginTop: vs(28), height: s(140), width: s(140), borderRadius: s(70) }}
+          className="items-center justify-center bg-brand-teal/10"
+        >
+          <HourglassIcon size={s(64)} color="#0097B3" />
         </View>
 
         <Text

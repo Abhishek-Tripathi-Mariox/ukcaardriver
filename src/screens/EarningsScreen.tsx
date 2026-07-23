@@ -59,6 +59,15 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
     load();
   };
 
+  const [period, setPeriod] = useState<'today' | 'week' | 'month'>('month');
+  // Period-driven headline. Daily/weekly come from the same endpoint now.
+  const periodData =
+    period === 'today'
+      ? { total: data?.today?.total ?? 0, rides: data?.today?.completedRides ?? 0, title: 'Today' }
+      : period === 'week'
+      ? { total: data?.thisWeek?.total ?? 0, rides: data?.thisWeek?.completedRides ?? 0, title: 'This Week' }
+      : { total: data?.thisMonth.total ?? 0, rides: data?.thisMonth.completedRides ?? 0, title: 'This Month' };
+  const periodTotal = data ? formatRupees(periodData.total) : '—';
   const monthTotal = data ? formatRupees(data.thisMonth.total) : '—';
   const growthPct = data ? formatDelta(data.thisMonth.growthPct) : '—';
   const isPositiveGrowth = (data?.thisMonth.growthPct ?? 0) >= 0;
@@ -117,7 +126,31 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
           </View>
         ) : (
           <>
-            {/* This-month total card */}
+            {/* Period filter — Daily / Weekly / Monthly. */}
+            <View className="mb-4 flex-row rounded-2xl bg-[#F1ECF9] p-1">
+              {([
+                { key: 'today', label: 'Daily' },
+                { key: 'week', label: 'Weekly' },
+                { key: 'month', label: 'Monthly' },
+              ] as const).map(opt => {
+                const active = period === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setPeriod(opt.key)}
+                    className={`flex-1 items-center rounded-xl py-2 ${active ? 'bg-white' : ''}`}
+                  >
+                    <Text
+                      className={`text-[13px] ${active ? 'font-poppins-semibold text-[#9810FA]' : 'font-poppins text-[#6A7282]'}`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Period total card */}
             <View
               className="rounded-2xl bg-white p-5"
               style={{
@@ -130,28 +163,30 @@ export function EarningsScreen({ onBack, onViewPaymentHistory }: EarningsScreenP
             >
               <View className="flex-row items-center justify-between">
                 <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
-                  This Month
+                  {periodData.title}
                 </Text>
-                <View
-                  className={`rounded-full px-3 py-1 ${
-                    isPositiveGrowth ? 'bg-[#DCFCE7]' : 'bg-[#FEE2E2]'
-                  }`}
-                >
-                  <Text
-                    className={`text-[12px] font-poppins-semibold ${
-                      isPositiveGrowth ? 'text-[#00A63E]' : 'text-[#B91C1C]'
+                {period === 'month' && (
+                  <View
+                    className={`rounded-full px-3 py-1 ${
+                      isPositiveGrowth ? 'bg-[#DCFCE7]' : 'bg-[#FEE2E2]'
                     }`}
                   >
-                    {growthPct}
-                  </Text>
-                </View>
+                    <Text
+                      className={`text-[12px] font-poppins-semibold ${
+                        isPositiveGrowth ? 'text-[#00A63E]' : 'text-[#B91C1C]'
+                      }`}
+                    >
+                      {growthPct}
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text className="mt-3 text-[34px] font-poppins-bold text-[#9A15FB]">
-                {monthTotal}
+                {periodTotal}
               </Text>
               <Text className="mt-1 text-[13px] text-[#6A7282]">
-                From {completedRides} completed{' '}
-                {completedRides === 1 ? 'ride' : 'rides'}
+                From {periodData.rides} completed{' '}
+                {periodData.rides === 1 ? 'ride' : 'rides'}
               </Text>
             </View>
 
