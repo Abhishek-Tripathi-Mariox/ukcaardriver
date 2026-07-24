@@ -132,7 +132,14 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
         <Pressable onPress={onBack} hitSlop={10} style={styles.backBtn}>
           <BackArrowIcon size={22} color="#1B1D21" />
         </Pressable>
-        <Text style={styles.headerTitle}>UKCAAR OnePass</Text>
+        <Text
+          style={styles.headerTitle}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          maxFontSizeMultiplier={1.3}
+        >
+          UKCAAR OnePass
+        </Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -160,9 +167,21 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
           ) : (
             plans.map((plan) => (
               <View key={plan.key} style={styles.planCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.planLabel}>{plan.label}</Text>
-                  <Text style={styles.planMeta}>
+                <View style={styles.planInfo}>
+                  <Text
+                    style={styles.planLabel}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                    maxFontSizeMultiplier={1.3}
+                  >
+                    {plan.label}
+                  </Text>
+                  <Text
+                    style={styles.planMeta}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    maxFontSizeMultiplier={1.3}
+                  >
                     {plan.days} days · {plan.currency} {plan.price.toFixed(2)}
                   </Text>
                 </View>
@@ -174,7 +193,13 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
                   {buying === plan.key ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.buyText}>Buy ₹{plan.price.toFixed(0)}</Text>
+                    <Text
+                      style={styles.buyText}
+                      numberOfLines={1}
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Buy ₹{plan.price.toFixed(0)}
+                    </Text>
                   )}
                 </Pressable>
               </View>
@@ -193,7 +218,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
   },
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1B1D21' },
+  headerTitle: {
+    fontSize: 18, fontWeight: '700', color: '#1B1D21',
+    flex: 1, textAlign: 'center', marginHorizontal: 8,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16 },
 
@@ -209,14 +237,20 @@ const styles = StyleSheet.create({
   planCard: {
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1, borderColor: '#EEE', borderRadius: 14,
-    padding: 16, marginBottom: 12,
+    padding: 16, marginBottom: 12, gap: 12,
   },
+  // Text column: grows into the free space AND is allowed to shrink (minWidth: 0)
+  // so a long admin-configured plan label can never push the amount off the card.
+  planInfo: { flex: 1, minWidth: 0, flexShrink: 1 },
   planLabel: { fontSize: 16, fontWeight: '600', color: '#1B1D21' },
   planMeta: { fontSize: 13, color: '#7D8A95', marginTop: 4 },
   buyBtn: {
     backgroundColor: PRIMARY, borderRadius: 10,
-    paddingHorizontal: 18, paddingVertical: 11, minWidth: 96, alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 11,
+    // Amount never shrinks or truncates; capped so a large price can't starve the label.
+    flexShrink: 0, minWidth: 96, maxWidth: '46%', minHeight: 44,
+    alignItems: 'center', justifyContent: 'center',
   },
   buyBtnDisabled: { opacity: 0.6 },
-  buyText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  buyText: { color: '#fff', fontSize: 14, fontFamily: 'Poppins-Medium' },
 });

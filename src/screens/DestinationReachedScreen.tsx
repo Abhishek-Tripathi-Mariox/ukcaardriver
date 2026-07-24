@@ -208,7 +208,7 @@ export function DestinationReachedScreen({
           style={{ height: s(56), borderRadius: s(14) }}
         >
           <Text
-            className="font-poppins-semibold uppercase text-white"
+            className="font-poppins-medium uppercase text-white"
             style={{ fontSize: fs(14) }}
           >
             End Ride

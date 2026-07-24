@@ -60,7 +60,7 @@ export function RatePassengerModal({
             className="mt-5 h-14 items-center justify-center rounded-2xl bg-brand-teal"
             style={{ opacity: rating === 0 || submitting ? 0.5 : 1 }}
           >
-            <Text className="text-sm font-poppins-semibold text-white">
+            <Text className="text-sm font-poppins-medium text-white">
               {submitting ? 'Submitting…' : 'Submit Rating'}
             </Text>
           </Pressable>

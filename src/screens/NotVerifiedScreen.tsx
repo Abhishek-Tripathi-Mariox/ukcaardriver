@@ -137,7 +137,7 @@ export function NotVerifiedScreen({
           }}
           className="items-center bg-brand-teal"
         >
-          <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-white">
+          <Text style={{ fontSize: fs(15) }} className="font-poppins-medium text-white">
             {copy.cta}
           </Text>
         </Pressable>

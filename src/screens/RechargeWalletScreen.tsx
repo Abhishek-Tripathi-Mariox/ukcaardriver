@@ -21,6 +21,7 @@ import {
   verifyRechargePayment,
 } from '../services/api';
 import { useUserStore } from '../store';
+import { friendlyPaymentError } from '../utils/paymentErrors';
 
 interface RechargeWalletScreenProps {
   onBack?: () => void;
@@ -103,6 +104,10 @@ export function RechargeWalletScreen({
     // user dismisses the Razorpay sheet (otherwise it sits as 'pending'
     // forever in the wallet statement).
     let createdOrderId: string | null = null;
+    // True once Razorpay has actually taken the payment. Lets the catch block
+    // tell "never charged" apart from "charged but our verify call failed" —
+    // those need very different messages.
+    let checkoutSucceeded = false;
     try {
       // 1. Create a Razorpay order on the backend (returns orderId + keyId).
       const order = await createRechargeOrder(numericAmount);
@@ -138,6 +143,7 @@ export function RechargeWalletScreen({
       console.log('[recharge] opening Razorpay with options:', JSON.stringify(options));
 
       const paymentData = await RazorpayCheckout.open(options);
+      checkoutSucceeded = true;
       console.log('[recharge] Razorpay returned payment_id=', paymentData?.razorpay_payment_id);
 
       // 3. Verify server-side. Backend HMAC-checks the signature, marks the
@@ -202,11 +208,19 @@ export function RechargeWalletScreen({
           'Recharge cancelled',
           'You closed the payment sheet. No money was charged.',
         );
-      } else {
+      } else if (checkoutSucceeded) {
+        // Money may well have been taken — the payment cleared and only our
+        // verify call failed. NEVER tell this user they weren't charged; the
+        // webhook credits the wallet server-side, so point them at the balance.
         Alert.alert(
-          'Recharge failed',
-          err?.description || err?.message || 'Please try again.',
+          'Payment received',
+          "We couldn't confirm your recharge just yet. If the amount was debited it will appear in your wallet shortly — please check your balance before trying again.",
         );
+      } else {
+        // Raw Razorpay/network text was being shown verbatim (e.g. "BAD_REQUEST_ERROR
+        // …"), which means nothing to a driver. Log stays in console.warn above;
+        // the user gets plain language.
+        Alert.alert('Recharge failed', friendlyPaymentError(err));
       }
     } finally {
       setSubmitting(false);
@@ -302,7 +316,7 @@ export function RechargeWalletScreen({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-base font-poppins-bold text-white">Recharge Now</Text>
+            <Text className="text-base font-poppins-medium text-white">Recharge Now</Text>
           )}
         </Pressable>
       </SafeAreaView>

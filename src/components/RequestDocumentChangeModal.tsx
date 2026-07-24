@@ -190,7 +190,7 @@ export function RequestDocumentChangeModal({
                 disabled={submitting}
                 className="h-12 flex-1 items-center justify-center rounded-xl"
               >
-                <Text className="text-[14px] font-poppins-semibold text-[#364153]">
+                <Text className="text-[14px] font-poppins-medium text-[#364153]">
                   Cancel
                 </Text>
               </Pressable>
@@ -215,7 +215,7 @@ export function RequestDocumentChangeModal({
                 {submitting ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="text-[14px] font-poppins-semibold text-white">
+                  <Text className="text-[14px] font-poppins-medium text-white">
                     Submit Request
                   </Text>
                 )}

@@ -128,7 +128,7 @@ export function RideInProgressScreen({
             className="absolute right-4 bottom-4 h-14 flex-row items-center gap-2 rounded-full bg-[#0097B3] px-5 shadow-lg shadow-black/25"
           >
             <MapPinIcon size={20} color="white" />
-            <Text className="text-sm font-poppins-semibold text-white">Navigate</Text>
+            <Text className="text-sm font-poppins-medium text-white">Navigate</Text>
           </Pressable>
         )}
       </View>
@@ -179,7 +179,7 @@ export function RideInProgressScreen({
           }}
         >
           <Text
-            className="text-sm font-poppins-bold tracking-[0.28px]"
+            className="text-sm font-poppins-medium tracking-[0.28px]"
             style={{ color: canComplete ? 'white' : '#9CA3AF' }}
           >
             COMPLETE

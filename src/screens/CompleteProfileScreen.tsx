@@ -376,7 +376,7 @@ export function CompleteProfileScreen({
           {activeTab === 'vehicle' && (
             <View>
               <View className="mb-4 h-12 justify-center rounded-2xl bg-[#F3F3F5] px-4">
-                <Text className="text-sm text-slate-500">
+                <Text className="text-base font-poppins text-slate-500">
                   Vehicle details already captured
                 </Text>
               </View>
@@ -427,16 +427,6 @@ export function CompleteProfileScreen({
                 </View>
               </View>
 
-              {onEditVehicle ? (
-                <Pressable
-                  onPress={onEditVehicle}
-                  className="mt-4 h-12 items-center justify-center rounded-2xl border border-slate-300"
-                >
-                  <Text className="text-sm font-poppins-medium text-slate-700">
-                    Edit Detail
-                  </Text>
-                </Pressable>
-              ) : null}
             </View>
           )}
 
@@ -550,6 +540,19 @@ export function CompleteProfileScreen({
               </Text>
             )}
           </Pressable>
+
+          {/* Edit Detail renders BELOW Save — the primary action comes first.
+              Hoisted out of the vehicle tab block, which forced it above. */}
+          {activeTab === 'vehicle' && onEditVehicle ? (
+            <Pressable
+              onPress={onEditVehicle}
+              className="mt-3 h-12 items-center justify-center rounded-2xl border border-slate-300"
+            >
+              <Text className="text-sm font-poppins-medium text-slate-700">
+                Edit Detail
+              </Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

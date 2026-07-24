@@ -244,7 +244,7 @@ export function RideRequestModal({
               className="flex-1 flex-row items-center justify-center gap-2 border border-[#FFC9C9] bg-white"
             >
               <CloseIcon size={s(16)} color="#E7000B" />
-              <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-[#E7000B]">Reject</Text>
+              <Text style={{ fontSize: fs(15) }} className="font-poppins-medium text-[#E7000B]">Reject</Text>
             </Pressable>
             <Pressable
               onPress={onAccept}
@@ -252,7 +252,7 @@ export function RideRequestModal({
               className="flex-1 flex-row items-center justify-center gap-2"
             >
               <CheckIcon size={s(16)} color="white" />
-              <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-white">Accept</Text>
+              <Text style={{ fontSize: fs(15) }} className="font-poppins-medium text-white">Accept</Text>
             </Pressable>
           </View>
         </View>

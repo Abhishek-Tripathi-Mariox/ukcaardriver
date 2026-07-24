@@ -223,7 +223,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                 }}
               >
                 <EditPencilIcon size={16} color="white" />
-                <Text className="text-sm font-poppins-semibold text-white">
+                <Text className="text-sm font-poppins-medium text-white">
                   Request Bank Details Update
                 </Text>
               </Pressable>
@@ -232,7 +232,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
                 className="h-12 flex-row items-center justify-center gap-2 rounded-xl border border-[#0097B3] bg-white"
               >
                 <DocumentIcon size={16} color="#0097B3" />
-                <Text className="text-sm font-poppins-semibold text-[#0097B3]">
+                <Text className="text-sm font-poppins-medium text-[#0097B3]">
                   View Transaction Statement
                 </Text>
               </Pressable>

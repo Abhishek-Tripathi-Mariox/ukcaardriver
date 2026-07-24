@@ -168,7 +168,7 @@ export function RatePassengersScreen({ journeyKey, onBack, onDone }: RatePasseng
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-[14px] font-poppins-semibold uppercase text-white">
+            <Text className="text-[14px] font-poppins-medium uppercase text-white">
               {riders.length === 0 ? 'Continue' : 'Submit Ratings'}
             </Text>
           )}

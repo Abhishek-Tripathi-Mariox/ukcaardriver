@@ -72,7 +72,7 @@ export function CashoutSuccessScreen({
               elevation: 4,
             }}
           >
-            <Text className="text-base font-poppins-semibold text-white">
+            <Text className="text-base font-poppins-medium text-white">
               Go to Wallet
             </Text>
           </Pressable>
@@ -80,7 +80,7 @@ export function CashoutSuccessScreen({
             onPress={onViewTransaction}
             className="h-12 items-center justify-center rounded-xl"
           >
-            <Text className="text-sm font-poppins-semibold text-[#0097B3]">
+            <Text className="text-sm font-poppins-medium text-[#0097B3]">
               View Transaction
             </Text>
           </Pressable>

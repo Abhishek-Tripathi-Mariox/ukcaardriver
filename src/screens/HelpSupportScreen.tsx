@@ -270,7 +270,7 @@ export function HelpSupportScreen({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-[17px] font-poppins-bold text-white">Submit</Text>
+            <Text className="text-[17px] font-poppins-medium text-white">Submit</Text>
           )}
         </Pressable>
       </SafeAreaView>

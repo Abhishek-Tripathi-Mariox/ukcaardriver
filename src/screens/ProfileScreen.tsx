@@ -486,7 +486,7 @@ export function ProfileScreen({
               {savingEdit ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-base font-poppins-semibold text-white">Save</Text>
+                <Text className="text-base font-poppins-medium text-white">Save</Text>
               )}
             </Pressable>
             <Pressable onPress={() => setEditOpen(false)} className="mt-2 h-11 items-center justify-center">

@@ -22,8 +22,10 @@ export function LanguageBar({ onPress, tint = 'light' }: LanguageBarProps) {
   const meta = LANG_META[language];
   const isLight = tint === 'light';
 
+  // Layout-neutral: no w-full, no self-padding. The call site owns the row's
+  // padding so the pill can't double-pad or jam into the corner.
   return (
-    <View className="w-full flex-row justify-end px-4 pt-2">
+    <View className="flex-row justify-end">
       <Pressable
         onPress={onPress}
         hitSlop={8}

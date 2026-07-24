@@ -140,7 +140,7 @@ export function EmergencyAlertScreen({
             {approving ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-[14px] font-poppins-semibold uppercase text-white">
+              <Text className="text-[14px] font-poppins-medium uppercase text-white">
                 Approve Drop (Safe Zone)
               </Text>
             )}
@@ -150,7 +150,7 @@ export function EmergencyAlertScreen({
             disabled={approving}
             className="mt-3 h-[56px] items-center justify-center rounded-2xl border border-[#D32F2F] bg-white"
           >
-            <Text className="text-[14px] font-poppins-semibold uppercase text-[#D32F2F]">
+            <Text className="text-[14px] font-poppins-medium uppercase text-[#D32F2F]">
               Decline (Unsafe Area)
             </Text>
           </Pressable>
@@ -181,7 +181,7 @@ export function EmergencyAlertScreen({
               }}
               className="mt-5 h-[50px] items-center justify-center rounded-2xl bg-[#00C896]"
             >
-              <Text className="text-[14px] font-poppins-semibold uppercase text-white">
+              <Text className="text-[14px] font-poppins-medium uppercase text-white">
                 Yes, Stop Now
               </Text>
             </Pressable>
@@ -189,7 +189,7 @@ export function EmergencyAlertScreen({
               onPress={() => setSafeStopDialogOpen(false)}
               className="mt-3 h-[50px] items-center justify-center rounded-2xl border border-[#0097B3] bg-white"
             >
-              <Text className="text-[14px] font-poppins-semibold uppercase text-[#0097B3]">
+              <Text className="text-[14px] font-poppins-medium uppercase text-[#0097B3]">
                 Not Yet
               </Text>
             </Pressable>

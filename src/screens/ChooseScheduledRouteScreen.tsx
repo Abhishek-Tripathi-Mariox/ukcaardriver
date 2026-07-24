@@ -423,7 +423,7 @@ function RouteDetail({
           {submitting ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-base font-poppins-bold text-white">
+            <Text className="text-base font-poppins-medium text-white">
               Register for this route
             </Text>
           )}

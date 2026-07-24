@@ -30,7 +30,7 @@ export function RegistrationHeader({
       end={{ x: 0.5, y: 1 }}
     >
       <SafeAreaView edges={['top']}>
-        <View style={{ paddingHorizontal: s(20), paddingTop: vs(12), paddingBottom: vs(16) }}>
+        <View style={{ paddingHorizontal: s(20), paddingTop: vs(18), paddingBottom: vs(16) }}>
           <View className="flex-row items-center" style={{ gap: s(14) }}>
             {onBack ? (
               <Pressable onPress={onBack} hitSlop={12}>
@@ -38,10 +38,19 @@ export function RegistrationHeader({
               </Pressable>
             ) : null}
             <View className="flex-1">
-              <Text className="font-poppins-bold text-white" style={{ fontSize: fs(23) }}>
+              {/* lineHeight pinned on both lines: RN's default line box on
+                  Poppins-Bold @ fs(23) is what created the dead space under
+                  the title — a margin tweak alone can't remove it. */}
+              <Text
+                className="font-poppins-bold text-white"
+                style={{ fontSize: fs(23), lineHeight: fs(27) }}
+              >
                 {title}
               </Text>
-              <Text className="font-poppins text-white/90" style={{ marginTop: vs(2), fontSize: fs(13) }}>
+              <Text
+                className="font-poppins text-white/90"
+                style={{ marginTop: 0, fontSize: fs(13), lineHeight: fs(16) }}
+              >
                 Step {currentStep} of {totalSteps}
               </Text>
             </View>

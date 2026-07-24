@@ -252,7 +252,7 @@ export function BoardingSummaryScreen({
           ]}
         >
           <Text
-            className="font-poppins-semibold uppercase text-white"
+            className="font-poppins-medium uppercase text-white"
             style={{ fontSize: fs(16) }}
           >
             Start Journey

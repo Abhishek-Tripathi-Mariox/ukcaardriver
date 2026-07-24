@@ -102,7 +102,7 @@ export function ChooseLanguageScreen({
           >
             <Text
               style={{ fontSize: fs(17) }}
-              className="font-poppins-semibold text-white"
+              className="font-poppins-medium text-white"
             >
               Continue
             </Text>

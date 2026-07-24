@@ -33,20 +33,28 @@ export function DriverRegistrationHomeScreen({
         end={{ x: 0.5, y: 1 }}
       >
         <SafeAreaView edges={['top']}>
-          <View className="flex-row items-center justify-between px-4">
-            {/* LanguageBar is w-full internally — unwrapped it consumed the
-                whole row and pushed the Logout button off-screen (the exact
-                "logout not visible" bug). flex-1 confines it. */}
-            <View className="flex-1">
-              <LanguageBar onPress={onOpenLanguage} tint="light" />
-            </View>
+          {/* Language + Logout share one padded row. LanguageBar is now
+              layout-neutral (see LanguageBar.tsx), so the padding lives here
+              and lines up with the title block below — the pill used to sit
+              jammed into the top-right corner under the status bar. */}
+          <View
+            className="flex-row items-center justify-end"
+            style={{ paddingHorizontal: s(20), paddingTop: vs(10), gap: s(12) }}
+          >
+            <LanguageBar onPress={onOpenLanguage} tint="light" />
             <LogoutButton onLoggedOut={onLogout} tint="light" />
           </View>
-          <View style={{ paddingHorizontal: s(20), paddingBottom: vs(18), paddingTop: vs(2) }}>
-            <Text className="font-poppins-bold text-white" style={{ fontSize: fs(23) }}>
+          <View style={{ paddingHorizontal: s(20), paddingBottom: vs(18), paddingTop: vs(12) }}>
+            <Text
+              className="font-poppins-bold text-white"
+              style={{ fontSize: fs(23), lineHeight: fs(27) }}
+            >
               Driver Registration
             </Text>
-            <Text className="font-poppins text-white/90" style={{ marginTop: vs(2), fontSize: fs(13) }}>
+            <Text
+              className="font-poppins text-white/90"
+              style={{ marginTop: 0, fontSize: fs(13), lineHeight: fs(16) }}
+            >
               Step {currentStep} of {totalSteps}
             </Text>
             <View
@@ -84,6 +92,7 @@ export function DriverRegistrationHomeScreen({
           label="Register Vehicle"
           onPress={onRegisterVehicle}
           className="mt-10"
+          labelClassName="font-poppins"
         />
       </View>
     </View>

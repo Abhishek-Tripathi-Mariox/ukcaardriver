@@ -122,22 +122,27 @@ function CounterCard({ value, label, icon }: CounterCardProps) {
       style={{ paddingHorizontal: s(16), paddingVertical: vs(18), borderRadius: s(15) }}
       className="flex-1 flex-row items-start justify-between border border-[#EBEBEB] bg-white"
     >
-      <View>
+      <View style={{ flex: 1, minWidth: 0, marginRight: s(8) }}>
         <Text
-          style={{ fontSize: fs(22), lineHeight: fs(24) }}
+          style={{ fontSize: fs(22), lineHeight: fs(26) }}
           className="font-poppins-semibold text-brand-teal"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
         >
           {value}
         </Text>
         <Text
           style={{ fontSize: fs(12), marginTop: vs(6) }}
           className="font-poppins-bold text-[#6C757D]"
+          numberOfLines={1}
+          ellipsizeMode="tail"
         >
           {label}
         </Text>
       </View>
       <View
-        style={{ height: s(36), width: s(36) }}
+        style={{ height: s(36), width: s(36), flexGrow: 0, flexShrink: 0 }}
         className="items-center justify-center rounded-full bg-[#F0F0FA]"
       >
         {icon === 'rupee' ? <RupeeBadgeIcon size={s(18)} /> : <ListBadgeIcon size={s(18)} />}
@@ -419,16 +424,19 @@ export function DriverDashboardScreen({
         <SafeAreaView edges={['top']}>
           <View style={{ paddingHorizontal: s(24), paddingBottom: vs(24), paddingTop: vs(8) }}>
             <View className="flex-row items-center justify-between">
-              <View>
+              <View className="flex-1" style={{ minWidth: 0, paddingRight: s(12) }}>
                 <Text
                   style={{ fontSize: fs(24), lineHeight: fs(32) }}
                   className="font-poppins-semibold text-white"
+                  numberOfLines={1}
                 >
                   Welcome back,
                 </Text>
                 <Text
                   style={{ fontSize: fs(18) }}
                   className="font-poppins text-white/90"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {driverName}
                 </Text>
@@ -440,7 +448,7 @@ export function DriverDashboardScreen({
                   is still visible on Home. */}
               <Pressable
                 onPress={onOpenMenu}
-                style={{ height: s(44), width: s(52) }}
+                style={{ height: s(44), width: s(52), flexGrow: 0, flexShrink: 0 }}
                 className="items-center justify-center rounded-2xl bg-white/20"
                 hitSlop={8}
                 accessibilityLabel="Open menu"
@@ -475,22 +483,26 @@ export function DriverDashboardScreen({
                 }}
                 className="flex-row items-center shadow-sm"
               >
-                <View style={{ marginRight: s(10) }}>
+                <View style={{ marginRight: s(10), flexGrow: 0, flexShrink: 0 }}>
                   {regBanner.icon === 'car' && <CarGlyphIcon size={s(24)} color={regBanner.accent} />}
                   {regBanner.icon === 'clipboard' && <ClipboardListIcon size={s(24)} color={regBanner.accent} />}
                   {regBanner.icon === 'hourglass' && <HourglassIcon size={s(24)} color={regBanner.accent} />}
                   {regBanner.icon === 'alert' && <AlertCircleIcon size={s(24)} color={regBanner.accent} />}
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
                     style={{ fontSize: fs(14.5) }}
                     className="font-poppins-semibold text-[#1E293B]"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
                     {regBanner.title}
                   </Text>
                   <Text
                     style={{ fontSize: fs(11.5), marginTop: vs(2) }}
                     className="font-poppins text-[#6C757D]"
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
                   >
                     {regBanner.body}
                   </Text>
@@ -502,28 +514,44 @@ export function DriverDashboardScreen({
                     borderRadius: s(10),
                     backgroundColor: regBanner.accent,
                     marginLeft: s(8),
+                    flexGrow: 0,
+                    flexShrink: 0,
                   }}
                 >
-                  <Text style={{ fontSize: fs(12) }} className="font-poppins-semibold text-white">
+                  <Text
+                    style={{ fontSize: fs(12) }}
+                    className="font-poppins-medium text-white"
+                    numberOfLines={1}
+                  >
                     {regBanner.cta}
                   </Text>
                 </View>
               </Pressable>
             ) : (
             <View
-              style={{ marginTop: vs(24), height: vs(56), paddingHorizontal: s(16) }}
+              style={{
+                marginTop: vs(24),
+                minHeight: vs(56),
+                paddingHorizontal: s(16),
+                paddingVertical: vs(8),
+              }}
               className="flex-row items-center justify-between rounded-2xl bg-white shadow-sm"
             >
-              <View className="flex-row items-center" style={{ gap: s(12) }}>
+              <View
+                className="flex-1 flex-row items-center"
+                style={{ gap: s(12), minWidth: 0, marginRight: s(10) }}
+              >
                 <View
-                  style={{ height: s(12), width: s(12) }}
+                  style={{ height: s(12), width: s(12), flexGrow: 0, flexShrink: 0 }}
                   className={`rounded-full ${
                     isOnline ? 'bg-[#00C896]' : 'bg-[#99A1AF]'
                   }`}
                 />
                 <Text
-                  style={{ fontSize: fs(16) }}
+                  style={{ fontSize: fs(16), flexShrink: 1 }}
                   className="font-poppins-semibold text-[#1E293B]"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {isOnline ? "You're Online" : "You're Offline"}
                 </Text>
@@ -535,7 +563,7 @@ export function DriverDashboardScreen({
                 onPress={handleToggleOnline}
                 disabled={togglingOnline || loading}
                 hitSlop={12}
-                className={`h-8 w-14 justify-center rounded-full px-1 ${
+                className={`h-8 w-14 shrink-0 grow-0 justify-center rounded-full px-1 ${
                   isOnline ? 'bg-brand-teal' : 'bg-[#CBCED4]'
                 }`}
                 style={{
@@ -579,10 +607,14 @@ export function DriverDashboardScreen({
         {incomingRequests.length > 0 && (
           <View className="mb-5">
             <View className="mb-3 flex-row items-center gap-2">
-              <Text className="text-[18px] font-poppins-semibold text-[#1E293B]">
+              <Text
+                className="shrink text-[18px] font-poppins-semibold text-[#1E293B]"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 Incoming Requests
               </Text>
-              <View className="min-w-[22px] items-center justify-center rounded-full bg-[#00C896] px-2 py-0.5">
+              <View className="min-w-[22px] shrink-0 grow-0 items-center justify-center rounded-full bg-[#00C896] px-2 py-0.5">
                 <Text className="text-[12px] font-poppins-bold text-white">
                   {incomingRequests.length}
                 </Text>
@@ -597,10 +629,17 @@ export function DriverDashboardScreen({
                   className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-sm"
                 >
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-[15px] font-poppins-semibold text-[#1E293B]">
+                    <Text
+                      className="flex-1 pr-2 text-[15px] font-poppins-semibold text-[#1E293B]"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
                       {req.passengerName}
                     </Text>
-                    <Text className="text-[15px] font-poppins-bold text-brand-teal">
+                    <Text
+                      className="shrink-0 text-[15px] font-poppins-bold text-brand-teal"
+                      numberOfLines={1}
+                    >
                       {req.fare}
                     </Text>
                   </View>
@@ -624,12 +663,14 @@ export function DriverDashboardScreen({
                     </Text>
                   </View>
 
-                  <View className="mt-2 flex-row items-center gap-3 pl-4">
-                    <Text className="text-[12px] text-[#94A3B8]">
+                  <View className="mt-2 flex-row flex-wrap items-center gap-3 pl-4">
+                    <Text className="shrink text-[12px] text-[#94A3B8]" numberOfLines={1}>
                       {req.distance}
                     </Text>
-                    <Text className="text-[12px] text-[#94A3B8]">•</Text>
-                    <Text className="text-[12px] text-[#94A3B8]">{req.eta}</Text>
+                    <Text className="shrink-0 text-[12px] text-[#94A3B8]">•</Text>
+                    <Text className="shrink text-[12px] text-[#94A3B8]" numberOfLines={1}>
+                      {req.eta}
+                    </Text>
                   </View>
 
                   <View className="mt-3 flex-row gap-3">
@@ -637,7 +678,7 @@ export function DriverDashboardScreen({
                       onPress={() => onRejectRequest?.(req)}
                       className="h-11 flex-1 items-center justify-center rounded-xl border border-[#E2E8F0] bg-white"
                     >
-                      <Text className="text-[14px] font-poppins-semibold text-[#64748B]">
+                      <Text className="text-[14px] font-poppins-medium text-[#64748B]">
                         Reject
                       </Text>
                     </Pressable>
@@ -645,7 +686,7 @@ export function DriverDashboardScreen({
                       onPress={() => onAcceptRequest?.(req)}
                       className="h-11 flex-1 items-center justify-center rounded-xl bg-brand-teal"
                     >
-                      <Text className="text-[14px] font-poppins-semibold text-white">
+                      <Text className="text-[14px] font-poppins-medium text-white">
                         Accept
                       </Text>
                     </Pressable>
@@ -675,16 +716,25 @@ export function DriverDashboardScreen({
                     colors={card.colors}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
-                    className="h-20 flex-row items-center gap-3 rounded-2xl px-4 shadow-sm"
+                    style={{ minHeight: vs(80), paddingVertical: vs(10) }}
+                    className="flex-row items-center gap-3 rounded-2xl px-4 shadow-sm"
                   >
-                    <View className="h-12 w-12 items-center justify-center rounded-full bg-white/20">
+                    <View className="h-12 w-12 shrink-0 grow-0 items-center justify-center rounded-full bg-white/20">
                       {card.icon}
                     </View>
-                    <View className="flex-1">
-                      <Text className="text-base font-poppins-semibold text-white">
+                    <View className="flex-1" style={{ minWidth: 0 }}>
+                      <Text
+                        className="text-base font-poppins-semibold text-white"
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
                         {card.title}
                       </Text>
-                      <Text className="text-sm font-poppins-medium text-white/80">
+                      <Text
+                        className="text-sm font-poppins-medium text-white/80"
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                      >
                         {card.subtitle}
                       </Text>
                     </View>
@@ -738,14 +788,28 @@ export function DriverDashboardScreen({
                   style={{ borderRadius: s(16), padding: s(16) }}
                 >
                   <View className="flex-row items-center justify-between">
-                    <Text className="font-poppins-semibold text-white" style={{ fontSize: fs(18) }}>
+                    <Text
+                      className="flex-1 font-poppins-semibold text-white"
+                      style={{ fontSize: fs(18), minWidth: 0, paddingRight: s(8) }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
                       Current Ride
                     </Text>
                     <View
                       className="rounded-full bg-white/25"
-                      style={{ paddingHorizontal: s(10), paddingVertical: vs(3) }}
+                      style={{
+                        paddingHorizontal: s(10),
+                        paddingVertical: vs(3),
+                        flexGrow: 0,
+                        flexShrink: 0,
+                      }}
                     >
-                      <Text className="font-poppins-semibold text-white" style={{ fontSize: fs(13) }}>
+                      <Text
+                        className="font-poppins-semibold text-white"
+                        style={{ fontSize: fs(13) }}
+                        numberOfLines={1}
+                      >
                         ₹{Number(activeRide.estimatedFare ?? 0).toFixed(0)}
                       </Text>
                     </View>
@@ -808,13 +872,18 @@ export function DriverDashboardScreen({
               const shown = real > 0 ? real : 5;
               return (
                 <View className="mt-4 flex-row items-center justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
-                  <View>
-                    <Text className="text-[13px] text-[#6A7282]">Your Rating</Text>
-                    <Text className="text-[22px] font-poppins-semibold leading-[22px] text-brand-teal">
+                  <View className="flex-1 pr-3" style={{ minWidth: 0 }}>
+                    <Text className="text-[13px] text-[#6A7282]" numberOfLines={1}>
+                      Your Rating
+                    </Text>
+                    <Text
+                      className="text-[22px] font-poppins-semibold leading-[26px] text-brand-teal"
+                      numberOfLines={1}
+                    >
                       {shown.toFixed(1)}
                     </Text>
                   </View>
-                  <View className="flex-row items-center gap-1">
+                  <View className="shrink-0 grow-0 flex-row items-center gap-1">
                     {[1, 2, 3, 4, 5].map(i => (
                       <StarIcon
                         key={i}
@@ -830,18 +899,22 @@ export function DriverDashboardScreen({
             {upcomingJourneys.length > 0 ? (
               <View className="mt-6">
                 <View className="mb-3 flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-base font-poppins-semibold text-[#0A0A0A]">
+                  <View className="flex-1 flex-row items-center gap-2 pr-2" style={{ minWidth: 0 }}>
+                    <Text
+                      className="shrink text-base font-poppins-semibold text-[#0A0A0A]"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
                       Upcoming Scheduled Rides
                     </Text>
-                    <View className="min-w-[20px] items-center justify-center rounded-full bg-brand-teal px-1.5 py-0.5">
+                    <View className="min-w-[20px] shrink-0 grow-0 items-center justify-center rounded-full bg-brand-teal px-1.5 py-0.5">
                       <Text className="text-[11px] font-poppins-bold text-white">
                         {upcomingJourneys.length}
                       </Text>
                     </View>
                   </View>
-                  <Pressable onPress={onOpenScheduledJourneys} hitSlop={8}>
-                    <Text className="text-sm font-poppins-medium text-brand-teal">
+                  <Pressable onPress={onOpenScheduledJourneys} hitSlop={8} className="shrink-0">
+                    <Text className="text-sm font-poppins-medium text-brand-teal" numberOfLines={1}>
                       View All
                     </Text>
                   </Pressable>
@@ -861,24 +934,33 @@ export function DriverDashboardScreen({
                       className="mb-3 rounded-2xl border border-[#EBEBEB] p-4"
                     >
                       <View className="flex-row items-center justify-between">
-                        <View className="flex-1 flex-row items-center gap-1.5 pr-2">
-                          <CalendarIcon size={14} color="#0097B3" />
+                        <View
+                          className="flex-1 flex-row items-center gap-1.5 pr-2"
+                          style={{ minWidth: 0 }}
+                        >
+                          <View className="shrink-0 grow-0">
+                            <CalendarIcon size={14} color="#0097B3" />
+                          </View>
                           <Text
-                            className="font-poppins-medium text-xs text-[#6A7282]"
+                            className="flex-1 font-poppins-medium text-xs text-[#6A7282]"
                             numberOfLines={1}
+                            ellipsizeMode="tail"
                           >
                             {j.departureDate}, {j.departureTime}
                           </Text>
                         </View>
-                        <View className="rounded-full bg-[#F3E8FF] px-2.5 py-1">
-                          <Text className="font-poppins-semibold text-xs text-[#9810FA]">
+                        <View className="shrink-0 grow-0 rounded-full bg-[#F3E8FF] px-2.5 py-1">
+                          <Text
+                            className="font-poppins-semibold text-xs text-[#9810FA]"
+                            numberOfLines={1}
+                          >
                             {j.passengerCount}/{j.totalSeats} seats
                           </Text>
                         </View>
                       </View>
                       <View className="mt-2.5 flex-row items-center gap-2">
                         <View
-                          className="h-2.5 w-2.5 rounded-full"
+                          className="h-2.5 w-2.5 shrink-0 grow-0 rounded-full"
                           style={{ backgroundColor: dot }}
                         />
                         <Text
@@ -899,7 +981,7 @@ export function DriverDashboardScreen({
                         onPress={onOpenScheduledJourneys}
                         className="mt-3 h-10 items-center justify-center rounded-xl border border-brand-teal bg-white"
                       >
-                        <Text className="font-poppins-semibold text-sm text-brand-teal">
+                        <Text className="font-poppins-medium text-sm text-brand-teal">
                           View Details
                         </Text>
                       </Pressable>
@@ -925,10 +1007,18 @@ export function DriverDashboardScreen({
                 otherwise. No placeholder reviewers. */}
             <View className="mt-6">
               <View className="mb-3 flex-row items-center justify-between">
-                <Text className="text-base font-poppins-semibold text-[#0A0A0A]">Reviews</Text>
+                <Text
+                  className="flex-1 pr-2 text-base font-poppins-semibold text-[#0A0A0A]"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  Reviews
+                </Text>
                 {reviews.length > 0 && (
-                  <Pressable onPress={onOpenReviews} hitSlop={8}>
-                    <Text className="text-sm font-poppins-medium text-brand-teal">View All</Text>
+                  <Pressable onPress={onOpenReviews} hitSlop={8} className="shrink-0">
+                    <Text className="text-sm font-poppins-medium text-brand-teal" numberOfLines={1}>
+                      View All
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -965,7 +1055,7 @@ export function DriverDashboardScreen({
                     <View className="flex-row items-center" style={{ gap: s(12) }}>
                       <View
                         className="items-center justify-center rounded-full bg-[#E9D4FF]"
-                        style={{ width: s(40), height: s(40) }}
+                        style={{ width: s(40), height: s(40), flexGrow: 0, flexShrink: 0 }}
                       >
                         <Text
                           className="font-poppins-semibold text-[#8200DB]"
@@ -1004,7 +1094,8 @@ export function DriverDashboardScreen({
                       {!!formatReviewDate(r.date) && (
                         <Text
                           className="font-poppins-regular text-[#9CA3AF]"
-                          style={{ fontSize: fs(12) }}
+                          style={{ fontSize: fs(12), flexGrow: 0, flexShrink: 0 }}
+                          numberOfLines={1}
                         >
                           {formatReviewDate(r.date)}
                         </Text>
@@ -1062,7 +1153,7 @@ export function DriverDashboardScreen({
               style={{ marginTop: vs(18), paddingVertical: vs(13), borderRadius: s(12) }}
               className="items-center bg-brand-teal"
             >
-              <Text style={{ fontSize: fs(15) }} className="font-poppins-semibold text-white">
+              <Text style={{ fontSize: fs(15) }} className="font-poppins-medium text-white">
                 Register Vehicle
               </Text>
             </Pressable>

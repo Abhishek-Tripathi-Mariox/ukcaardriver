@@ -201,7 +201,7 @@ export function FeedbackRatingsScreen({
           onPress={onGoDashboard}
           className="h-[50px] items-center justify-center rounded-2xl bg-[#9810FA]"
         >
-          <Text className="text-[14px] font-poppins-semibold uppercase text-white">
+          <Text className="text-[14px] font-poppins-medium uppercase text-white">
             Go to Dashboard
           </Text>
         </Pressable>
@@ -209,7 +209,7 @@ export function FeedbackRatingsScreen({
           onPress={onViewEarnings}
           className="mt-3 h-[50px] items-center justify-center rounded-2xl border border-[#0097B3] bg-white"
         >
-          <Text className="text-[14px] font-poppins-semibold uppercase text-[#0097B3]">
+          <Text className="text-[14px] font-poppins-medium uppercase text-[#0097B3]">
             View Earnings
           </Text>
         </Pressable>

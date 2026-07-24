@@ -616,6 +616,16 @@ export interface DriverEarnings {
     growthPct: number;
     completedRides: number;
   };
+  /** Driver's average star rating, when the API supplies it. */
+  rating?: number;
+  /** Newest-first completed rides backing the "Recent Rides" list. */
+  recentRides?: {
+    id: string;
+    from: string;
+    to: string;
+    time: string;
+    amount: number;
+  }[];
   trend: { label: string; value: number }[];
   hourlySeries?: { label: string; value: number }[]; // Daily tab — today, 4h buckets
   weekSeries?: { label: string; value: number }[]; // Weekly tab — last 7 days

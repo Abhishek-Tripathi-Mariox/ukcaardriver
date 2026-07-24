@@ -8,12 +8,14 @@ interface PrimaryButtonProps {
   loading?: boolean;
   /** Extra NativeWind classes for spacing/layout at the call site. */
   className?: string;
+  /** Font/weight classes for the label. Defaults to the app-wide normal weight. */
+  labelClassName?: string;
 }
 
 /**
  * The teal call-to-action button used across the driver app (Send OTP, Login,
  * Continue, Save …). Matches the Figma design: full-width, ~56dp tall, 16dp
- * radius, teal `#0097B3`, white Poppins-SemiBold label. Sizes scale via the
+ * radius, teal `#0097B3`, white Poppins-Medium label. Sizes scale via the
  * responsive helpers so it looks right on any device.
  */
 export function PrimaryButton({
@@ -22,6 +24,7 @@ export function PrimaryButton({
   disabled,
   loading,
   className = '',
+  labelClassName = 'font-poppins-medium',
 }: PrimaryButtonProps) {
   const inactive = disabled || loading;
   return (
@@ -36,7 +39,7 @@ export function PrimaryButton({
       ) : (
         <Text
           style={{ fontSize: fs(17) }}
-          className="font-poppins-semibold text-white"
+          className={`${labelClassName} text-white`}
         >
           {label}
         </Text>

@@ -455,7 +455,7 @@ export function UpcomingBookingDetailsScreen({
           style={{ height: s(56), borderRadius: s(16) }}
         >
           <Text
-            className="font-poppins-semibold uppercase text-white"
+            className="font-poppins-medium uppercase text-white"
             style={{ fontSize: fs(16) }}
           >
             Start Journey

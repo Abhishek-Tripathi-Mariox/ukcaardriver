@@ -353,7 +353,7 @@ export function RoutePickerModal({
               className="h-12 items-center justify-center rounded-2xl"
               style={{ backgroundColor: canSave ? '#0097B3' : '#9DD7E0' }}
             >
-              <Text className="text-base font-poppins-bold text-white">Save selection</Text>
+              <Text className="text-base font-poppins-medium text-white">Save selection</Text>
             </Pressable>
           </SafeAreaView>
         )}

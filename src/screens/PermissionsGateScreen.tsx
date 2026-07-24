@@ -141,7 +141,7 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
           onPress={openAppSettings}
           className="mt-3 self-center rounded-full border border-[#0097B3] px-5 py-2"
         >
-          <Text className="text-[14px] font-poppins-semibold text-[#0097B3]">
+          <Text className="text-[14px] font-poppins-medium text-[#0097B3]">
             Open app settings
           </Text>
         </Pressable>
@@ -155,7 +155,7 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
             notif && loc ? 'bg-[#0097B3]' : 'bg-[#CBCED4]'
           }`}
         >
-          <Text className="text-[16px] font-poppins-semibold text-white">
+          <Text className="text-[16px] font-poppins-medium text-white">
             {notif && loc ? 'Continue to dashboard' : 'Grant permissions to continue'}
           </Text>
         </Pressable>
@@ -209,7 +209,7 @@ function PermissionRow({
           onPress={onPress}
           className="mt-3 self-start rounded-full bg-[#0097B3] px-4 py-2"
         >
-          <Text className="text-[13px] font-poppins-semibold text-white">
+          <Text className="text-[13px] font-poppins-medium text-white">
             {actionLabel}
           </Text>
         </Pressable>

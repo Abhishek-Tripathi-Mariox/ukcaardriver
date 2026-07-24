@@ -326,7 +326,7 @@ export function CashoutFundsScreen({
             elevation: 4,
           }}
         >
-          <Text className="text-base font-poppins-semibold text-white">
+          <Text className="text-base font-poppins-medium text-white">
             Proceed to Cashout
           </Text>
         </Pressable>
@@ -366,7 +366,7 @@ export function CashoutFundsScreen({
                 disabled={submitting}
                 className="flex-1 items-center justify-center py-3"
               >
-                <Text className="text-sm font-poppins-semibold text-[#364153]">
+                <Text className="text-sm font-poppins-medium text-[#364153]">
                   Cancel
                 </Text>
               </Pressable>
@@ -378,7 +378,7 @@ export function CashoutFundsScreen({
                 {submitting ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="text-sm font-poppins-semibold text-white">
+                  <Text className="text-sm font-poppins-medium text-white">
                     Confirm
                   </Text>
                 )}

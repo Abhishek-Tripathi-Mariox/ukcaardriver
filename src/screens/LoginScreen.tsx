@@ -101,8 +101,18 @@ export function LoginScreen({ onSendOtp, onRegister }: LoginScreenProps) {
                 keyboardType="number-pad"
                 maxLength={10}
                 editable={!submitting}
+                textAlignVertical="center"
                 className="rounded-2xl border border-slate-200 bg-[#F3F3F5] font-poppins text-slate-900"
-                style={{ height: vs(50), paddingLeft: s(44), paddingRight: s(12), fontSize: fs(15) }}
+                style={{
+                  height: vs(50),
+                  paddingLeft: s(44),
+                  paddingRight: s(12),
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                  fontSize: fs(15),
+                  includeFontPadding: false,
+                  textAlignVertical: 'center',
+                }}
               />
             </View>
 

@@ -96,7 +96,7 @@ export function ChooseServiceTypeScreen({
       />
 
       <View className="flex-1" style={{ paddingHorizontal: s(24), paddingTop: vs(26) }}>
-        <Text className="font-poppins-semibold text-slate-800" style={{ fontSize: fs(20) }}>
+        <Text className="font-poppins text-slate-800" style={{ fontSize: fs(20) }}>
           Choose Service Type
         </Text>
 

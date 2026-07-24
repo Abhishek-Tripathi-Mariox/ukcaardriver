@@ -205,27 +205,31 @@ export function VerifyRideOtpScreen({
               <Text className="mt-2 text-base text-[#6A7282]">Waiting for location…</Text>
             </View>
           )}
+          {/* Navigate + SOS live in the normal flex flow at the bottom of the
+              map column instead of floating over it. They reserve their own
+              height, so they can never sit on top of the pickup/drop card. */}
+          <View className="flex-row items-center justify-end gap-3 px-4 pb-4">
+            {pickupCoord && (
+              <Pressable
+                onPress={() => openGoogleMapsNavigation(pickupCoord)}
+                className="h-14 flex-1 flex-row items-center justify-center gap-2 rounded-full bg-[#0097B3] px-5 shadow-lg shadow-black/25"
+              >
+                <MapPinIcon size={20} color="white" />
+                <Text className="text-sm font-poppins-medium text-white">Navigate</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              onPress={() => {
+                onSos?.();
+                setSosVisible(true);
+              }}
+              className="h-14 w-14 items-center justify-center rounded-full bg-[#E7000B] shadow-lg shadow-black/25"
+            >
+              <SOSAlertIcon size={24} color="white" />
+            </Pressable>
+          </View>
         </LinearGradient>
-
-        {pickupCoord && (
-          <Pressable
-            onPress={() => openGoogleMapsNavigation(pickupCoord)}
-            className="absolute left-4 bottom-[260px] h-14 flex-row items-center gap-2 rounded-full bg-[#0097B3] px-5 shadow-lg shadow-black/25"
-          >
-            <MapPinIcon size={20} color="white" />
-            <Text className="text-sm font-poppins-semibold text-white">Navigate</Text>
-          </Pressable>
-        )}
-
-        <Pressable
-          onPress={() => {
-            onSos?.();
-            setSosVisible(true);
-          }}
-          className="absolute right-4 bottom-[260px] h-14 w-14 items-center justify-center rounded-full bg-[#E7000B] shadow-lg shadow-black/25"
-        >
-          <SOSAlertIcon size={24} color="white" />
-        </Pressable>
       </View>
 
       <View

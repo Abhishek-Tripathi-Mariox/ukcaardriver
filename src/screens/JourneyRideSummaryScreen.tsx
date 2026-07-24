@@ -241,7 +241,7 @@ export function JourneyRideSummaryScreen({
         >
           <StarIcon size={s(18)} color="white" />
           <Text
-            className="font-poppins-semibold uppercase text-white"
+            className="font-poppins-medium uppercase text-white"
             style={{ fontSize: fs(14) }}
           >
             Rate Passengers

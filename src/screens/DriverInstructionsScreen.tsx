@@ -123,7 +123,7 @@ export function DriverInstructionsScreen({
           className="h-14 items-center justify-center rounded-2xl"
           style={{ backgroundColor: agreed ? '#0097B3' : '#D1D5DC' }}
         >
-          <Text className="text-[17px] font-poppins-bold text-white">Agree</Text>
+          <Text className="text-[17px] font-poppins-medium text-white">Agree</Text>
         </Pressable>
       </SafeAreaView>
     </View>

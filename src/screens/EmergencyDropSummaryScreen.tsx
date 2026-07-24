@@ -156,7 +156,7 @@ export function EmergencyDropSummaryScreen({
           onPress={onContinue}
           className="h-[56px] items-center justify-center rounded-[14px] bg-[#9810FA]"
         >
-          <Text className="text-[14px] font-poppins-semibold uppercase text-white">
+          <Text className="text-[14px] font-poppins-medium uppercase text-white">
             Continue Journey
           </Text>
         </Pressable>

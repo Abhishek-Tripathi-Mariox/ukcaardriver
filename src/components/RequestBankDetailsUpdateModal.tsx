@@ -155,7 +155,7 @@ export function RequestBankDetailsUpdateModal({
                 onPress={handleClose}
                 className="h-12 flex-1 items-center justify-center rounded-xl"
               >
-                <Text className="text-sm font-poppins-semibold text-[#364153]">Cancel</Text>
+                <Text className="text-sm font-poppins-medium text-[#364153]">Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={handleSubmit}
@@ -170,7 +170,7 @@ export function RequestBankDetailsUpdateModal({
                   elevation: 4,
                 }}
               >
-                <Text className="text-sm font-poppins-semibold text-white">Submit Request</Text>
+                <Text className="text-sm font-poppins-medium text-white">Submit Request</Text>
               </Pressable>
             </View>
           </ScrollView>

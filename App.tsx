@@ -1404,6 +1404,8 @@ function App() {
         <EarningsScreen
           onBack={goHome}
           onViewPaymentHistory={() => setStage('wallet-statement')}
+          onExport={() => setStage('wallet-statement')}
+          onWithdraw={() => setStage('cashout')}
         />
       )}
 

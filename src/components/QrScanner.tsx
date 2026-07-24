@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   fallback: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   fallbackText: { color: '#1E293B', textAlign: 'center', fontSize: 14, marginBottom: 12 },
   fallbackBtn: { backgroundColor: '#9810FA', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
-  fallbackBtnText: { color: '#fff', fontWeight: '600' },
+  fallbackBtnText: { color: '#fff', fontFamily: 'Poppins-Medium' },
 });
 
 export default QrScanner;

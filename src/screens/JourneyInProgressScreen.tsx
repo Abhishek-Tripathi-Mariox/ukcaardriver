@@ -208,6 +208,27 @@ export function JourneyInProgressScreen({
           className="absolute left-0 right-0"
           style={{ bottom: vs(16), paddingHorizontal: s(16) }}
         >
+          {/* SOS sits in normal flow directly above the On Board card rather
+              than floating at a hardcoded vs(96) offset, so it reserves its
+              own space and can never overlap the card's text when the card
+              grows with the OS font scale or on wider/shorter devices. */}
+          <Pressable
+            onPress={onSos}
+            className="items-center justify-center self-end rounded-full bg-[#E7000B]"
+            style={{
+              width: s(56),
+              height: s(56),
+              marginBottom: vs(12),
+              shadowColor: '#E7000B',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.4,
+              shadowRadius: 6,
+              elevation: 4,
+            }}
+          >
+            <SOSAlertIcon size={s(24)} color="white" />
+          </Pressable>
+
           <View
             className="bg-white"
             style={{
@@ -245,24 +266,6 @@ export function JourneyInProgressScreen({
             </View>
           </View>
         </View>
-
-        <Pressable
-          onPress={onSos}
-          className="absolute items-center justify-center rounded-full bg-[#E7000B]"
-          style={{
-            bottom: vs(96),
-            right: s(16),
-            width: s(56),
-            height: s(56),
-            shadowColor: '#E7000B',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.4,
-            shadowRadius: 6,
-            elevation: 4,
-          }}
-        >
-          <SOSAlertIcon size={s(24)} color="white" />
-        </Pressable>
       </View>
 
       <View
