@@ -162,10 +162,14 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
 
   return (
     <View className="flex-row items-center border-b border-[#E9F0F7] py-3">
-      <View className="flex-1">
+      {/* Text column shrinks; the amount never does. Long descriptions used to
+          push the status badge out of the row and run under the amount. */}
+      <View className="min-w-0 flex-1">
         <View className="flex-row items-center gap-2">
           <Text
-            className="text-[15px] font-poppins-semibold"
+            className="flex-1 text-[15px] font-poppins-semibold"
+            numberOfLines={1}
+            ellipsizeMode="tail"
             style={{
               color: isCompleted ? '#132235' : '#6A7282',
               // Strike-through failed rows so the eye dismisses them.
@@ -176,7 +180,7 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
           </Text>
           {badge && (
             <View
-              className="rounded-full px-2 py-0.5"
+              className="shrink-0 rounded-full px-2 py-0.5"
               style={{ backgroundColor: badge.bg }}
             >
               <Text
@@ -188,13 +192,18 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
             </View>
           )}
         </View>
-        <Text className="mt-0.5 text-xs text-[#6A7282]">
+        <Text
+          className="mt-0.5 text-xs text-[#6A7282]"
+          numberOfLines={1}
+          ellipsizeMode="middle"
+        >
           {transaction.reference}
         </Text>
       </View>
       {isCompleted ? (
         <Text
-          className="text-[15px] font-poppins-bold"
+          className="shrink-0 pl-3 text-[15px] font-poppins-bold"
+          numberOfLines={1}
           style={{ color: isCredit ? '#08875D' : '#E02D3C' }}
         >
           {isCredit ? '+ ' : '- '}
@@ -204,7 +213,10 @@ function TransactionRow({ transaction }: { transaction: UiTxn }) {
         // For pending / failed rows we show the *attempted* amount in grey
         // with no sign, so the driver knows what was tried but doesn't
         // mistake it for a successful credit.
-        <Text className="text-[15px] font-poppins-medium text-[#9CA3AF]">
+        <Text
+          className="shrink-0 pl-3 text-[15px] font-poppins-medium text-[#9CA3AF]"
+          numberOfLines={1}
+        >
           {fmtRupees(transaction.amount)}
         </Text>
       )}

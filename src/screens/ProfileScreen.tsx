@@ -18,6 +18,7 @@ import { Asset } from 'react-native-image-picker';
 import DriverIdCardModal from '../components/DriverIdCardModal';
 import { fetchCurrentUser, fetchMyDashboard, uploadAvatar, updateProfile } from '../services/api';
 import { pickImageFromSource } from '../services/imagePicker';
+import { driverRatingText } from '../utils/driverRating';
 import {
   BackArrowIcon,
   BankIcon,
@@ -220,7 +221,7 @@ export function ProfileScreen({
   const totalTrips = stats ? String(stats.totalServices) : '—';
   // Real average is 0 until the first rating; show a neutral 5.0 until then
   // (matches the customer app + dashboard). A real average is always >= 1.
-  const rating = (dp?.rating && dp.rating > 0 ? dp.rating : 5).toFixed(1);
+  const rating = driverRatingText(dp?.rating);
 
   const formatDate = (iso?: string | null) => {
     if (!iso) return '—';

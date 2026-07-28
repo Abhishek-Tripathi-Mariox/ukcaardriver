@@ -48,6 +48,7 @@ import {
   stopLocationReporting,
 } from '../services/locationReporter';
 import { fs, s, vs } from '../theme/responsive';
+import { driverDisplayRating } from '../utils/driverRating';
 
 type ServiceType = 'instant' | 'private' | 'scheduled';
 
@@ -123,20 +124,23 @@ function CounterCard({ value, label, icon }: CounterCardProps) {
       className="flex-1 flex-row items-start justify-between border border-[#EBEBEB] bg-white"
     >
       <View style={{ flex: 1, minWidth: 0, marginRight: s(8) }}>
+        {/* Numbers stay on one line and scale down if huge (₹1,23,456) —
+            that's shrinking, never truncation. */}
         <Text
-          style={{ fontSize: fs(22), lineHeight: fs(26) }}
-          className="font-poppins-semibold text-brand-teal"
+          style={{ fontSize: fs(26), lineHeight: fs(30) }}
+          className="font-poppins-bold text-brand-teal"
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.7}
+          minimumFontScale={0.6}
         >
           {value}
         </Text>
+        {/* The label WRAPS — no numberOfLines/ellipsize. "Upcoming Services"
+            was being clipped to one line; labels must never be hidden. Cards in
+            a row stretch to the tallest, so a 2-line label keeps them level. */}
         <Text
-          style={{ fontSize: fs(12), marginTop: vs(6) }}
+          style={{ fontSize: fs(12.5), lineHeight: fs(17), marginTop: vs(6) }}
           className="font-poppins-bold text-[#6C757D]"
-          numberOfLines={1}
-          ellipsizeMode="tail"
         >
           {label}
         </Text>
@@ -868,8 +872,9 @@ export function DriverDashboardScreen({
             {(() => {
               // A brand-new driver's true average is 0; show a neutral 5.0
               // until the first real rating arrives (real averages are >= 1).
-              const real = data?.driver?.rating ?? 0;
-              const shown = real > 0 ? real : 5;
+              // Shared rule (utils/driverRating) so Dashboard, Profile and
+              // Earnings can never disagree again.
+              const shown = driverDisplayRating(data?.driver?.rating);
               return (
                 <View className="mt-4 flex-row items-center justify-between rounded-[15px] border border-[#EBEBEB] bg-white px-4 py-5">
                   <View className="flex-1 pr-3" style={{ minWidth: 0 }}>

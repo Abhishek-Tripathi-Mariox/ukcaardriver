@@ -23,7 +23,8 @@ import {
   DownloadIcon,
   StarIcon,
 } from '../components/icons/ServiceTypeIcons';
-import { DriverEarnings, fetchMyEarnings } from '../services/api';
+import { DriverEarnings, fetchCurrentUser, fetchMyEarnings } from '../services/api';
+import { driverRatingText } from '../utils/driverRating';
 
 interface EarningsScreenProps {
   onBack?: () => void;
@@ -63,6 +64,9 @@ export function EarningsScreen({
   onWithdraw,
 }: EarningsScreenProps) {
   const [data, setData] = useState<DriverEarnings | null>(null);
+  // driverProfile.rating — same field the dashboard and profile read, so the
+  // three screens can never disagree.
+  const [profileRating, setProfileRating] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +76,12 @@ export function EarningsScreen({
   const load = useCallback(async () => {
     setError(null);
     try {
-      const fresh = await fetchMyEarnings();
+      const [fresh, me] = await Promise.all([
+        fetchMyEarnings(),
+        fetchCurrentUser().catch(() => null),
+      ]);
       setData(fresh);
+      setProfileRating(me?.driverProfile?.rating ?? null);
     } catch (err: any) {
       console.warn('[earnings] fetch failed:', err);
       setError(err?.message ?? 'Could not load earnings.');
@@ -108,8 +116,11 @@ export function EarningsScreen({
     data && periodData.rides > 0
       ? formatRupees(Math.round(periodData.total / periodData.rides))
       : '—';
-  const ratingLabel =
-    typeof data?.rating === 'number' ? data.rating.toFixed(1) : '—';
+  // Read the rating from driverProfile — the SAME value the dashboard and
+  // profile show. It used to come from an earnings-API field that isn't on the
+  // deployed backend, so it fell back to 5.0 while the dashboard showed the
+  // real 4.0.
+  const ratingLabel = driverRatingText(profileRating);
   const growthPct = data ? formatDelta(data.thisMonth.growthPct) : '—';
   const isPositiveGrowth = (data?.thisMonth.growthPct ?? 0) >= 0;
   const completedRides = data?.thisMonth.completedRides ?? 0;

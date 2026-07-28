@@ -203,10 +203,14 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                 : null;
             return (
               <View className="flex-row items-center gap-3 border-b border-[#E9F0F7] px-4 py-3">
-                <View className="flex-1">
+                {/* Text column shrinks, amount never does — long titles used
+                    to shove the badge out and run under the amount. */}
+                <View className="min-w-0 flex-1">
                   <View className="flex-row items-center gap-2">
                     <Text
-                      className="text-[15px] font-poppins-bold"
+                      className="flex-1 text-[15px] font-poppins-bold"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
                       style={{
                         color: isCompleted ? '#132235' : '#6A7282',
                         textDecorationLine: isFailed ? 'line-through' : 'none',
@@ -216,7 +220,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                     </Text>
                     {badge && (
                       <View
-                        className="rounded-full px-2 py-0.5"
+                        className="shrink-0 rounded-full px-2 py-0.5"
                         style={{ backgroundColor: badge.bg }}
                       >
                         <Text
@@ -228,13 +232,18 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                       </View>
                     )}
                   </View>
-                  <Text className="mt-0.5 text-xs text-[#364B63]">
+                  <Text
+                    className="mt-0.5 text-xs text-[#364B63]"
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                  >
                     Reference ID: {t._id.slice(-8).toUpperCase()}
                   </Text>
                 </View>
                 {isCompleted ? (
                   <Text
-                    className="text-[17px] font-poppins-bold"
+                    className="shrink-0 text-[17px] font-poppins-bold"
+                    numberOfLines={1}
                     style={{ color: isCredit ? '#08875D' : '#E02D3C' }}
                   >
                     {isCredit ? '+ ' : '- '}
@@ -243,7 +252,10 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
                 ) : (
                   // Pending / failed: show the *attempted* amount in muted
                   // grey with no sign, so it's clear no money moved.
-                  <Text className="text-[17px] font-poppins-medium text-[#9CA3AF]">
+                  <Text
+                    className="shrink-0 text-[17px] font-poppins-medium text-[#9CA3AF]"
+                    numberOfLines={1}
+                  >
                     {fmtRupees(Math.abs(t.amount))}
                   </Text>
                 )}

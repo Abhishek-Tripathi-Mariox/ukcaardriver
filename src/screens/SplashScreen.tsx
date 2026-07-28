@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { LogoGlow, logoUkcaar } from '../assets/images';
+import { logoUkcaar } from '../assets/images';
 import { fs, s, vs } from '../theme/responsive';
 
 interface SplashScreenProps {
@@ -40,23 +40,22 @@ export function SplashScreen({ onFinish, duration = 2500 }: SplashScreenProps) {
         className="flex-1 items-center justify-center"
       >
         <View className="items-center">
+          {/* LogoGlow removed: it is a solid `fill="white"` circle (see
+              logo-glow.svg) positioned at cy=95.5 in a 241 viewBox — i.e. off
+              centre — and stretched by preserveAspectRatio="none". It was meant
+              to sit behind a TRANSPARENT logo, but logo-ukcaar.png is opaque
+              with a baked-in teal background, so the glow only ever showed as a
+              misaligned white ring around it. The artwork already carries its
+              own circular design, so the image stands alone. */}
           <View
-            style={{ height: s(215), width: s(215) }}
-            className="items-center justify-center"
+            style={{ height: s(180), width: s(180) }}
+            className="items-center justify-center overflow-hidden rounded-full"
           >
-            <View className="absolute inset-0">
-              <LogoGlow width="100%" height="100%" />
-            </View>
-            <View
-              style={{ height: s(160), width: s(160) }}
-              className="items-center justify-center overflow-hidden rounded-full bg-white"
-            >
-              <Image
-                source={logoUkcaar}
-                resizeMode="cover"
-                style={{ height: s(160), width: s(160) }}
-              />
-            </View>
+            <Image
+              source={logoUkcaar}
+              resizeMode="cover"
+              style={{ height: s(180), width: s(180) }}
+            />
           </View>
 
           <View style={{ marginTop: vs(48) }} className="items-center">
