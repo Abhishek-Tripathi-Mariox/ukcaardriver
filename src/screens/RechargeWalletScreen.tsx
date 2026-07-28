@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import RazorpayCheckout from 'react-native-razorpay';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import {
   cancelRechargeOrder,
@@ -48,6 +48,7 @@ export function RechargeWalletScreen({
   onBack,
   onLaunched,
 }: RechargeWalletScreenProps) {
+  const insets = useSafeAreaInsets();
   const [balance, setBalance] = useState<number | null>(null);
   const [amountText, setAmountText] = useState<string>('500');
   const [submitting, setSubmitting] = useState(false);
@@ -306,7 +307,7 @@ export function RechargeWalletScreen({
         </View>
       </View>
 
-      <SafeAreaView edges={['bottom']} className="bg-white px-4 pb-4">
+      <View className="bg-white px-4" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <Pressable
           onPress={onRechargeNow}
           disabled={!valid || submitting}
@@ -319,7 +320,7 @@ export function RechargeWalletScreen({
             <Text className="text-base font-poppins-medium text-white">Recharge Now</Text>
           )}
         </Pressable>
-      </SafeAreaView>
+      </View>
       </KeyboardAvoidingView>
     </View>
   );

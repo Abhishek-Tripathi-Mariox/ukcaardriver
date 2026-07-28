@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   joinRideRoom,
   sendChatMessage,
@@ -50,6 +50,7 @@ const fmt = (d: Date) =>
  * thread survives reload and reaches a backgrounded counterpart.
  */
 export function RideChatScreen({ rideId, customer, onBack }: RideChatScreenProps) {
+  const insets = useSafeAreaInsets();
   const myId = useUserStore(s => s.user?.id);
   const [messages, setMessages] = useState<ChatRow[]>([]);
   const [input, setInput] = useState('');
@@ -189,7 +190,7 @@ export function RideChatScreen({ rideId, customer, onBack }: RideChatScreenProps
           }}
         />
 
-        <SafeAreaView edges={['bottom']} style={styles.composer}>
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
           <TextInput
             style={styles.input}
             value={input}
@@ -202,7 +203,7 @@ export function RideChatScreen({ rideId, customer, onBack }: RideChatScreenProps
           <TouchableOpacity style={styles.sendBtn} onPress={send}>
             <Text style={{ color: '#fff', fontSize: 16 }}>➤</Text>
           </TouchableOpacity>
-        </SafeAreaView>
+        </View>
       </KeyboardAvoidingView>
     </View>
   );

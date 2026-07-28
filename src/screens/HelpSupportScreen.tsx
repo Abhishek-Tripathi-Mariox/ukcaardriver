@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   ChevronDownIcon,
@@ -98,6 +98,7 @@ export function HelpSupportScreen({
   subjects = DEFAULT_SUBJECTS,
   onBack,
 }: HelpSupportScreenProps) {
+  const insets = useSafeAreaInsets();
   // Live admin-managed FAQs, falling back to the bundled list if the caller
   // supplied none and the request fails or returns nothing.
   const [faqs, setFaqs] = useState(faqsProp ?? DEFAULT_FAQS);
@@ -259,7 +260,7 @@ export function HelpSupportScreen({
         </View>
       </ScrollView>
 
-      <SafeAreaView edges={['bottom']} className="bg-white px-4 pb-4">
+      <View className="bg-white px-4" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <Pressable
           onPress={handleSubmit}
           disabled={!canSubmit}
@@ -273,7 +274,7 @@ export function HelpSupportScreen({
             <Text className="text-[17px] font-poppins-medium text-white">Submit</Text>
           )}
         </Pressable>
-      </SafeAreaView>
+      </View>
       </KeyboardAvoidingView>
     </View>
   );

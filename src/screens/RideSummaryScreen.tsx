@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FareCalculationsModal from '../components/FareCalculationsModal';
 import {
   BackArrowIcon,
@@ -173,6 +173,7 @@ export function RideSummaryScreen({
   onRaiseTicket,
   onCollectedCash,
 }: RideSummaryScreenProps) {
+  const insets = useSafeAreaInsets();
   const [fareVisible, setFareVisible] = useState(false);
 
   // Real trip time: the backend stamps actualDuration (minutes between
@@ -278,11 +279,11 @@ export function RideSummaryScreen({
           </Pressable>
         </View>
 
-        <SafeAreaView edges={['bottom']}>
+        <View style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
           <View className="mb-2 mt-3">
             <SlideToConfirm label="Slide to confirm cash" onConfirm={onCollectedCash} />
           </View>
-        </SafeAreaView>
+        </View>
       </View>
 
       <FareCalculationsModal visible={fareVisible} onClose={() => setFareVisible(false)} />

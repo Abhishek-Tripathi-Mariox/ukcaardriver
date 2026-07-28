@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   CarOutlineIcon,
@@ -49,6 +49,7 @@ export function DriverInstructionsScreen({
   onBack,
   onAgree,
 }: DriverInstructionsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [agreed, setAgreed] = useState(false);
 
   return (
@@ -99,7 +100,7 @@ export function DriverInstructionsScreen({
         </View>
       </ScrollView>
 
-      <SafeAreaView edges={['bottom']} className="bg-white px-4 pb-4">
+      <View className="bg-white px-4" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <Pressable
           onPress={() => setAgreed(v => !v)}
           className="mb-4 flex-row items-center gap-3"
@@ -125,7 +126,7 @@ export function DriverInstructionsScreen({
         >
           <Text className="text-[17px] font-poppins-medium text-white">Agree</Text>
         </Pressable>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

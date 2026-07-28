@@ -308,6 +308,16 @@ async function fetchCurrentUserUncached(): Promise<ApiUser | null> {
     // clear the stored token here on transient failures; only clear on
     // an explicit 401 so an offline launch doesn't log the user out.
     if (err instanceof ApiError && err.status === 401) {
+      // Session expired/revoked: this is a logout in all but name, so drop the
+      // push token too. The access token is already dead, so the server-side
+      // unregister can't be authenticated — deleting the Firebase token still
+      // stops delivery to this device.
+      try {
+        const { clearFcmToken } = await import('./fcmService');
+        await clearFcmToken(false);
+      } catch {
+        // never block the logout path on FCM cleanup
+      }
       await clearTokens();
     }
     return null;
@@ -358,13 +368,19 @@ export async function updateProfile(input: {
  * (best-effort), then clears local tokens. Safe to call even if the server
  * call fails — local clear always runs.
  *
- * Also clears the FCM token cache. Without this, a second driver logging
- * in on the same physical device would skip token re-registration (the
- * `synced` flag was true from the previous user's session) and the
- * backend would still have the previous user's record holding this
- * device's token — pushes for the new user go to the old user's record.
+ * Also unregisters the device's FCM token server-side. This runs FIRST,
+ * before /auth/logout and before clearTokens(), because the DELETE needs a
+ * still-valid access token — once the tokens are gone the call goes out
+ * unauthenticated, 401s, and the token stays on the user record, so ride
+ * requests keep ringing on a logged-out driver's phone.
  */
 export async function logout(): Promise<void> {
+  try {
+    const { clearFcmToken } = await import('./fcmService');
+    await clearFcmToken();
+  } catch (err) {
+    console.warn('[logout] fcm clear failed (continuing):', err);
+  }
   try {
     await request('/auth/logout', { method: 'POST', auth: true });
   } catch (err) {
@@ -374,12 +390,6 @@ export async function logout(): Promise<void> {
     // Drop every cached read — a different user logging in on the same
     // install must not see the previous user's dashboard / wallet / etc.
     clearAllCache();
-    try {
-      const { clearFcmToken } = await import('./fcmService');
-      await clearFcmToken();
-    } catch (err) {
-      console.warn('[logout] fcm clear failed (continuing):', err);
-    }
   }
 }
 

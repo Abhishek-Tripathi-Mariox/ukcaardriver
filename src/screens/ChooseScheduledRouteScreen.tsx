@@ -302,6 +302,7 @@ function RouteDetail({
   onSubmit: () => void;
   submitting: boolean;
 }) {
+  const insets = useSafeAreaInsets();
   // The map shows ALL stops along the route. We pass the first as pickup,
   // the last as dropoff (so OsmMap draws its standard pickup/drop pins),
   // and use intermediate stops as the "polyline anchors". The driver gets
@@ -410,8 +411,9 @@ function RouteDetail({
         </View>
       </View>
 
-      <SafeAreaView edges={['bottom']} className="absolute bottom-0 left-0 right-0 bg-white px-4 pb-4 pt-3"
+      <View className="absolute bottom-0 left-0 right-0 bg-white px-4 pt-3"
         style={{
+          paddingBottom: Math.max(insets.bottom, 12) + 12,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
@@ -433,7 +435,7 @@ function RouteDetail({
             </Text>
           )}
         </Pressable>
-      </SafeAreaView>
+      </View>
     </ScrollView>
   );
 }

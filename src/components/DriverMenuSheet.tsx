@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRightIcon, CloseIcon } from './icons/ServiceTypeIcons';
 import { fs, s, vs } from '../theme/responsive';
 
@@ -29,6 +29,7 @@ export function DriverMenuSheet({
   onClose: () => void;
   items: DriverMenuItem[];
 }) {
+  const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/40" onPress={onClose} />
@@ -36,7 +37,7 @@ export function DriverMenuSheet({
         className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white"
         style={{ maxHeight: '82%' }}
       >
-        <SafeAreaView edges={['bottom']}>
+        <View style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
           <View className="items-center" style={{ paddingTop: vs(10) }}>
             <View style={{ width: s(40), height: 4, borderRadius: 2 }} className="bg-[#E5E7EB]" />
           </View>
@@ -92,7 +93,7 @@ export function DriverMenuSheet({
               </Pressable>
             ))}
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </View>
     </Modal>
   );

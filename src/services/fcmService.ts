@@ -269,6 +269,11 @@ export async function initFcm(
   // populating `incomingRequest` and the modal; we just handle the wake
   // signal here.
   messaging().onMessage(async (remoteMessage) => {
+    // Logged-out guard, mirroring the background handler in index.js. A push
+    // can still arrive after logout (token removal is best-effort and the
+    // server may already have queued the message) — never surface a ride
+    // alert to someone who is signed out.
+    if (!(await AsyncStorage.getItem(ACCESS_TOKEN_KEY))) return;
     await displayRemoteMessage(remoteMessage);
     if (remoteMessage.data?.kind === 'ride:new-request') {
       buzzForRideAlert();
@@ -279,7 +284,8 @@ export async function initFcm(
   // Background → user taps the notification → app comes to foreground.
   // We get the message but it was NOT shown by us, so don't re-display;
   // just let the app react to the data payload (route to dashboard, etc).
-  messaging().onNotificationOpenedApp((remoteMessage) => {
+  messaging().onNotificationOpenedApp(async (remoteMessage) => {
+    if (!(await AsyncStorage.getItem(ACCESS_TOKEN_KEY))) return;
     if (remoteMessage && onMessage) onMessage(remoteMessage);
   });
 
@@ -390,10 +396,54 @@ export async function getStoredFcmToken(): Promise<string | null> {
   return AsyncStorage.getItem(FCM_TOKEN_KEY);
 }
 
-export async function clearFcmToken(): Promise<void> {
+/**
+ * Logout cleanup. Removes this device's token from the user's `fcmTokens`
+ * array SERVER-SIDE, then deletes the Firebase token locally.
+ *
+ * The server call is the important half: dispatch reads `user.fcmTokens`, so
+ * a token left behind there keeps ringing ride requests on a phone whose
+ * driver has logged out. Clearing only local state (what this used to do)
+ * never touched the user record.
+ *
+ * MUST run before the auth tokens are cleared — the DELETE needs the still
+ * valid access token. See `logout()` in api.ts for the ordering.
+ */
+export async function clearFcmToken(serverSide = true): Promise<void> {
   try {
+    const token = await AsyncStorage.getItem(FCM_TOKEN_KEY);
+    const authToken = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+    // serverSide=false is used when the access token is already dead (session
+    // expiry / deleted account) — the DELETE could only 401, so skip straight
+    // to invalidating the Firebase token, which is what stops delivery.
+    if (serverSide && token && authToken) {
+      // Own try/catch so a network failure here still lets deleteToken() run.
+      try {
+        const res = await fetch(`${API_BASE_URL}/notifications/fcm-token`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({ token }),
+        });
+        if (!res.ok) {
+          console.warn('[fcm] unregister failed:', res.status, await res.text());
+        }
+      } catch (err) {
+        console.warn('[fcm] unregister error:', err);
+      }
+    } else if (serverSide && token && !authToken) {
+      console.warn(
+        '[fcm] unregister skipped: auth token already cleared — server still holds this device token',
+      );
+    }
+    // Invalidate the device token itself so a re-login mints a fresh one and
+    // re-registers cleanly (and so any push already in flight is rejected).
     await messaging().deleteToken();
   } finally {
+    // Drop the in-process dedupe marker too, otherwise syncTokenToBackend
+    // could short-circuit the re-POST for the next user on this device.
+    lastSyncedTokenInProcess = null;
     await Promise.all([
       AsyncStorage.removeItem(FCM_TOKEN_KEY),
       AsyncStorage.removeItem(FCM_TOKEN_SYNCED_KEY),

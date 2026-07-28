@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore, type LanguageCode } from '../store';
 import { fs, s, vs } from '../theme/responsive';
 
@@ -29,12 +29,13 @@ export function ChooseLanguageScreen({
   onContinue,
   onClose,
 }: ChooseLanguageScreenProps) {
+  const insets = useSafeAreaInsets();
   const language = useAppStore(state => state.language);
   const setLanguage = useAppStore(state => state.setLanguage);
 
   return (
     <View className="flex-1 bg-black/40 justify-end">
-      <SafeAreaView edges={['bottom']} className="bg-[#E8F7FA] rounded-t-3xl">
+      <View className="bg-[#E8F7FA] rounded-t-3xl" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <View
           style={{ paddingHorizontal: s(28), paddingTop: vs(28), paddingBottom: vs(16) }}
           className="flex-row items-center justify-between"
@@ -108,7 +109,7 @@ export function ChooseLanguageScreen({
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   TabEarningsIcon,
   TabHomeIcon,
@@ -25,6 +25,7 @@ interface DriverBottomNavProps {
  * itself is ~70px + bottom safe-area inset.
  */
 export function DriverBottomNav({ active, onChange }: DriverBottomNavProps) {
+  const insets = useSafeAreaInsets();
   const tabs = [
     { id: 'home' as const, label: 'Home', Icon: TabHomeIcon },
     { id: 'rides' as const, label: 'Rides', Icon: TabRidesIcon },
@@ -34,7 +35,10 @@ export function DriverBottomNav({ active, onChange }: DriverBottomNavProps) {
   ];
 
   return (
-    <SafeAreaView edges={['bottom']} className="border-t border-[#E5E7EB] bg-white">
+    <View
+      className="border-t border-[#E5E7EB] bg-white"
+      style={{ paddingBottom: Math.max(insets.bottom, 8) + 4 }}
+    >
       <View className="flex-row items-center justify-between px-2 pt-3">
         {tabs.map(({ id, label, Icon }) => {
           const isActive = active === id;
@@ -58,7 +62,7 @@ export function DriverBottomNav({ active, onChange }: DriverBottomNavProps) {
           );
         })}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

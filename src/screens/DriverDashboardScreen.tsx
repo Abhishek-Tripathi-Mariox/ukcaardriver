@@ -389,8 +389,13 @@ export function DriverDashboardScreen({
   // If the driver is *already* online when the dashboard mounts (returning
   // user / Metro reload), start the reporter without waiting for them to
   // toggle. Cleanup stops it whenever the online flag flips false.
+  //
+  // Gated on approval too: a driver rejected while online keeps isOnline:true
+  // on their server record (nothing in the app can clear it — the toggle is
+  // replaced by the banner below), so without this they'd silently keep
+  // broadcasting GPS after losing approval.
   useEffect(() => {
-    if (data?.driver.isOnline) {
+    if (isApprovedDriver && data?.driver.isOnline) {
       startLocationReporting().catch(() => {});
     } else {
       stopLocationReporting();
@@ -400,7 +405,7 @@ export function DriverDashboardScreen({
       // dashboard unmounts and we no longer have a socket to emit on.
       stopLocationReporting();
     };
-  }, [data?.driver.isOnline]);
+  }, [data?.driver.isOnline, isApprovedDriver]);
 
   // Socket + ride-request modal live at the App level now (see App.tsx),
   // so this screen no longer subscribes to ride:new-request. Lifting the

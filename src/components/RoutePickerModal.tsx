@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   ChevronDownIcon,
@@ -76,6 +76,7 @@ export function RoutePickerModal({
   onSave,
   initial,
 }: RoutePickerModalProps) {
+  const insets = useSafeAreaInsets();
   const [routes, setRoutes] = useState<ScheduledRouteApi[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [fromQuery, setFromQuery] = useState('');
@@ -346,7 +347,10 @@ export function RoutePickerModal({
 
         {/* Save bar (only on pick-primary). */}
         {step === 'pick-primary' && (
-          <SafeAreaView edges={['bottom']} className="border-t border-[#EBEBEB] bg-white px-4 pb-3 pt-3">
+          <View
+            className="border-t border-[#EBEBEB] bg-white px-4 pt-3"
+            style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}
+          >
             <Pressable
               disabled={!canSave}
               onPress={handleSave}
@@ -355,7 +359,7 @@ export function RoutePickerModal({
             >
               <Text className="text-base font-poppins-medium text-white">Save selection</Text>
             </Pressable>
-          </SafeAreaView>
+          </View>
         )}
       </View>
     </Modal>

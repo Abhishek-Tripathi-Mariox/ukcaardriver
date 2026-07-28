@@ -45,6 +45,16 @@ messaging().setBackgroundMessageHandler(async (remoteMessage) => {
     return;
   }
 
+  // Logged-out guard. Logout unregisters this device's token server-side,
+  // but that call can fail (logout with no network), leaving the backend
+  // still pushing here. No session on this phone means nobody to page, so
+  // drop the alert rather than ringing a driver who has signed out.
+  // Placed after the cancel branch above so a stale ring can always be
+  // taken down. Key must match ACCESS_TOKEN_KEY in src/services/api.ts.
+  try {
+    if (!(await AsyncStorage.getItem('auth.accessToken'))) return;
+  } catch {}
+
   const isRideAlert = remoteMessage.data?.kind === 'ride:new-request';
 
   // Recreate channels — they're process-scoped so the foreground service's
