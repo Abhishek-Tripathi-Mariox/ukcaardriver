@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon, StarIcon } from '../components/icons/ServiceTypeIcons';
 import { fetchJourneyPassengers, rateJourneyPassengers } from '../services/api';
 import { fs, s, vs } from '../theme/responsive';
@@ -31,6 +31,7 @@ interface Rider {
  * journey manifest — no fabricated rows. Persisted via rate-passengers.
  */
 export function RatePassengersScreen({ journeyKey, onBack, onDone }: RatePassengersScreenProps) {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [riders, setRiders] = useState<Rider[]>([]);
   const [stars, setStars] = useState<Record<string, number>>({});
@@ -158,7 +159,8 @@ export function RatePassengersScreen({ journeyKey, onBack, onDone }: RatePasseng
         </ScrollView>
       )}
 
-      <View className="px-4 pb-6 pt-2">
+      {/* Edge-to-edge (SDK 36): keep the CTAs above the system nav bar. */}
+      <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <Pressable
           onPress={submit}
           disabled={submitting}

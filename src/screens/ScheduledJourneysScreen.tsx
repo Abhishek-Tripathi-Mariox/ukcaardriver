@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowRightIcon,
   BackArrowIcon,
@@ -250,6 +250,7 @@ export function ScheduledJourneysScreen({
   onOpenUpcoming,
   onOpenPast,
 }: ScheduledJourneysScreenProps) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [upcoming, setUpcoming] = useState<ScheduledJourney[]>([]);
   const [past, setPast] = useState<ScheduledJourney[]>([]);
@@ -345,7 +346,7 @@ export function ScheduledJourneysScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: s(24), paddingBottom: vs(32), gap: vs(16) }}
+        contentContainerStyle={{ padding: s(24), paddingBottom: vs(32) + insets.bottom, gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (

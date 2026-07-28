@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   BellIcon,
@@ -138,6 +138,7 @@ const buildRows = (items: NotificationApi[]): Row[] => {
 };
 
 export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<NotificationApi[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -225,7 +226,7 @@ export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
         <FlatList
           data={rows}
           keyExtractor={r => r.key}
-          contentContainerStyle={{ paddingBottom: 32 }}
+          contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }

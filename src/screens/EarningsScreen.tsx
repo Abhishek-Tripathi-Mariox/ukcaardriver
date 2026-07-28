@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
   Line as SvgLine,
@@ -63,6 +63,7 @@ export function EarningsScreen({
   onExport,
   onWithdraw,
 }: EarningsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<DriverEarnings | null>(null);
   // driverProfile.rating — same field the dashboard and profile read, so the
   // three screens can never disagree.
@@ -175,9 +176,9 @@ export function EarningsScreen({
 
       <ScrollView
         className="flex-1"
-        // 120px bottom padding so the last card / button clears the
-        // persistent DriverBottomNav (~88px + safe-area inset).
-        contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}
+        // Bottom padding so the last card / button clears the persistent
+        // DriverBottomNav (~88px) plus the edge-to-edge nav-bar inset.
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 + insets.bottom, gap: 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

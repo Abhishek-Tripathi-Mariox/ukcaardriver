@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   CopyIcon,
@@ -24,6 +24,7 @@ interface ReferAndEarnScreenProps {
 }
 
 export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
+  const insets = useSafeAreaInsets();
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState<number>(0);
   // Amounts are admin-configured and differ per side: the referring driver
@@ -114,7 +115,7 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

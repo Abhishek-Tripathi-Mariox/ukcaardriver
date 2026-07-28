@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   CardAddIcon,
@@ -231,6 +231,7 @@ export function WalletScreen({
   onReceived,
   onCashout,
 }: WalletScreenProps) {
+  const insets = useSafeAreaInsets();
   const [balance, setBalance] = useState<number | null>(null);
   const [groups, setGroups] = useState<UiGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,7 +280,7 @@ export function WalletScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 20 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom, gap: 20 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

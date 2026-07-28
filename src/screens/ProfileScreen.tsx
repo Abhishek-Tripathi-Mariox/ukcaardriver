@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Asset } from 'react-native-image-picker';
 import DriverIdCardModal from '../components/DriverIdCardModal';
 import { fetchCurrentUser, fetchMyDashboard, uploadAvatar, updateProfile } from '../services/api';
@@ -99,6 +99,7 @@ export function ProfileScreen({
   onOpenRouteChange,
   serviceType,
 }: ProfileScreenProps) {
+  const insets = useSafeAreaInsets();
   const [idCardOpen, setIdCardOpen] = useState(false);
   const [user, setUser] = useState<Awaited<ReturnType<typeof fetchCurrentUser>>>(null);
   const [stats, setStats] = useState<{
@@ -304,7 +305,7 @@ export function ProfileScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -446,7 +447,12 @@ export function ProfileScreen({
           onPress={() => setEditOpen(false)}
           className="flex-1 justify-end bg-black/50"
         >
-          <Pressable onPress={(e) => e.stopPropagation()} className="rounded-t-3xl bg-white px-6 pb-8 pt-5">
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            className="rounded-t-3xl bg-white px-6 pt-5"
+            // Edge-to-edge (SDK 36): keep the sheet's buttons above the nav bar.
+            style={{ paddingBottom: Math.max(insets.bottom, 20) + 12 }}
+          >
             <Text className="mb-4 text-center text-lg font-poppins-semibold text-[#1E293B]">Edit Profile</Text>
 
             <Text className="mb-1 text-xs font-poppins-semibold text-[#6A7282]">First Name</Text>

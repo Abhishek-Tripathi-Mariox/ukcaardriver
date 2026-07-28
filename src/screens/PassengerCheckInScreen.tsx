@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   PhoneIcon,
@@ -92,6 +92,7 @@ export function PassengerCheckInScreen({
   onMarkAbsent,
   onViewSummary,
 }: PassengerCheckInScreenProps) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<PassengerStatus>('upcoming');
   const [absentTarget, setAbsentTarget] = useState<CheckInPassenger | null>(null);
   const [fetched, setFetched] = useState<CheckInPassenger[] | null>(null);
@@ -360,7 +361,14 @@ export function PassengerCheckInScreen({
         )}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View
+        style={{
+          paddingHorizontal: s(16),
+          paddingBottom: Math.max(insets.bottom, vs(12)) + vs(12),
+          paddingTop: vs(8),
+        }}
+      >
         <Pressable
           onPress={onViewSummary}
           className="items-center justify-center bg-[#9810FA]"

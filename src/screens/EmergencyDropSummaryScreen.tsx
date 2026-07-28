@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   BigCheckIcon,
@@ -30,6 +30,7 @@ export function EmergencyDropSummaryScreen({
   onBack,
   onContinue,
 }: EmergencyDropSummaryScreenProps) {
+  const insets = useSafeAreaInsets();
   const displayName = passenger?.name ?? 'Passenger';
   const displaySeat = passenger?.seat != null ? String(passenger.seat) : '—';
   const displayTime = new Date().toLocaleString('en-IN');
@@ -151,7 +152,8 @@ export function EmergencyDropSummaryScreen({
         </View>
       </ScrollView>
 
-      <View className="px-4 pb-6 pt-2">
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <Pressable
           onPress={onContinue}
           className="h-[56px] items-center justify-center rounded-[14px] bg-[#9810FA]"

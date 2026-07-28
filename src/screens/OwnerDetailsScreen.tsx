@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RegistrationHeader from '../components/RegistrationHeader';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import { updateRegistrationStep, AddressHit } from '../services/api';
@@ -88,6 +89,7 @@ export function OwnerDetailsScreen({
   initialOwnerName,
   initialOwnerAddress,
 }: OwnerDetailsScreenProps) {
+  const insets = useSafeAreaInsets();
   // Pull the local digits out of the stored phone (e.g. '+919876543210'
   // → '9876543210'). We:
   //   1. drop everything that isn't a digit (handles '+', spaces, dashes)
@@ -149,7 +151,9 @@ export function OwnerDetailsScreen({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-6 pt-6 pb-10"
+          contentContainerClassName="px-6 pt-6"
+          // pb-10 (40) + nav-bar inset so the Next button clears the system bar.
+          contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
         >
           <Text className="font-poppins-semibold text-slate-800" style={{ marginBottom: vs(4), fontSize: fs(20) }}>

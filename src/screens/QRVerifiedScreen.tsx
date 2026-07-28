@@ -1,6 +1,6 @@
 import { Pressable, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   BigCheckIcon,
@@ -19,6 +19,7 @@ export function QRVerifiedScreen({
   onBack,
   onNext,
 }: QRVerifiedScreenProps) {
+  const insets = useSafeAreaInsets();
   return (
     <View className="flex-1 bg-[#F9FAFB]">
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -53,7 +54,8 @@ export function QRVerifiedScreen({
         <Text className="mt-1 text-[14px] text-[#6A7282]">Seat: {seat}</Text>
       </View>
 
-      <View className="px-4 pb-6 pt-2">
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
         <Pressable
           onPress={onNext}
           className="h-[50px] items-center justify-center rounded-2xl bg-[#9810FA]"

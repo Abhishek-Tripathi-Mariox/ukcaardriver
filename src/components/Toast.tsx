@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckIcon } from './icons/ServiceTypeIcons';
 
 interface ToastProps {
@@ -10,6 +11,7 @@ interface ToastProps {
 }
 
 export function Toast({ visible, message, onHide, duration = 3000 }: ToastProps) {
+  const insets = useSafeAreaInsets();
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -40,7 +42,8 @@ export function Toast({ visible, message, onHide, duration = 3000 }: ToastProps)
         position: 'absolute',
         left: 16,
         right: 16,
-        bottom: 32,
+        // Edge-to-edge (SDK 36): float above the system nav bar.
+        bottom: 32 + insets.bottom,
         opacity,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },

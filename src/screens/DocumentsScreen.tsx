@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickImageFromSource } from '../services/imagePicker';
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import RequestDocumentChangeModal from '../components/RequestDocumentChangeModal';
@@ -298,6 +298,7 @@ function DocumentCard({
 }
 
 export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -479,7 +480,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

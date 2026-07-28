@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchJourney, fetchJourneyPassengers, startJourney } from '../services/api';
 import {
   BackArrowIcon,
@@ -188,6 +188,7 @@ export function UpcomingBookingDetailsScreen({
   onCallPassenger,
   onStartJourney,
 }: UpcomingBookingDetailsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchJourney>> | null>(null);
   const [pax, setPax] = useState<Passenger[] | null>(null);
   const [starting, setStarting] = useState(false);
@@ -447,7 +448,14 @@ export function UpcomingBookingDetailsScreen({
         </LinearGradient>
       </ScrollView>
 
-      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View
+        style={{
+          paddingHorizontal: s(16),
+          paddingBottom: Math.max(insets.bottom, vs(12)) + vs(12),
+          paddingTop: vs(8),
+        }}
+      >
         <Pressable
           onPress={handleStart}
           disabled={starting}

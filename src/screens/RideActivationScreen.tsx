@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   InfoCircleIcon,
@@ -36,6 +36,7 @@ export function RideActivationScreen({
   onStartCheckIn,
   onViewDetails,
 }: RideActivationScreenProps) {
+  const insets = useSafeAreaInsets();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchJourney>> | null>(null);
 
@@ -202,7 +203,15 @@ export function RideActivationScreen({
         </View>
       </ScrollView>
 
-      <View style={{ gap: vs(12), paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
+      {/* Edge-to-edge (SDK 36): keep the CTAs above the system nav bar. */}
+      <View
+        style={{
+          gap: vs(12),
+          paddingHorizontal: s(16),
+          paddingBottom: Math.max(insets.bottom, vs(12)) + vs(12),
+          paddingTop: vs(8),
+        }}
+      >
         <Pressable
           onPress={() => setConfirmOpen(true)}
           className="items-center justify-center bg-[#9810FA]"

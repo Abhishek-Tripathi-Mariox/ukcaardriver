@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import RazorpayCheckout from 'react-native-razorpay';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import {
   createOnePassOrder,
@@ -32,6 +32,7 @@ const PRIMARY = '#0097B3';
 export function OnePassScreen({ onBack }: OnePassScreenProps) {
   const user = useUserStore(s => s.user);
   const hydrateUser = useUserStore(s => s.hydrate);
+  const insets = useSafeAreaInsets();
 
   const [plans, setPlans] = useState<OnePassPlan[]>([]);
   const [status, setStatus] = useState<OnePassStatus | null>(null);
@@ -148,7 +149,10 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
           <ActivityIndicator size="large" color={PRIMARY} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          // Edge-to-edge (SDK 36): last Buy button must clear the nav bar.
+          contentContainerStyle={[styles.content, { paddingBottom: 16 + insets.bottom }]}
+        >
           {/* Status banner */}
           <View style={[styles.statusCard, status?.isActive ? styles.statusActive : styles.statusInactive]}>
             <Text style={styles.statusTitle}>

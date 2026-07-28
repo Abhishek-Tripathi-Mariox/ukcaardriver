@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconPhone, logoUkcaar } from '../assets/images';
 import { sendOtp } from '../services/api';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -23,6 +23,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onSendOtp, onRegister }: LoginScreenProps) {
+  const insets = useSafeAreaInsets();
   const [mobile, setMobile] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +139,8 @@ export function LoginScreen({ onSendOtp, onRegister }: LoginScreenProps) {
           <View className="flex-1" />
           <Text
             className="text-center font-poppins text-slate-400"
-            style={{ marginBottom: vs(28), fontSize: fs(12) }}
+            // Edge-to-edge (SDK 36): keep the footer text above the nav bar.
+            style={{ marginBottom: Math.max(insets.bottom, vs(16)) + vs(12), fontSize: fs(12) }}
           >
             By continuing, you agree to our Terms & Conditions
           </Text>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StatusBar, Text, View } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   MapPinIcon,
@@ -30,8 +30,10 @@ interface RideInProgressScreenProps {
 
 export function RideInProgressScreen({
   title = 'Private Ride Confirmed',
-  eta = '2 min',
-  distance = '0.5 mi',
+  // Neutral placeholders — never invent numbers; the caller passes the
+  // ride's estimate and the live route replaces it within seconds.
+  eta = '— min',
+  distance = '— km',
   statusText = 'On the way to drop',
   pickup = null,
   dropoff = null,
@@ -40,6 +42,7 @@ export function RideInProgressScreen({
   onChat,
   onComplete,
 }: RideInProgressScreenProps) {
+  const insets = useSafeAreaInsets();
   const [canComplete, setCanComplete] = useState(false);
   const [driverPos, setDriverPos] = useState<LatLng | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -134,8 +137,10 @@ export function RideInProgressScreen({
       </View>
 
       <View
-        className="rounded-t-[20px] bg-white px-6 pb-8 pt-6"
+        className="rounded-t-[20px] bg-white px-6 pt-6"
         style={{
+          // Edge-to-edge (SDK 36): keep the CTA above the system nav bar.
+          paddingBottom: Math.max(insets.bottom, 20) + 12,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,

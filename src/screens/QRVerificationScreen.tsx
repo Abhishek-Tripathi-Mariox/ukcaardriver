@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StatusBar, Text, TextInput, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import { QrScanner } from '../components/QrScanner';
 import { verifyJourneyQr } from '../services/api';
@@ -42,6 +42,7 @@ export function QRVerificationScreen({
   onBack,
   onVerified,
 }: QRVerificationScreenProps) {
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'camera' | 'manual'>('camera');
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
@@ -140,7 +141,11 @@ export function QRVerificationScreen({
             </View>
           </View>
 
-          <View className="absolute bottom-0 left-0 right-0" style={{ paddingHorizontal: s(16), paddingBottom: vs(24) }}>
+          {/* Edge-to-edge (SDK 36): keep the button above the system nav bar. */}
+          <View
+            className="absolute bottom-0 left-0 right-0"
+            style={{ paddingHorizontal: s(16), paddingBottom: Math.max(insets.bottom, vs(12)) + vs(12) }}
+          >
             <Pressable
               onPress={() => setMode('manual')}
               className="items-center justify-center bg-white/15"

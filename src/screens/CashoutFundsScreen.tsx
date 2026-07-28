@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   EditPencilIcon,
@@ -70,6 +70,7 @@ export function CashoutFundsScreen({
   onConfirmed,
   onEditBank,
 }: CashoutFundsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [method, setMethod] = useState<PayoutMethod>('bank');
   const [amountText, setAmountText] = useState('');
   const [upiId, setUpiId] = useState('');
@@ -167,7 +168,7 @@ export function CashoutFundsScreen({
       >
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 24 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom, gap: 24 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

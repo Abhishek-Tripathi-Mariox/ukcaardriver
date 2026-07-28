@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   BigCheckIcon,
@@ -28,6 +28,7 @@ export function DestinationReachedScreen({
   onBack,
   onEndRide,
 }: DestinationReachedScreenProps) {
+  const insets = useSafeAreaInsets();
   const [ending, setEnding] = useState(false);
   const [info, setInfo] = useState<{ destination: string; boarded: number; total: number; stops: number } | null>(null);
 
@@ -200,7 +201,14 @@ export function DestinationReachedScreen({
         </View>
       </ScrollView>
 
-      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View
+        style={{
+          paddingHorizontal: s(16),
+          paddingBottom: Math.max(insets.bottom, vs(12)) + vs(12),
+          paddingTop: vs(8),
+        }}
+      >
         <Pressable
           onPress={handleEndRide}
           disabled={ending}

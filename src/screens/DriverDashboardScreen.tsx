@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RideRequest } from '../components/RideRequestModal';
 import {
   AlertCircleIcon,
@@ -198,6 +198,7 @@ export function DriverDashboardScreen({
   registrationStatus = 'approved',
   onRegistrationAction,
 }: DriverDashboardScreenProps) {
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<DriverDashboard | null>(null);
   const isApprovedDriver = registrationStatus === 'approved';
   // One-shot "register your vehicle" popup for drivers who haven't started.
@@ -599,7 +600,10 @@ export function DriverDashboardScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-6 pb-28 pt-6"
+        contentContainerClassName="px-6 pt-6"
+        // pb-28 (112) + nav-bar inset so the last card clears the overlaid
+        // DriverBottomNav on edge-to-edge devices.
+        contentContainerStyle={{ paddingBottom: 112 + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

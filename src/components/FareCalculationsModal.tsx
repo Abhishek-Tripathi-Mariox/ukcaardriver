@@ -1,4 +1,5 @@
 import { Modal, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CloseIcon } from './icons/ServiceTypeIcons';
 
 interface FareRow {
@@ -31,6 +32,7 @@ export function FareCalculationsModal({
   roundingUp = '₹0.41',
   grandTotal = '₹581',
 }: FareCalculationsModalProps) {
+  const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/20">
@@ -42,7 +44,11 @@ export function FareCalculationsModal({
             <CloseIcon size={22} color="white" />
           </Pressable>
 
-          <View className="w-full rounded-t-2xl bg-white px-4 pb-8 pt-6">
+          {/* Edge-to-edge (SDK 36): keep the sheet content above the nav bar. */}
+          <View
+            className="w-full rounded-t-2xl bg-white px-4 pt-6"
+            style={{ paddingBottom: Math.max(insets.bottom, 20) + 12 }}
+          >
             <Text className="text-center text-[20px] font-poppins-bold text-[#132235]">
               Fare Calculations
             </Text>

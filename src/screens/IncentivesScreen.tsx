@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import {
   fetchIncentives,
@@ -32,6 +32,7 @@ function rewardLabel(type?: string, amount?: number): string {
 }
 
 export function IncentivesScreen({ onBack }: IncentivesScreenProps) {
+  const insets = useSafeAreaInsets();
   const [active, setActive] = useState<ActiveItem[]>([]);
   const [history, setHistory] = useState<IncentiveProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +72,8 @@ export function IncentivesScreen({ onBack }: IncentivesScreenProps) {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.content}
+          // Edge-to-edge (SDK 36): last rows must clear the nav bar.
+          contentContainerStyle={[styles.content, { paddingBottom: 16 + insets.bottom }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

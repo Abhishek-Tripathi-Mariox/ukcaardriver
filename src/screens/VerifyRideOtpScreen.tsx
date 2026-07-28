@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import EmergencySosModal from '../components/EmergencySosModal';
 import {
   BackArrowIcon,
@@ -46,6 +46,7 @@ export function VerifyRideOtpScreen({
   onVerified,
   onSos,
 }: VerifyRideOtpScreenProps) {
+  const insets = useSafeAreaInsets();
   const [otp, setOtp] = useState('');
   const [sosVisible, setSosVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -233,8 +234,10 @@ export function VerifyRideOtpScreen({
       </View>
 
       <View
-        className="rounded-t-3xl bg-white px-6 pb-8 pt-6"
+        className="rounded-t-3xl bg-white px-6 pt-6"
         style={{
+          // Edge-to-edge (SDK 36): keep the CTA above the system nav bar.
+          paddingBottom: Math.max(insets.bottom, 20) + 12,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -10 },
           shadowOpacity: 0.15,

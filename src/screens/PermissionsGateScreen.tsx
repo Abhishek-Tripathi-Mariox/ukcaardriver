@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   hasCriticalDriverPermissions,
   isAggressiveOemDevice,
@@ -33,6 +33,7 @@ interface PermissionsGateScreenProps {
  * pushes after a few minutes idle.
  */
 export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenProps) {
+  const insets = useSafeAreaInsets();
   const [notif, setNotif] = useState(false);
   const [loc, setLoc] = useState(false);
   const [batteryWhitelisted, setBatteryWhitelisted] = useState(true);
@@ -147,7 +148,11 @@ export function PermissionsGateScreen({ onAllGranted }: PermissionsGateScreenPro
         </Pressable>
       </ScrollView>
 
-      <View className="border-t border-[#E5E7EB] bg-white px-4 py-4">
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View
+        className="border-t border-[#E5E7EB] bg-white px-4 pt-4"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}
+      >
         <Pressable
           disabled={!notif || !loc}
           onPress={() => onAllGranted()}

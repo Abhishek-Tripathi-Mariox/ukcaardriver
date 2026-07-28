@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import { OsmMap, type LatLng } from '../components/OsmMap';
 import {
@@ -189,6 +189,7 @@ function RouteList({
   loadingError: string | null;
   onPickRoute: (r: ScheduledRouteApi) => void;
 }) {
+  const insets = useSafeAreaInsets();
   if (loadingError) {
     return (
       <View className="flex-1 items-center justify-center px-6">
@@ -217,7 +218,11 @@ function RouteList({
     );
   }
   return (
-    <ScrollView contentContainerClassName="px-4 pb-8 pt-4 gap-3">
+    <ScrollView
+      contentContainerClassName="px-4 pt-4 gap-3"
+      // pb-8 (32) + nav-bar inset — this step has no bottom footer overlay.
+      contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
+    >
       <Text className="px-2 text-xs text-[#6A7282]">
         Pick the route you'd like to drive. You'll choose a departure time on
         the next screen.

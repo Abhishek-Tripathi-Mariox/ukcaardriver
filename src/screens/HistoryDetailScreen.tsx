@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import { getRide, RideListItem } from '../services/api';
 
@@ -63,6 +63,7 @@ export function HistoryDetailScreen({
   rideId,
   onBack,
 }: HistoryDetailScreenProps) {
+  const insets = useSafeAreaInsets();
   const [ride, setRide] = useState<RideListItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +121,7 @@ export function HistoryDetailScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom, gap: 16 }}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (

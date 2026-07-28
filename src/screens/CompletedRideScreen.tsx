@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchJourney, fetchJourneyPassengers } from '../services/api';
 import {
   BackArrowIcon,
@@ -174,6 +174,7 @@ export function CompletedRideScreen({
   onBack,
   onCallPassenger,
 }: CompletedRideScreenProps) {
+  const insets = useSafeAreaInsets();
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchJourney>> | null>(null);
   const [pax, setPax] = useState<Passenger[] | null>(null);
 
@@ -204,6 +205,18 @@ export function CompletedRideScreen({
   const time = j?.departureTime ?? timeProp;
   const stopsCount = detail?.stops?.length ?? stopsCountProp;
   const passengerCount = j?.passengerCount ?? passengerCountProp;
+  // Real elapsed journey minutes from the start/complete timestamps — the
+  // prop default (0) only shows when neither timestamp made it to the doc.
+  const elapsedMins =
+    j?.startedAt && j?.completedAt
+      ? Math.max(
+          1,
+          Math.round(
+            (new Date(j.completedAt).getTime() - new Date(j.startedAt).getTime()) / 60000,
+          ),
+        )
+      : null;
+  const journeyMins = elapsedMins ?? durationMins;
   const stops =
     detail?.stops?.map((s, i) => ({ index: i + 1, title: s.name, time: '' })) ?? stopsProp;
   const passengers = pax ?? passengersProp;
@@ -269,7 +282,7 @@ export function CompletedRideScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: s(24), paddingBottom: vs(40), gap: vs(24) }}
+        contentContainerStyle={{ padding: s(24), paddingBottom: vs(40) + insets.bottom, gap: vs(24) }}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -330,7 +343,7 @@ export function CompletedRideScreen({
                 className="text-[#8200DB] font-poppins-medium"
                 style={{ fontSize: fs(14), marginTop: vs(4) }}
               >
-                {durationMins} mins
+                {journeyMins} mins
               </Text>
             </View>
           </View>

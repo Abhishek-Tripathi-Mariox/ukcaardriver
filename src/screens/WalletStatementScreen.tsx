@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import {
   fetchWalletStatement,
@@ -91,6 +91,7 @@ const buildRows = (txns: WalletTransactionApi[]): Row[] => {
 };
 
 export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<WalletTransactionApi[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -166,7 +167,7 @@ export function WalletStatementScreen({ onBack }: WalletStatementScreenProps) {
         <FlatList
           data={rows}
           keyExtractor={r => r.key}
-          contentContainerStyle={{ paddingBottom: 32 }}
+          contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }

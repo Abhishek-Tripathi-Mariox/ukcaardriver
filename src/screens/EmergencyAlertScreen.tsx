@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AlertCircleIcon, CloseIcon } from '../components/icons/ServiceTypeIcons';
 
 /** A customer-initiated early-drop request awaiting this driver's approval. */
@@ -46,6 +46,7 @@ export function EmergencyAlertScreen({
   onApprove,
   onDecline,
 }: EmergencyAlertScreenProps) {
+  const insets = useSafeAreaInsets();
   const [safeStopDialogOpen, setSafeStopDialogOpen] = useState(false);
 
   const seatLabel = request?.seats?.length
@@ -130,7 +131,8 @@ export function EmergencyAlertScreen({
       </ScrollView>
 
       {!!request && (
-        <View className="px-4 pb-6 pt-2">
+        // Edge-to-edge (SDK 36): keep the CTAs above the system nav bar.
+        <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
           <Pressable
             onPress={() => setSafeStopDialogOpen(true)}
             disabled={approving}

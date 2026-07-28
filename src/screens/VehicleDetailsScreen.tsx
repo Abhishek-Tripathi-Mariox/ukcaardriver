@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickImageFromSource } from '../services/imagePicker';
 import {
   ChevronDownIcon,
@@ -192,10 +193,15 @@ function DocUploadField({
 }
 
 function PickerModal({ visible, title, options, onSelect, onClose }: PickerModalProps) {
+  const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable onPress={onClose} className="flex-1 bg-black/40 justify-end">
-        <Pressable className="rounded-t-3xl bg-white p-5" style={{ maxHeight: '70%' }}>
+        <Pressable
+          className="rounded-t-3xl bg-white p-5"
+          // Edge-to-edge (SDK 36): keep the Cancel button above the nav bar.
+          style={{ maxHeight: '70%', paddingBottom: Math.max(insets.bottom, 12) + 8 }}
+        >
           <Text className="mb-3 text-lg font-poppins-semibold text-slate-800">{title}</Text>
           <ScrollView showsVerticalScrollIndicator={false}>
             {options.map(option => (
@@ -228,6 +234,7 @@ export function VehicleDetailsScreen({
   totalSteps = 6,
   initialDocs,
 }: VehicleDetailsScreenProps) {
+  const insets = useSafeAreaInsets();
   const initialRc = initialDocs?.find(d => d.type === 'vehicle');
   const initialInsurance = initialDocs?.find(d => d.type === 'insurance');
 
@@ -385,7 +392,9 @@ export function VehicleDetailsScreen({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-6 pt-6 pb-10"
+          contentContainerClassName="px-6 pt-6"
+          // pb-10 (40) + nav-bar inset so the Next button clears the system bar.
+          contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
         >
           <Text className="font-poppins-semibold text-slate-800" style={{ marginBottom: vs(16), fontSize: fs(20) }}>

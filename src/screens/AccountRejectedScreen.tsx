@@ -1,6 +1,6 @@
 import { Pressable, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LogoutButton from '../components/LogoutButton';
 
 interface AccountRejectedScreenProps {
@@ -22,6 +22,7 @@ export function AccountRejectedScreen({
   onContactSupport,
   onLogout,
 }: AccountRejectedScreenProps) {
+  const insets = useSafeAreaInsets();
   return (
     <View className="flex-1 bg-[#F5F3F8]">
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -43,7 +44,8 @@ export function AccountRejectedScreen({
         </SafeAreaView>
       </LinearGradient>
 
-      <View className="flex-1 px-6 pt-8">
+      {/* Edge-to-edge (SDK 36): bottom-anchored buttons/text clear the nav bar. */}
+      <View className="flex-1 px-6 pt-8" style={{ paddingBottom: insets.bottom }}>
         <Text className="text-center text-[24px] font-poppins-semibold text-slate-800">
           Hello, {driverName}
         </Text>

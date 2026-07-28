@@ -1749,6 +1749,11 @@ function App() {
               ? 'Private Ride Confirmed'
               : 'Instant Ride Confirmed'
           }
+          // Ride's estimated values ("N min" / "X.X km") until the map's
+          // live route reports real numbers — without these the screen fell
+          // back to hardcoded "2 min" / "0.5 mi" placeholders.
+          eta={activeRide?.eta}
+          distance={activeRide?.distance}
           pickup={
             // Truthiness — see VerifyRideOtpScreen pickupCoord note (0 = missing).
             activeRide?.pickupLat && activeRide?.pickupLng
@@ -1819,7 +1824,11 @@ function App() {
 
       {stage === 'ride-summary' && (
         <RideSummaryScreen
+          rideId={activeRide?.rideId}
           amount={activeRide?.fare ?? '₹0.00'}
+          // Estimated minutes as the interim value; the screen swaps in the
+          // backend's actualDuration once its fetch lands.
+          duration={activeRide?.eta}
           onBack={goBack}
           onContact={() => {
             const phone = activeRide?.passengerPhone;

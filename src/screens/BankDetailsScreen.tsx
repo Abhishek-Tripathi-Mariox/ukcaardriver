@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import RequestBankDetailsUpdateModal from '../components/RequestBankDetailsUpdateModal';
 import Toast from '../components/Toast';
 import {
@@ -47,6 +47,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreenProps) {
+  const insets = useSafeAreaInsets();
   const [info, setInfo] = useState<{
     accountHolder: string;
     bankName: string;
@@ -142,7 +143,7 @@ export function BankDetailsScreen({ onBack, onViewStatement }: BankDetailsScreen
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

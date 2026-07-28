@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   CheckCircleIcon,
@@ -39,6 +39,7 @@ export function BoardingSummaryScreen({
   onBack,
   onStartJourney,
 }: BoardingSummaryScreenProps) {
+  const insets = useSafeAreaInsets();
   const [counts, setCounts] = useState<{
     boarded: number;
     total: number;
@@ -233,7 +234,14 @@ export function BoardingSummaryScreen({
         )}
       </ScrollView>
 
-      <View style={{ paddingHorizontal: s(16), paddingBottom: vs(24), paddingTop: vs(8) }}>
+      {/* Edge-to-edge (SDK 36): keep the CTA above the system nav bar. */}
+      <View
+        style={{
+          paddingHorizontal: s(16),
+          paddingBottom: Math.max(insets.bottom, vs(12)) + vs(12),
+          paddingTop: vs(8),
+        }}
+      >
         {!canStart && (
           <Text
             className="text-center font-poppins-regular text-[#B45309]"

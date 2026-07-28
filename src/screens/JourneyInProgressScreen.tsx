@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   AlertCircleIcon,
   BackArrowIcon,
@@ -54,6 +54,9 @@ export function JourneyInProgressScreen({
   onSos,
   onViewOnBoardDetails,
 }: JourneyInProgressScreenProps) {
+  const insets = useSafeAreaInsets();
+  // Edge-to-edge (SDK 36): keep bottom-sheet CTAs above the system nav bar.
+  const bottomPad = Math.max(insets.bottom, vs(12)) + vs(12);
   const [showStopDetails, setShowStopDetails] = useState(false);
   const [detail, setDetail] = useState<{ stops: JourneyStop[]; current: number; title: string; boarded: number } | null>(null);
   const [advancing, setAdvancing] = useState(false);
@@ -272,7 +275,7 @@ export function JourneyInProgressScreen({
         className="rounded-t-3xl bg-white"
         style={{
           paddingHorizontal: s(24),
-          paddingBottom: vs(24),
+          paddingBottom: bottomPad,
           paddingTop: vs(20),
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
@@ -360,7 +363,7 @@ export function JourneyInProgressScreen({
             className="rounded-t-3xl bg-white"
             style={{
               paddingHorizontal: s(24),
-              paddingBottom: vs(24),
+              paddingBottom: bottomPad,
               paddingTop: vs(20),
               shadowColor: '#000',
               shadowOffset: { width: 0, height: -4 },

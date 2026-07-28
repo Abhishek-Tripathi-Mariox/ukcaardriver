@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
   CalendarIcon,
@@ -186,6 +186,7 @@ function RideCard({
 }
 
 export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
+  const insets = useSafeAreaInsets();
   const [groups, setGroups] = useState<HistoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -232,7 +233,7 @@ export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 + insets.bottom, gap: 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

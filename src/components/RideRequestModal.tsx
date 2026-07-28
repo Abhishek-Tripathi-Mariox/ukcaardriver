@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle as SvgCircle } from 'react-native-svg';
 import {
   CheckIcon,
@@ -122,6 +123,7 @@ export function RideRequestModal({
   onReject,
   onTimeout,
 }: RideRequestModalProps) {
+  const insets = useSafeAreaInsets();
   const [seconds, setSeconds] = useState(initialSeconds);
   const styles = VARIANT_STYLES[request.variant];
 
@@ -142,7 +144,12 @@ export function RideRequestModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onReject}>
       <View className="flex-1 justify-end bg-black/40">
         <View
-          style={{ paddingHorizontal: s(24), paddingBottom: vs(32), paddingTop: vs(24) }}
+          style={{
+            paddingHorizontal: s(24),
+            // Edge-to-edge (SDK 36): keep Accept/Reject above the nav bar.
+            paddingBottom: Math.max(insets.bottom, vs(20)) + vs(12),
+            paddingTop: vs(24),
+          }}
           className="rounded-t-3xl bg-white"
         >
           <View className="flex-row items-center justify-between">

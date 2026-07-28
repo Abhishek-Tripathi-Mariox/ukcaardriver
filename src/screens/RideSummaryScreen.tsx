@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   PanResponder,
@@ -18,8 +18,12 @@ import {
   PhoneIcon,
   TicketIcon,
 } from '../components/icons/ServiceTypeIcons';
+import { getRide } from '../services/api';
 
 interface RideSummaryScreenProps {
+  /** Backend ride id — when set, the screen fetches the ride and shows its
+   *  actualDuration (real elapsed trip minutes) instead of the estimate. */
+  rideId?: string;
   amount?: string;
   duration?: string;
   onBack?: () => void;
@@ -159,14 +163,38 @@ function SlideToConfirm({
 }
 
 export function RideSummaryScreen({
-  amount = '₹489.56',
-  duration = '1 Hr 58 Mins',
+  rideId,
+  // Neutral placeholders — never invent numbers. The caller passes the
+  // estimate as `duration`; the fetch below swaps in the real elapsed time.
+  amount = '—',
+  duration = '—',
   onBack,
   onContact,
   onRaiseTicket,
   onCollectedCash,
 }: RideSummaryScreenProps) {
   const [fareVisible, setFareVisible] = useState(false);
+
+  // Real trip time: the backend stamps actualDuration (minutes between
+  // OTP-verify and end-trip) when the ride flips to payment_pending, so a
+  // single fetch here shows the true duration rather than the estimate.
+  const [actualDurationMin, setActualDurationMin] = useState<number | null>(null);
+  useEffect(() => {
+    if (!rideId) return;
+    let cancelled = false;
+    getRide(rideId)
+      .then(r => {
+        if (!cancelled && typeof r?.actualDuration === 'number') {
+          setActualDurationMin(r.actualDuration);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [rideId]);
+  const durationText =
+    actualDurationMin != null ? `${Math.round(actualDurationMin)} min` : duration;
 
   return (
     <View className="flex-1 bg-white">
@@ -206,7 +234,7 @@ export function RideSummaryScreen({
       >
         <View className="rounded-2xl border border-[#0097B3] bg-[#F0F5FF] p-4">
           <Text className="text-center text-[13px] text-[#0097B3]">DURATION OF USE</Text>
-          <Text className="text-center text-[17px] font-poppins-bold text-[#0097B3]">{duration}</Text>
+          <Text className="text-center text-[17px] font-poppins-bold text-[#0097B3]">{durationText}</Text>
         </View>
 
         <View className="mt-10 items-center">

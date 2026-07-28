@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Pressable, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StarIcon } from './icons/ServiceTypeIcons';
 
 interface RatePassengerModalProps {
@@ -22,13 +23,18 @@ export function RatePassengerModal({
   onSubmit,
   onSkip,
 }: RatePassengerModalProps) {
+  const insets = useSafeAreaInsets();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onSkip}>
       <View className="flex-1 justify-end bg-black/40">
-        <View className="rounded-t-3xl bg-white px-6 pb-8 pt-6">
+        {/* Edge-to-edge (SDK 36): keep the sheet's buttons above the nav bar. */}
+        <View
+          className="rounded-t-3xl bg-white px-6 pt-6"
+          style={{ paddingBottom: Math.max(insets.bottom, 20) + 12 }}
+        >
           <Text className="text-center text-[20px] font-poppins-semibold text-[#1E293B]">
             Rate your passenger
           </Text>

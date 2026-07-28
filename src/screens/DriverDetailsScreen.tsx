@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickImageFromSource } from '../services/imagePicker';
 import RegistrationHeader from '../components/RegistrationHeader';
 import { UploadIcon } from '../components/icons/ServiceTypeIcons';
@@ -160,6 +161,7 @@ export function DriverDetailsScreen({
   initialDocs,
   serviceType,
 }: DriverDetailsScreenProps) {
+  const insets = useSafeAreaInsets();
   const isScheduled = serviceType === 'scheduled';
   const findDoc = (t: string) => initialDocs?.find(d => d.type === t);
   // Aadhaar is now split into front + back. Legacy drivers may have a single
@@ -316,7 +318,9 @@ export function DriverDetailsScreen({
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-6 pt-6 pb-10"
+          contentContainerClassName="px-6 pt-6"
+          // pb-10 (40) + nav-bar inset so the Next button clears the system bar.
+          contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
         >
           <Text className="mb-4 text-[20px] font-poppins-semibold text-slate-800">

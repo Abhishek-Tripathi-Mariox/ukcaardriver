@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import {
   fetchReceivedAmounts,
@@ -92,6 +92,7 @@ function RideEntry({ ride }: { ride: ReceivedAmountItem }) {
 }
 
 export function ReceivedAmountScreen({ onBack }: ReceivedAmountScreenProps) {
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<ReceivedAmountItem[]>([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
@@ -169,7 +170,7 @@ export function ReceivedAmountScreen({ onBack }: ReceivedAmountScreenProps) {
         <FlatList
           data={rows}
           keyExtractor={r => r.key}
-          contentContainerStyle={{ paddingBottom: 32 }}
+          contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
