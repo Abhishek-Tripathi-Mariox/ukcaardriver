@@ -4,6 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BackArrowIcon,
+  ChatBubbleIcon,
   PhoneIcon,
   QrCodeIcon,
   UserXIcon,
@@ -34,6 +35,8 @@ interface PassengerCheckInScreenProps {
   onBack?: () => void;
   onScanQr?: (id: string) => void;
   onCall?: (id: string) => void;
+  /** Open the booking-scoped chat thread with this passenger's customer. */
+  onChatPassenger?: (p: { bookingId: string; name: string; contact?: string }) => void;
   onMarkAbsent?: (id: string) => void;
   onViewSummary?: () => void;
 }
@@ -89,6 +92,7 @@ export function PassengerCheckInScreen({
   onBack,
   onScanQr,
   onCall,
+  onChatPassenger,
   onMarkAbsent,
   onViewSummary,
 }: PassengerCheckInScreenProps) {
@@ -346,6 +350,21 @@ export function PassengerCheckInScreen({
                     >
                       <PhoneIcon size={s(16)} color="#0097B3" />
                     </Pressable>
+                    {p.bookingId && onChatPassenger && (
+                      <Pressable
+                        onPress={() =>
+                          onChatPassenger({
+                            bookingId: p.bookingId!,
+                            name: p.name,
+                            contact: p.contact,
+                          })
+                        }
+                        className="items-center justify-center rounded-full bg-[#E0F7FA]"
+                        style={{ width: s(36), height: s(36) }}
+                      >
+                        <ChatBubbleIcon size={s(16)} color="#0097B3" />
+                      </Pressable>
+                    )}
                     <Pressable
                       onPress={() => setAbsentTarget(p)}
                       className="items-center justify-center rounded-full bg-[#FEE2E2]"

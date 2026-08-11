@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { RideRequest } from '../components/RideRequestModal';
 import {
   AlertCircleIcon,
+  BellIcon,
   CarIcon as CarGlyphIcon,
   ClipboardListIcon,
   HourglassIcon,
@@ -24,7 +25,6 @@ import {
   InstantRideIcon,
   ListBadgeIcon,
   LockIcon,
-  BellIcon,
   RupeeBadgeIcon,
   StarIcon,
   WalletIcon,
@@ -451,23 +451,17 @@ export function DriverDashboardScreen({
                   {driverName}
                 </Text>
               </View>
-              {/* Figma header: a single hamburger "menu" button (top-right).
-                  It opens the slide-in menu, which contains Wallet,
-                  Notifications (with the unread count), and the rest of the
-                  destinations. The unread badge is mirrored here so the count
-                  is still visible on Home. */}
+              {/* Notification bell (top-right). The hamburger here duplicated
+                  the bottom nav's Menu tab, so it's replaced with the unread
+                  notifications entry point per client request. */}
               <Pressable
-                onPress={onOpenMenu}
+                onPress={onOpenNotifications}
                 style={{ height: s(44), width: s(52), flexGrow: 0, flexShrink: 0 }}
                 className="items-center justify-center rounded-2xl bg-white/20"
                 hitSlop={8}
-                accessibilityLabel="Open menu"
+                accessibilityLabel="Open notifications"
               >
-                <View style={{ gap: s(4) }}>
-                  <View style={{ width: s(20), height: 2, borderRadius: 2 }} className="bg-white" />
-                  <View style={{ width: s(20), height: 2, borderRadius: 2 }} className="bg-white" />
-                  <View style={{ width: s(20), height: 2, borderRadius: 2 }} className="bg-white" />
-                </View>
+                <BellIcon size={s(22)} color="#FFFFFF" />
                 {unreadNotifs > 0 && (
                   <View
                     className="absolute -right-1 -top-1 items-center justify-center rounded-full border-[1.5px] border-[#0097B3] bg-[#E02D3C] px-1"

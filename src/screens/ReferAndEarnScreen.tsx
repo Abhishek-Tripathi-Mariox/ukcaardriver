@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Clipboard,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   Share,
   StatusBar,
   Text,
+  ToastAndroid,
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -75,14 +78,17 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
     }
   };
 
-  // No Clipboard module installed yet — show the code in an alert that the
-  // user can long-press to copy. Cheap until we add @react-native-clipboard.
   const handleCopy = () => {
     if (!referralCode) return;
-    Alert.alert(
-      'Your referral code',
-      `${referralCode}\n\nLong-press the code to copy, or tap Share Code below.`,
-    );
+    // RN core's Clipboard is deprecated in favour of the community package
+    // but still ships with 0.73 — no new native dependency needed. This used
+    // to open an Alert panel telling the driver to long-press; now it copies.
+    Clipboard.setString(referralCode);
+    if (Platform.OS === 'android') {
+      ToastAndroid.show('Referral code copied', ToastAndroid.SHORT);
+    } else {
+      Alert.alert('Copied', 'Referral code copied to clipboard.');
+    }
   };
 
   // The driver's total earned so far = successful referrals × their per-referral

@@ -1090,7 +1090,7 @@ export interface JourneySummary {
   departureTime: string;
   seatPrice: number;
   totalSeats: number;
-  status: 'scheduled' | 'active' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'active' | 'in_progress' | 'completed' | 'cancelled' | 'expired';
   currentStopIndex: number;
   passengerCount: number;
   boardedCount: number;
@@ -1098,6 +1098,9 @@ export interface JourneySummary {
   startedAt: string | null;
   completedAt: string | null;
   earnings: number;
+  /** Minutes before departure within which the journey may be started.
+   *  Server-configured per route; fall back to 30 when absent. */
+  startWindowMinutes?: number;
 }
 
 export interface JourneyStop {

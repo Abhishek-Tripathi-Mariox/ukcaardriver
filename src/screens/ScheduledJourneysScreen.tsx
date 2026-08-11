@@ -23,12 +23,15 @@ interface ScheduledJourney {
   to: string;
   stops: number;
   passengers: number;
+  status: JourneySummary['status'];
   completed?: boolean;
 }
 
 interface ScheduledJourneysScreenProps {
   onBack?: () => void;
-  onOpenUpcoming?: (id: string) => void;
+  /** `status` lets the caller resume an already active/in-progress journey
+   *  at the right screen instead of restarting from the details page. */
+  onOpenUpcoming?: (id: string, status: JourneySummary['status']) => void;
   onOpenPast?: (id: string) => void;
 }
 
@@ -47,6 +50,7 @@ function toCard(j: JourneySummary): ScheduledJourney {
     to: j.to,
     stops: j.stopCount,
     passengers: j.passengerCount,
+    status: j.status,
     completed,
   };
 }
@@ -155,6 +159,16 @@ function PastJourneyCard({
   journey: ScheduledJourney;
   onPress?: () => void;
 }) {
+  // Badge follows the real outcome. 'expired' (or a trip still marked
+  // scheduled whose date has passed) never ran — it was missed, not
+  // completed, and showing a projected fare for it would be fiction.
+  const badge =
+    journey.status === 'completed'
+      ? { label: 'Completed', color: '#00A63E' }
+      : journey.status === 'cancelled'
+        ? { label: 'Cancelled', color: '#E7000B' }
+        : { label: 'Missed', color: '#6A7282' };
+  const showFare = journey.status === 'completed';
   return (
     <Pressable
       onPress={onPress}
@@ -193,16 +207,16 @@ function PastJourneyCard({
         </View>
         <View className="items-end">
           <Text
-            className="font-poppins-semibold text-[#00A63E]"
-            style={{ fontSize: fs(16) }}
+            className="font-poppins-semibold"
+            style={{ fontSize: fs(16), color: showFare ? '#00A63E' : '#6A7282' }}
           >
-            {journey.fare}
+            {showFare ? journey.fare : '—'}
           </Text>
           <Text
-            className="font-poppins-medium text-[#00A63E]"
-            style={{ fontSize: fs(12), marginTop: vs(2) }}
+            className="font-poppins-medium"
+            style={{ fontSize: fs(12), marginTop: vs(2), color: badge.color }}
           >
-            ✓ Completed
+            {badge.label}
           </Text>
         </View>
       </View>
@@ -364,7 +378,7 @@ export function ScheduledJourneysScreen({
               <UpcomingJourneyCard
                 key={j.id}
                 journey={j}
-                onPress={() => onOpenUpcoming?.(j.id)}
+                onPress={() => onOpenUpcoming?.(j.id, j.status)}
               />
             ) : (
               <PastJourneyCard

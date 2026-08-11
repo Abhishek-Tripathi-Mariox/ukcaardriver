@@ -275,6 +275,7 @@ type Stage =
   | 'qr-verified'
   | 'boarding-summary'
   | 'journey-in-progress'
+  | 'journey-chat'
   | 'emergency-alert'
   | 'emergency-drop-summary'
   | 'destination-reached'
@@ -333,6 +334,15 @@ function App() {
   // <routeId>_<departureIndex>_<YYYY-MM-DD>). Threaded through the whole
   // scheduled-flow stage chain so each screen fetches the right trip.
   const [activeJourneyKey, setActiveJourneyKey] = useState<string | null>(null);
+  // The scheduled-journey passenger the driver is chatting with. Scheduled
+  // trips have no Ride doc, so the chat thread is keyed by the passenger's
+  // ScheduledBooking _id (both apps join the same `ride:<bookingId>` room
+  // and the backend persists against the booking).
+  const [journeyChatPax, setJourneyChatPax] = useState<{
+    bookingId: string;
+    name: string;
+    contact?: string;
+  } | null>(null);
   // A customer-initiated early-drop request awaiting this driver's approval
   // (delivered over the socket / FCM). Drives the Emergency Alert screen.
   const [earlyDropReq, setEarlyDropReq] = useState<IncomingEarlyDrop | null>(null);
@@ -1528,9 +1538,14 @@ function App() {
       {stage === 'scheduled-journeys' && !gatedBlocked && (
         <ScheduledJourneysScreen
           onBack={goHome}
-          onOpenUpcoming={(key: string) => {
+          onOpenUpcoming={(key: string, status) => {
             setActiveJourneyKey(key);
-            setStage('upcoming-booking-details');
+            // Resume an already-running trip where it actually is — after a
+            // process death mid-journey the driver used to land back on the
+            // details page and had to walk the whole start flow again.
+            if (status === 'in_progress') setStage('journey-in-progress');
+            else if (status === 'active') setStage('passenger-checkin');
+            else setStage('upcoming-booking-details');
           }}
           onOpenPast={(key: string) => {
             setActiveJourneyKey(key);
@@ -1545,6 +1560,10 @@ function App() {
           journeyId={journeyIdFromKey(activeJourneyKey)}
           onBack={goBack}
           onStartJourney={() => setStage('ride-activation')}
+          onChatPassenger={pax => {
+            setJourneyChatPax(pax);
+            setStage('journey-chat');
+          }}
         />
       )}
 
@@ -1564,6 +1583,10 @@ function App() {
           onBack={goBack}
           onScanQr={() => setStage('qr-verification')}
           onViewSummary={() => setStage('boarding-summary')}
+          onChatPassenger={pax => {
+            setJourneyChatPax(pax);
+            setStage('journey-chat');
+          }}
         />
       )}
 
@@ -1602,6 +1625,10 @@ function App() {
           journeyKey={activeJourneyKey}
           onBack={goBack}
           onNextStop={() => setStage('destination-reached')}
+          onChatPassenger={pax => {
+            setJourneyChatPax(pax);
+            setStage('journey-chat');
+          }}
           onSos={() =>
             // Genuine driver SOS — call emergency services. (Early drops are
             // now customer-initiated and arrive as their own alert.)
@@ -1817,6 +1844,21 @@ function App() {
             name: activeRide.passengerName,
             phone: activeRide.passengerPhone,
             avatar: activeRide.passengerAvatar ?? null,
+          }}
+          onBack={goBack}
+        />
+      )}
+
+      {/* Scheduled-journey chat — same screen/socket channel as instant-ride
+          chat, but the thread is keyed by the passenger's ScheduledBooking id
+          (scheduled trips have no Ride doc). */}
+      {stage === 'journey-chat' && journeyChatPax && (
+        <RideChatScreen
+          rideId={journeyChatPax.bookingId}
+          customer={{
+            name: journeyChatPax.name,
+            phone: journeyChatPax.contact,
+            avatar: null,
           }}
           onBack={goBack}
         />

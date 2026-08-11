@@ -186,7 +186,7 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
                     ellipsizeMode="tail"
                     maxFontSizeMultiplier={1.3}
                   >
-                    {plan.days} days · {plan.currency} {plan.price.toFixed(2)}
+                    {plan.days} {plan.days === 1 ? 'day' : 'days'} · {plan.currency} {plan.price.toFixed(2)}
                   </Text>
                 </View>
                 <Pressable

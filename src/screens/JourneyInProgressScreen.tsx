@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   AlertCircleIcon,
   BackArrowIcon,
+  ChatBubbleIcon,
   CheckIcon,
   CloseIcon,
   LocationPinSmallIcon,
@@ -24,6 +25,14 @@ interface JourneyStop {
   passengers?: { id: string; name: string; initial: string }[];
 }
 
+interface OnBoardPassenger {
+  id: string;
+  bookingId: string;
+  name: string;
+  initial: string;
+  contact: string;
+}
+
 interface JourneyInProgressScreenProps {
   journeyKey?: string | null;
   title?: string;
@@ -36,6 +45,8 @@ interface JourneyInProgressScreenProps {
   onEmergencyStop?: () => void;
   onSos?: () => void;
   onViewOnBoardDetails?: () => void;
+  /** Open the booking-scoped chat thread with this passenger's customer. */
+  onChatPassenger?: (p: { bookingId: string; name: string; contact?: string }) => void;
 }
 
 // Neutral fallback — real stops are fetched on mount.
@@ -53,12 +64,19 @@ export function JourneyInProgressScreen({
   onEmergencyStop,
   onSos,
   onViewOnBoardDetails,
+  onChatPassenger,
 }: JourneyInProgressScreenProps) {
   const insets = useSafeAreaInsets();
   // Edge-to-edge (SDK 36): keep bottom-sheet CTAs above the system nav bar.
   const bottomPad = Math.max(insets.bottom, vs(12)) + vs(12);
   const [showStopDetails, setShowStopDetails] = useState(false);
-  const [detail, setDetail] = useState<{ stops: JourneyStop[]; current: number; title: string; boarded: number } | null>(null);
+  const [detail, setDetail] = useState<{
+    stops: JourneyStop[];
+    current: number;
+    title: string;
+    boarded: number;
+    onboard: OnBoardPassenger[];
+  } | null>(null);
   const [advancing, setAdvancing] = useState(false);
 
   useEffect(() => {
@@ -78,6 +96,18 @@ export function JourneyInProgressScreen({
           // the raw boarded count on older backends that don't send onBoard.
           boarded: pax.onBoard ?? pax.boarded,
           stops: d.stops.map((s) => ({ index: s.index, title: s.name, time: '' })),
+          // Who is on the bus right now — the "View Details" sheet used to map
+          // a per-stop passengers field that no fetch ever populated, so it
+          // always rendered empty.
+          onboard: pax.passengers
+            .filter((p) => p.boarded && !p.dropped)
+            .map((p) => ({
+              id: `${p.bookingId}-${p.seat}`,
+              bookingId: p.bookingId,
+              name: p.name,
+              initial: (p.name?.[0] ?? '?').toUpperCase(),
+              contact: p.contact || '',
+            })),
         });
       } catch {
         /* keep placeholder */
@@ -411,34 +441,73 @@ export function JourneyInProgressScreen({
             <View style={{ marginTop: vs(16), maxHeight: vs(220) }}>
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{ gap: vs(8) }}>
-                  {(currentStop.passengers ?? []).map(p => (
-                    <View
-                      key={p.id}
-                      className="flex-row items-center justify-between bg-[#F9FAFB]"
-                      style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
+                  {(detail?.onboard ?? []).length === 0 ? (
+                    <Text
+                      className="text-center font-poppins-regular text-[#6A7282]"
+                      style={{ fontSize: fs(14), paddingVertical: vs(12) }}
                     >
-                      <View className="flex-row items-center" style={{ gap: s(12) }}>
-                        <View
-                          className="items-center justify-center rounded-full bg-[#E9D4FF]"
-                          style={{ width: s(40), height: s(40) }}
-                        >
-                          <Text className="font-poppins-semibold text-[#8200DB]" style={{ fontSize: fs(16) }}>
-                            {p.initial}
+                      No passengers on board.
+                    </Text>
+                  ) : (
+                    (detail?.onboard ?? []).map(p => (
+                      <View
+                        key={p.id}
+                        className="flex-row items-center justify-between bg-[#F9FAFB]"
+                        style={{ borderRadius: s(16), paddingHorizontal: s(16), paddingVertical: vs(12) }}
+                      >
+                        <View className="flex-1 flex-row items-center" style={{ gap: s(12) }}>
+                          <View
+                            className="items-center justify-center rounded-full bg-[#E9D4FF]"
+                            style={{ width: s(40), height: s(40) }}
+                          >
+                            <Text className="font-poppins-semibold text-[#8200DB]" style={{ fontSize: fs(16) }}>
+                              {p.initial}
+                            </Text>
+                          </View>
+                          <Text
+                            className="flex-1 font-poppins-medium text-[#1E293B]"
+                            style={{ fontSize: fs(16) }}
+                            numberOfLines={1}
+                          >
+                            {p.name}
                           </Text>
                         </View>
-                        <Text className="font-poppins-medium text-[#1E293B]" style={{ fontSize: fs(16) }}>
-                          {p.name}
-                        </Text>
+                        <View className="flex-row items-center" style={{ gap: s(8) }}>
+                          {onChatPassenger && (
+                            <Pressable
+                              onPress={() =>
+                                onChatPassenger({
+                                  bookingId: p.bookingId,
+                                  name: p.name,
+                                  contact: p.contact,
+                                })
+                              }
+                              hitSlop={8}
+                              className="items-center justify-center rounded-full bg-[#E0F7FA]"
+                              style={{ width: s(32), height: s(32) }}
+                            >
+                              <ChatBubbleIcon size={s(16)} color="#0097B3" />
+                            </Pressable>
+                          )}
+                          <Pressable
+                            onPress={() => {
+                              const phone = p.contact.replace(/\s/g, '');
+                              if (!phone) {
+                                Alert.alert('No phone number', 'This passenger has no contact number on file.');
+                                return;
+                              }
+                              Linking.openURL(`tel:${phone}`).catch(() => {});
+                            }}
+                            hitSlop={8}
+                            className="items-center justify-center rounded-full bg-[#0097B3]"
+                            style={{ width: s(32), height: s(32) }}
+                          >
+                            <PhoneIcon size={s(16)} color="white" />
+                          </Pressable>
+                        </View>
                       </View>
-                      <Pressable
-                        hitSlop={8}
-                        className="items-center justify-center rounded-full bg-[#0097B3]"
-                        style={{ width: s(32), height: s(32) }}
-                      >
-                        <PhoneIcon size={s(16)} color="white" />
-                      </Pressable>
-                    </View>
-                  ))}
+                    ))
+                  )}
                 </View>
               </ScrollView>
             </View>

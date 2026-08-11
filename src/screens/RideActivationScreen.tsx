@@ -55,6 +55,9 @@ export function RideActivationScreen({
     : departureTimeProp;
   const passengerCount = j?.passengerCount ?? passengerCountProp;
   const stopCount = detail?.stops?.length ?? j?.stopCount ?? 0;
+  // Route-configurable start window; 30 is only the fallback while the
+  // journey detail has not loaded (or the server omits the field).
+  const startWindowMinutes = j?.startWindowMinutes ?? 30;
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
@@ -197,7 +200,7 @@ export function RideActivationScreen({
               className="text-[#6A7282] font-poppins-regular"
               style={{ fontSize: fs(12), marginTop: vs(2) }}
             >
-              Available from 30 minutes before departure
+              Available from {startWindowMinutes} minute{startWindowMinutes === 1 ? '' : 's'} before departure
             </Text>
           </View>
         </View>

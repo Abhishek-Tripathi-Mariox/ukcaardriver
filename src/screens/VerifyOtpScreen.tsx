@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   Image,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   StatusBar,
   Text,
@@ -82,6 +84,13 @@ export function VerifyOtpScreen({
           className="absolute left-0 right-0 top-0"
         />
         <SafeAreaView edges={['top']} className="flex-1">
+        {/* Edge-to-edge + translucent status bar break Android's adjustResize,
+            so without this the keyboard covered the OTP boxes. 'height' mode
+            collapses the flex spacer below and slides the card up instead. */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View className="flex-row items-center" style={{ paddingHorizontal: s(16), paddingTop: vs(4) }}>
             <Pressable onPress={onBack} hitSlop={12} className="p-2">
               <IconArrowBack width={s(20)} height={s(20)} color="#FFFFFF" />
@@ -188,6 +197,7 @@ export function VerifyOtpScreen({
           >
             By continuing, you agree to our Terms & Conditions
           </Text>
+        </KeyboardAvoidingView>
         </SafeAreaView>
       </View>
     </TouchableWithoutFeedback>

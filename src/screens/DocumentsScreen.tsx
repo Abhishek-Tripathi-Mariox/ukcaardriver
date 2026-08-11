@@ -520,6 +520,7 @@ export function DocumentsScreen({ onBack }: DocumentsScreenProps) {
 
       <DocumentPreviewModal
         visible={previewFor !== null}
+        imageUrl={previewFor?.url}
         title={previewFor?.title}
         expiryDate={previewFor?.expiryDate}
         uploadDate={previewFor?.uploadedDate}

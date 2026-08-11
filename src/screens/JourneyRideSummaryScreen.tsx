@@ -41,6 +41,7 @@ export function JourneyRideSummaryScreen({
     route: string;
     total: number;
     boarded: number;
+    noShow: number;
     stops: number;
   } | null>(null);
 
@@ -57,6 +58,7 @@ export function JourneyRideSummaryScreen({
           route: `${d.journey.from} → ${d.journey.to}`,
           total: pax.total,
           boarded: pax.boarded,
+          noShow: pax.noShow,
           stops: d.stops.length,
         });
       } catch {
@@ -69,7 +71,9 @@ export function JourneyRideSummaryScreen({
   const route = data?.route ?? routeProp;
   const totalPassengers = data?.total ?? totalPassengersProp;
   const boarded = data?.boarded ?? boardedProp;
-  const absent = data ? data.total - data.boarded : absentProp;
+  // "Marked Absent" = seats the driver explicitly no-showed. total - boarded
+  // also counted unprocessed seats, inflating the number.
+  const absent = data?.noShow ?? absentProp;
   const stops = data?.stops ?? stopsProp;
 
   return (

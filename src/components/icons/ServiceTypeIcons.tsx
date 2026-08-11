@@ -19,7 +19,11 @@ export function InstantRideIcon({ size = 24 }: { size?: number }) {
 
 export function PrivateRideIcon({ size = 24 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    // The padlock artwork spans x=1..19 (centre 10), not the viewBox's centre
+    // of 12 — so a plain "0 0 24 24" box drew it 2 units left of centre, which
+    // showed as an off-centre lock inside the round service-type badge. Shifting
+    // the viewBox origin left by 2 re-centres it without touching the paths.
+    <Svg width={size} height={size} viewBox="-2 0 24 24" fill="none">
       <Path
         d="M17 11H3C1.89 11 1 11.9 1 13V20C1 21.1 1.89 22 3 22H17C18.1 22 19 21.1 19 20V13C19 11.9 18.1 11 17 11Z"
         stroke={STROKE}
@@ -380,6 +384,20 @@ export function TabMenuIcon({ size = 20, color = '#6A7282' }: { size?: number; c
       <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth={2} strokeLinecap="round" />
       <Line x1="3" y1="6" x2="21" y2="6" stroke={color} strokeWidth={2} strokeLinecap="round" />
       <Line x1="3" y1="18" x2="21" y2="18" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function ChatBubbleIcon({ size = 20, color = 'white' }: { size?: number; color?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 15C21 15.53 20.79 16.04 20.41 16.41C20.04 16.79 19.53 17 19 17H7L3 21V5C3 4.47 3.21 3.96 3.59 3.59C3.96 3.21 4.47 3 5 3H19C19.53 3 20.04 3.21 20.41 3.59C20.79 3.96 21 4.47 21 5V15Z"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

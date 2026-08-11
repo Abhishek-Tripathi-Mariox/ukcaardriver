@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
+  ScrollView,
   StatusBar,
   Text,
   View,
@@ -17,9 +19,10 @@ import {
   TabProfileIcon,
 } from '../components/icons/ServiceTypeIcons';
 import {
+  NotificationApi,
   fetchNotifications,
   markAllNotificationsRead,
-  NotificationApi,
+  markNotificationRead,
 } from '../services/api';
 
 interface NotificationsScreenProps {
@@ -95,27 +98,38 @@ function NotificationThumb({ type }: { type: NotificationApi['type'] }) {
   );
 }
 
-function NotificationRow({ item }: { item: NotificationApi }) {
+function NotificationRow({
+  item,
+  onPress,
+}: {
+  item: NotificationApi;
+  onPress: (n: NotificationApi) => void;
+}) {
   return (
-    <View
+    <Pressable
+      onPress={() => onPress(item)}
       className="flex-row items-start gap-4 border-b border-[#F3F4F6] px-6 py-4"
       style={{ backgroundColor: item.isRead ? 'white' : '#F0F9FB' }}
     >
       <NotificationThumb type={item.type} />
       <View className="flex-1">
         <View className="flex-row items-start justify-between">
-          <Text className="flex-1 pr-2 text-sm font-poppins-bold text-[#171717]">
+          <Text
+            className="flex-1 pr-2 text-sm font-poppins-bold text-[#171717]"
+            numberOfLines={1}
+          >
             {item.title}
           </Text>
           <Text className="text-xs text-[#D9D9D9]">
             {relativeTime(item.createdAt)}
           </Text>
         </View>
-        <Text className="mt-1 text-sm leading-[20px] text-[#8F92A1]">
+        {/* Clamped preview — tapping opens the full text in the popup. */}
+        <Text className="mt-1 text-sm leading-[20px] text-[#8F92A1]" numberOfLines={2}>
           {item.body}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -145,6 +159,18 @@ export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Full-notification popup for long descriptions (client request).
+  const [selected, setSelected] = useState<NotificationApi | null>(null);
+
+  const openNotification = (n: NotificationApi) => {
+    setSelected(n);
+    if (!n.isRead) {
+      // Optimistic: flip locally, best-effort persist. The dashboard badge
+      // refetches on focus so it self-corrects either way.
+      setItems(prev => prev.map(x => (x._id === n._id ? { ...x, isRead: true } : x)));
+      markNotificationRead(n._id).catch(() => {});
+    }
+  };
 
   const load = useCallback(async (pageToLoad: number, reset = false) => {
     try {
@@ -250,11 +276,53 @@ export function NotificationsScreen({ onBack }: NotificationsScreenProps) {
                 <View className="h-px bg-[#F3F4F6]" />
               </>
             ) : (
-              <NotificationRow item={item.notif} />
+              <NotificationRow item={item.notif} onPress={openNotification} />
             )
           }
         />
       )}
+
+      {/* Full-notification popup. */}
+      <Modal
+        visible={selected !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelected(null)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/45 px-6">
+          <View
+            className="w-full max-w-[360px] rounded-2xl bg-white p-5"
+            style={{ maxHeight: '75%' }}
+          >
+            {selected && (
+              <>
+                <View className="flex-row items-center">
+                  <NotificationThumb type={selected.type} />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-[16px] font-poppins-bold text-[#171717]">
+                      {selected.title}
+                    </Text>
+                    <Text className="mt-0.5 text-xs text-[#9AA5B0]">
+                      {relativeTime(selected.createdAt)}
+                    </Text>
+                  </View>
+                </View>
+                <ScrollView className="mt-4" style={{ flexGrow: 0 }}>
+                  <Text className="text-[15px] leading-[23px] text-[#3F4A54]">
+                    {selected.body}
+                  </Text>
+                </ScrollView>
+                <Pressable
+                  onPress={() => setSelected(null)}
+                  className="mt-5 h-12 items-center justify-center rounded-xl bg-[#0097B3]"
+                >
+                  <Text className="text-[16px] font-poppins-medium text-white">Close</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

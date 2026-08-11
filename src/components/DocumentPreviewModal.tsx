@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { DocumentIcon } from './icons/ServiceTypeIcons';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, Text, View } from 'react-native';
 import {
   CheckIcon,
   CloseIcon,
@@ -9,6 +10,8 @@ import {
 
 interface DocumentPreviewModalProps {
   visible: boolean;
+  /** Uploaded document image URL — rendered full-size in the preview area. */
+  imageUrl?: string;
   title?: string;
   expiryDate?: string;
   uploadDate?: string;
@@ -20,6 +23,7 @@ interface DocumentPreviewModalProps {
 
 export function DocumentPreviewModal({
   visible,
+  imageUrl,
   title = 'Driving License',
   expiryDate = '12 Mar 2027',
   uploadDate = '15 Jan 2026',
@@ -30,6 +34,8 @@ export function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const statusLabel = status === 'verified' ? 'Verified' : 'Under Review';
   const statusColor = status === 'verified' ? '#00C896' : '#FFA726';
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -75,11 +81,36 @@ export function DocumentPreviewModal({
           </View>
 
           <View className="gap-5 px-6 pt-6">
-            <View className="h-[280px] items-center justify-center rounded-xl bg-[#F3F4F6]">
-              <DocumentIcon size={64} color="#9CA3AF" />
-              <Text className="mt-3 text-sm text-[#4A5565]">{title}</Text>
-              <Text className="mt-2 text-xs text-[#6A7282]">Document Preview</Text>
-              <Text className="text-xs text-[#6A7282]">(Full resolution in production)</Text>
+            <View className="h-[280px] items-center justify-center overflow-hidden rounded-xl bg-[#F3F4F6]">
+              {imageUrl && !imageFailed ? (
+                <>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    resizeMode="contain"
+                    className="h-full w-full"
+                    onLoadEnd={() => setImageLoading(false)}
+                    onError={() => {
+                      setImageFailed(true);
+                      setImageLoading(false);
+                    }}
+                  />
+                  {imageLoading && (
+                    <View className="absolute inset-0 items-center justify-center">
+                      <ActivityIndicator color="#0097B3" />
+                    </View>
+                  )}
+                </>
+              ) : (
+                // No URL (or the image failed to load) — placeholder instead
+                // of the old always-generic box.
+                <>
+                  <DocumentIcon size={64} color="#9CA3AF" />
+                  <Text className="mt-3 text-sm text-[#4A5565]">{title}</Text>
+                  <Text className="mt-2 text-xs text-[#6A7282]">
+                    {imageFailed ? 'Could not load the document image' : 'No document uploaded yet'}
+                  </Text>
+                </>
+              )}
             </View>
 
             <View className="gap-3 rounded-xl bg-[#F9FAFB] p-4">

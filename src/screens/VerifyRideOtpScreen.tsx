@@ -50,6 +50,10 @@ export function VerifyRideOtpScreen({
   const [otp, setOtp] = useState('');
   const [sosVisible, setSosVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // "I've arrived" button state — once the backend confirms, the button
+  // flips to a disabled "Arrived" pill so the driver knows it registered.
+  const [arrived, setArrived] = useState(false);
+  const [arriveBusy, setArriveBusy] = useState(false);
   const [driverPos, setDriverPos] = useState<LatLng | null>(null);
   // Live driving distance + ETA to the pickup, reported by the map each time
   // it (re)routes. Shown as a pill over the map so the driver knows how far
@@ -103,16 +107,24 @@ export function VerifyRideOtpScreen({
     }
   };
 
-  // Optional: let the driver mark "I've arrived at pickup" before the
-  // passenger gets in. This gives the customer's tracking screen a clearer
-  // banner than just "approaching". Best-effort — a 400 from the backend
-  // (already past this state) is fine and we silently ignore it.
+  // Let the driver mark "I've arrived at pickup" before the passenger gets
+  // in. This flips the customer's tracking banner + sends them a push. The
+  // backend accepts it from driver_assigned/driver_arriving and is
+  // idempotent when the geofence already flipped the ride to arrived, so a
+  // success here always means "the rider knows you're there".
   const handleMarkArrived = async () => {
-    if (!rideId) return;
+    if (!rideId || arrived || arriveBusy) return;
+    setArriveBusy(true);
     try {
       await updateRideStatus(rideId, 'driver_arrived');
-    } catch (err) {
-      console.warn('[verify-otp] mark arrived failed:', err);
+      setArrived(true);
+    } catch (err: any) {
+      Alert.alert(
+        'Could not mark arrived',
+        err?.message ?? 'Please check your connection and try again.',
+      );
+    } finally {
+      setArriveBusy(false);
     }
   };
 
@@ -137,10 +149,14 @@ export function VerifyRideOtpScreen({
             {rideId && (
               <Pressable
                 onPress={handleMarkArrived}
+                disabled={arrived || arriveBusy}
                 hitSlop={6}
-                className="rounded-full bg-white/20 px-3 py-1.5"
+                className={`rounded-full px-3 py-1.5 ${arrived ? 'bg-white/40' : 'bg-white/20'}`}
+                style={{ opacity: arriveBusy ? 0.6 : 1 }}
               >
-                <Text className="text-xs font-poppins-medium text-white">I've arrived</Text>
+                <Text className="text-xs font-poppins-medium text-white">
+                  {arrived ? 'Arrived' : arriveBusy ? 'Marking...' : "I've arrived"}
+                </Text>
               </Pressable>
             )}
           </View>

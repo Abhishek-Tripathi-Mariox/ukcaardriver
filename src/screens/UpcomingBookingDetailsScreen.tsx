@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchJourney, fetchJourneyPassengers, startJourney } from '../services/api';
+import { ApiError, fetchJourney, fetchJourneyPassengers, startJourney } from '../services/api';
 import {
   BackArrowIcon,
+  ChatBubbleIcon,
   ClockSmallIcon,
   LocationPinSmallIcon,
   PhoneIcon,
@@ -24,6 +25,7 @@ interface Stop {
 
 interface Passenger {
   id: string;
+  bookingId?: string;
   name: string;
   seat: number;
   contact: string;
@@ -49,6 +51,8 @@ interface UpcomingBookingDetailsScreenProps {
   stopsFare?: string;
   onBack?: () => void;
   onCallPassenger?: (id: string) => void;
+  /** Open the booking-scoped chat thread with this passenger's customer. */
+  onChatPassenger?: (p: { bookingId: string; name: string; contact?: string }) => void;
   onStartJourney?: () => void;
 }
 
@@ -108,9 +112,11 @@ function StopRow({ stop, isLast }: { stop: Stop; isLast: boolean }) {
 function PassengerRow({
   passenger,
   onCall,
+  onChat,
 }: {
   passenger: Passenger;
   onCall?: () => void;
+  onChat?: () => void;
 }) {
   const initials =
     passenger.name
@@ -158,14 +164,26 @@ function PassengerRow({
           </Text>
         </View>
       </View>
-      <Pressable
-        onPress={onCall}
-        hitSlop={8}
-        className="items-center justify-center rounded-full bg-[#0097B3]"
-        style={{ width: s(36), height: s(36) }}
-      >
-        <PhoneIcon size={s(16)} color="white" />
-      </Pressable>
+      <View className="flex-row items-center" style={{ gap: s(8) }}>
+        {onChat && (
+          <Pressable
+            onPress={onChat}
+            hitSlop={8}
+            className="items-center justify-center rounded-full bg-[#E0F7FA]"
+            style={{ width: s(36), height: s(36) }}
+          >
+            <ChatBubbleIcon size={s(16)} color="#0097B3" />
+          </Pressable>
+        )}
+        <Pressable
+          onPress={onCall}
+          hitSlop={8}
+          className="items-center justify-center rounded-full bg-[#0097B3]"
+          style={{ width: s(36), height: s(36) }}
+        >
+          <PhoneIcon size={s(16)} color="white" />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -186,16 +204,36 @@ export function UpcomingBookingDetailsScreen({
   totalFare: totalFareProp = '—',
   onBack,
   onCallPassenger,
+  onChatPassenger,
   onStartJourney,
 }: UpcomingBookingDetailsScreenProps) {
   const insets = useSafeAreaInsets();
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchJourney>> | null>(null);
+  const [detailError, setDetailError] = useState(false);
+  // Bumping this re-runs the fetch effect (Retry action on fetch failure).
+  const [fetchNonce, setFetchNonce] = useState(0);
   const [pax, setPax] = useState<Passenger[] | null>(null);
   const [starting, setStarting] = useState(false);
+  // Re-evaluated every 30s so the Start button enables itself once the
+  // start window opens while the driver keeps the screen open.
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(tick);
+  }, []);
 
   useEffect(() => {
     if (!journeyKey) return;
-    fetchJourney(journeyKey).then(setDetail).catch(() => {});
+    setDetailError(false);
+    fetchJourney(journeyKey)
+      .then((d) => {
+        setDetail(d);
+        setDetailError(false);
+      })
+      // Don't leave the driver stuck: the failure is surfaced inline with a
+      // Retry action, and the Start gate fails open (server still enforces).
+      .catch(() => setDetailError(true));
     fetchJourneyPassengers(journeyKey)
       .then((r) =>
         setPax(
@@ -205,6 +243,7 @@ export function UpcomingBookingDetailsScreen({
           // would read as real. Show the seat + live boarding status instead.
           r.passengers.map((p) => ({
             id: `${p.bookingId}-${p.seat}`,
+            bookingId: p.bookingId,
             name: p.name,
             seat: p.seat,
             contact: p.contact,
@@ -214,7 +253,7 @@ export function UpcomingBookingDetailsScreen({
         ),
       )
       .catch(() => {});
-  }, [journeyKey]);
+  }, [journeyKey, fetchNonce]);
 
   const j = detail?.journey;
   const title = j?.routeName ?? titleProp;
@@ -232,17 +271,65 @@ export function UpcomingBookingDetailsScreen({
   const grossFare = seatPrice * passengerCount;
   const totalFare = j ? `₹${grossFare.toLocaleString('en-IN')}` : totalFareProp;
 
+  // ── Start-window gating (all business times are IST) ──
+  // Server enforces this too; the client mirrors it so the driver is not
+  // offered a button that can only fail.
+  const startWindowMinutes = j?.startWindowMinutes ?? 30;
+  // IST-correct departure instant: pin the offset so the device timezone
+  // never shifts the result.
+  const departureMs =
+    /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{1,2}:\d{2}$/.test(time)
+      ? Date.parse(`${date}T${time.padStart(5, '0')}:00+05:30`)
+      : NaN;
+  const windowOpensMs = departureMs - startWindowMinutes * 60_000;
+  // Today's IST civil date, independent of the device timezone.
+  const istToday = new Date(now + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const departureKnown = Number.isFinite(departureMs);
+  const isFutureDate = departureKnown && date > istToday;
+  // Pure epoch rule — no civil-date veto, so a start window that spans
+  // midnight (e.g. a 00:10 slot startable from 23:40) works. When departure
+  // info is unknown (detail fetch failed / missing date+time) we FAIL OPEN:
+  // the server enforces the window authoritatively and returns a clean
+  // message, so the driver is never silently locked out by a client gap.
+  const canStart = !!journeyKey && (!departureKnown || now >= windowOpensMs);
+
+  const istClock = (ms: number) =>
+    new Date(ms).toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  const istDate = (ms: number) =>
+    new Date(ms).toLocaleDateString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  let startHelper: string | null = null;
+  if (!canStart && journeyKey && departureKnown) {
+    // Before the window opens: a genuinely future IST date reads better as a
+    // date; otherwise (today, or a window that opens later today for an
+    // after-midnight slot) show the exact opening time.
+    startHelper = isFutureDate
+      ? `This journey is scheduled for ${istDate(departureMs)}`
+      : `Journey can be started from ${istClock(windowOpensMs)}`;
+  }
+
   const handleStart = async () => {
-    if (!journeyKey) {
-      onStartJourney?.();
-      return;
-    }
+    // No trip identity — nothing legitimate to start. The button is disabled
+    // in this state; this guard is the last line of defence.
+    if (!journeyKey || !canStart) return;
     setStarting(true);
     try {
       await startJourney(journeyKey);
       onStartJourney?.();
-    } catch (err: any) {
-      Alert.alert('Could not start', err?.message ?? 'Please try again.');
+    } catch (err) {
+      // Server 4xx messages are already clean business English; anything
+      // else (network, parse) gets a generic fallback — never raw errors.
+      const message = err instanceof ApiError ? err.message : 'Please try again.';
+      Alert.alert('Could not start', message);
     } finally {
       setStarting(false);
     }
@@ -412,7 +499,27 @@ export function UpcomingBookingDetailsScreen({
               <PassengerRow
                 key={p.id}
                 passenger={p}
-                onCall={() => onCallPassenger?.(p.id)}
+                onCall={() => {
+                  onCallPassenger?.(p.id);
+                  // Dial directly — the callback was never wired in App.tsx,
+                  // which left this button dead.
+                  const phone = (p.contact || '').replace(/\s/g, '');
+                  if (!phone) {
+                    Alert.alert('No phone number', 'This passenger has no contact number on file.');
+                    return;
+                  }
+                  Linking.openURL(`tel:${phone}`).catch(() => {});
+                }}
+                onChat={
+                  p.bookingId && onChatPassenger
+                    ? () =>
+                        onChatPassenger({
+                          bookingId: p.bookingId!,
+                          name: p.name,
+                          contact: p.contact,
+                        })
+                    : undefined
+                }
               />
             ))}
           </View>
@@ -456,11 +563,41 @@ export function UpcomingBookingDetailsScreen({
           paddingTop: vs(8),
         }}
       >
+        {detailError && (
+          <View
+            className="flex-row items-center bg-[#FEF3C7]"
+            style={{
+              borderRadius: s(12),
+              paddingHorizontal: s(12),
+              paddingVertical: vs(8),
+              marginBottom: vs(8),
+              gap: s(8),
+            }}
+          >
+            <Text
+              className="flex-1 font-poppins-regular text-[#92400E]"
+              style={{ fontSize: fs(12), lineHeight: fs(17) }}
+            >
+              Could not load journey details. Some information may be missing.
+            </Text>
+            <Pressable onPress={() => setFetchNonce((n) => n + 1)} hitSlop={8}>
+              <Text
+                className="font-poppins-semibold text-[#9810FA]"
+                style={{ fontSize: fs(13) }}
+              >
+                Retry
+              </Text>
+            </Pressable>
+          </View>
+        )}
         <Pressable
           onPress={handleStart}
-          disabled={starting}
+          disabled={!canStart || starting}
           className="items-center justify-center bg-[#9810FA]"
-          style={{ height: s(56), borderRadius: s(16) }}
+          style={[
+            { height: s(56), borderRadius: s(16) },
+            canStart ? undefined : { opacity: 0.5 },
+          ]}
         >
           <Text
             className="font-poppins-medium uppercase text-white"
@@ -469,6 +606,14 @@ export function UpcomingBookingDetailsScreen({
             Start Journey
           </Text>
         </Pressable>
+        {startHelper != null && (
+          <Text
+            className="text-center font-poppins-medium text-[#6A7282]"
+            style={{ fontSize: fs(13), marginTop: vs(8) }}
+          >
+            {startHelper}
+          </Text>
+        )}
       </View>
     </View>
   );
