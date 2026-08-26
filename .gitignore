@@ -73,3 +73,8 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Release signing credentials — never commit
+android/keystore.properties
+*.keystore
+!android/app/debug.keystore
