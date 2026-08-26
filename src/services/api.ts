@@ -241,7 +241,7 @@ export async function sendOtp(
 ): Promise<SendOtpResponse> {
   const fullPhone = `${countryCode}${phone.replace(/\s/g, '')}`;
   try {
-    phoneConfirmation = await auth().signInWithPhoneNumber(fullPhone, true);
+    phoneConfirmation = await auth().signInWithPhoneNumber(fullPhone);
     return { success: true, message: 'Code sent' };
   } catch (e: any) {
     throw new Error(phoneAuthMessage(e?.code));
