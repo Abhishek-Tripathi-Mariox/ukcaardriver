@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchJourney, fetchJourneyPassengers } from '../services/api';
+import { dialPhone } from '../utils/navigation';
 import {
   BackArrowIcon,
   ClockSmallIcon,
@@ -28,6 +29,8 @@ interface Passenger {
   seat: number;
   boarded: boolean;
   noShow: boolean;
+  /** Phone number for the row's Call button. */
+  contact?: string;
 }
 
 interface CompletedRideScreenProps {
@@ -192,6 +195,9 @@ export function CompletedRideScreen({
             seat: p.seat,
             boarded: p.boarded,
             noShow: p.noShow,
+            // The API has always returned this; dropping it here is why the
+            // row's Call button had no number to dial.
+            contact: p.contact,
           })),
         ),
       )
@@ -375,7 +381,12 @@ export function CompletedRideScreen({
               <PassengerRow
                 key={p.id}
                 passenger={p}
-                onCall={() => onCallPassenger?.(p.id)}
+                onCall={() => {
+                  // onCallPassenger is optional and no parent supplies it, so
+                  // this button previously did nothing at all.
+                  onCallPassenger?.(p.id);
+                  void dialPhone(p.contact);
+                }}
               />
             ))}
           </View>

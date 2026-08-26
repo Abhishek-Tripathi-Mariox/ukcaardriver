@@ -1,4 +1,30 @@
-import { Linking } from 'react-native';
+import { Alert, Linking } from 'react-native';
+
+/**
+ * Dial a passenger. Every call site used to be
+ * `Linking.openURL(...).catch(() => {})`, which swallowed the failure — a tap
+ * that could not open the dialler did nothing at all and left no trace, which
+ * is indistinguishable from a dead button.
+ *
+ * Strips spaces (numbers are stored as "+91 98765 43210" in some records) and
+ * surfaces both failure modes: no number on file, and no app able to dial.
+ */
+export async function dialPhone(raw?: string | null): Promise<void> {
+  const phone = (raw ?? '').replace(/[\s-()]/g, '');
+  if (!phone) {
+    Alert.alert('No phone number', 'This passenger has no contact number on file.');
+    return;
+  }
+  try {
+    await Linking.openURL(`tel:${phone}`);
+  } catch (err) {
+    console.warn('[dial] failed for', phone, err);
+    Alert.alert(
+      'Could not start the call',
+      `Dial ${phone} manually — this device did not open the phone app.`,
+    );
+  }
+}
 
 /**
  * Hand off turn-by-turn navigation to the device's Google Maps app, routing

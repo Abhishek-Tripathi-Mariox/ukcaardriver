@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import {
   CACHE_KEYS,
   CACHE_TTL,
@@ -195,17 +196,56 @@ function safeParseJson(text: string): any {
 export interface SendOtpResponse {
   success: boolean;
   message: string;
-  otp?: string; // present in dev/test mode
 }
 
+/**
+ * Firebase phone sign-in state.
+ *
+ * signInWithPhoneNumber returns a confirmation handle that has to survive
+ * between LoginScreen (requests the code) and VerifyOtpScreen (submits it).
+ * It is a live object with methods, so it is held at module level rather
+ * than in navigation params or app state. Killing the app between the two
+ * screens loses it — verifyOtp detects the null and asks for a fresh code.
+ */
+let phoneConfirmation: FirebaseAuthTypes.ConfirmationResult | null = null;
+
+/** Maps Firebase's error codes to something a driver can act on. */
+function phoneAuthMessage(code?: string): string {
+  switch (code) {
+    case 'auth/invalid-phone-number':
+      return 'That phone number does not look right. Please check and try again.';
+    case 'auth/invalid-verification-code':
+      return 'That code is incorrect. Please check and try again.';
+    case 'auth/code-expired':
+      return 'That code has expired. Please request a new one.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a few minutes before trying again.';
+    case 'auth/quota-exceeded':
+    case 'auth/missing-client-identifier':
+      return 'Sign-in is temporarily unavailable. Please try again shortly.';
+    case 'auth/network-request-failed':
+      return 'No internet connection. Please check your network and try again.';
+    default:
+      return 'Could not sign you in. Please try again.';
+  }
+}
+
+/**
+ * Asks Firebase to text a verification code. Google sends the SMS from their
+ * own registered sender, which is why UKCAAR needs no TRAI DLT registration
+ * for login. Nothing hits our backend on this step.
+ */
 export async function sendOtp(
   phone: string,
   countryCode = '+91',
 ): Promise<SendOtpResponse> {
-  return request<SendOtpResponse>('/auth/send-otp', {
-    method: 'POST',
-    body: JSON.stringify({ phone, countryCode }),
-  });
+  const fullPhone = `${countryCode}${phone.replace(/\s/g, '')}`;
+  try {
+    phoneConfirmation = await auth().signInWithPhoneNumber(fullPhone, true);
+    return { success: true, message: 'Code sent' };
+  } catch (e: any) {
+    throw new Error(phoneAuthMessage(e?.code));
+  }
 }
 
 export interface VerifyOtpResponse {
@@ -217,14 +257,37 @@ export interface VerifyOtpResponse {
   };
 }
 
+/**
+ * Confirms the code with Firebase, then trades the resulting ID token for our
+ * own session at /auth/firebase-login. The code itself never reaches our
+ * server. `phone` and `countryCode` are kept in the signature so the calling
+ * screens are unchanged — the number is already bound to the confirmation
+ * handle from sendOtp.
+ */
 export async function verifyOtp(
   phone: string,
   otp: string,
   countryCode = '+91',
 ): Promise<VerifyOtpResponse> {
-  const res = await request<VerifyOtpResponse>('/auth/verify-otp', {
+  if (!phoneConfirmation) {
+    throw new Error('Your session expired. Please request a new code.');
+  }
+
+  let idToken: string;
+  try {
+    const credential = await phoneConfirmation.confirm(otp);
+    if (!credential?.user) throw new Error('no user');
+    idToken = await credential.user.getIdToken();
+  } catch (e: any) {
+    throw new Error(phoneAuthMessage(e?.code));
+  }
+
+  // One-shot: a confirmed handle cannot be reused for another attempt.
+  phoneConfirmation = null;
+
+  const res = await request<VerifyOtpResponse>('/auth/firebase-login', {
     method: 'POST',
-    body: JSON.stringify({ phone, otp, countryCode }),
+    body: JSON.stringify({ idToken }),
   });
 
   if (res.data?.tokens) await persistTokens(res.data.tokens);

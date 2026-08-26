@@ -3,6 +3,7 @@ import { Alert, Linking, Pressable, ScrollView, StatusBar, Text, View } from 're
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, fetchJourney, fetchJourneyPassengers, startJourney } from '../services/api';
+import { dialPhone } from '../utils/navigation';
 import {
   BackArrowIcon,
   ChatBubbleIcon,
@@ -503,12 +504,7 @@ export function UpcomingBookingDetailsScreen({
                   onCallPassenger?.(p.id);
                   // Dial directly — the callback was never wired in App.tsx,
                   // which left this button dead.
-                  const phone = (p.contact || '').replace(/\s/g, '');
-                  if (!phone) {
-                    Alert.alert('No phone number', 'This passenger has no contact number on file.');
-                    return;
-                  }
-                  Linking.openURL(`tel:${phone}`).catch(() => {});
+                  void dialPhone(p.contact);
                 }}
                 onChat={
                   p.bookingId && onChatPassenger

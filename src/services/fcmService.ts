@@ -6,6 +6,7 @@ import messaging, {
 import notifee, {
   AndroidImportance,
   AndroidCategory,
+  AndroidStyle,
   AndroidVisibility,
   EventType,
 } from '@notifee/react-native';
@@ -145,6 +146,9 @@ export async function displayRemoteMessage(
     android: {
       channelId: isRideAlert ? RIDE_ALERTS_CHANNEL_ID : DEFAULT_CHANNEL_ID,
       pressAction: { id: 'default', launchActivity: 'default' },
+      // Without BIGTEXT Android clamps the banner to a single line with no
+      // way to expand it, so longer messages were unreadable from the shade.
+      style: { type: AndroidStyle.BIGTEXT, text: body },
       // Ride alerts: incoming-call-style full-screen intent so the alert
       // wakes the device past Doze and lock-screen on aggressive OEM ROMs.
       ...(isRideAlert
