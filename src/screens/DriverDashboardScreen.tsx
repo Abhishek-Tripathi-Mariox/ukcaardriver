@@ -109,6 +109,8 @@ interface DriverDashboardScreenProps {
   registrationStatus?: 'none' | 'in-progress' | 'pending' | 'rejected' | 'approved';
   /** Tap on the registration banner / popup CTA. */
   onRegistrationAction?: () => void;
+  /** "Read the driver instructions" link shown under the registration banner. */
+  onOpenDriverInstructions?: () => void;
 }
 
 interface CounterCardProps {
@@ -197,6 +199,7 @@ export function DriverDashboardScreen({
   onOpenReviews,
   registrationStatus = 'approved',
   onRegistrationAction,
+  onOpenDriverInstructions,
 }: DriverDashboardScreenProps) {
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<DriverDashboard | null>(null);
@@ -476,6 +479,7 @@ export function DriverDashboardScreen({
             </View>
 
             {!isApprovedDriver && regBanner ? (
+              <>
               <Pressable
                 onPress={onRegistrationAction}
                 style={{
@@ -531,6 +535,21 @@ export function DriverDashboardScreen({
                   </Text>
                 </View>
               </Pressable>
+              {onOpenDriverInstructions && (
+                <Pressable
+                  onPress={onOpenDriverInstructions}
+                  hitSlop={8}
+                  style={{ marginTop: vs(10), alignSelf: 'flex-start' }}
+                >
+                  <Text
+                    style={{ fontSize: fs(12.5) }}
+                    className="font-poppins-medium text-[#0097B3]"
+                  >
+                    New to UKCAAR? Read the driver instructions →
+                  </Text>
+                </Pressable>
+              )}
+              </>
             ) : (
             <View
               style={{

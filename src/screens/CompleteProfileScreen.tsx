@@ -20,6 +20,7 @@ import RegistrationHeader from '../components/RegistrationHeader';
 import { CarIcon, TabProfileIcon, DocumentIcon, BankIcon } from '../components/icons/ServiceTypeIcons';
 import {
   DriverDocument,
+  applyReferral,
   updateRegistrationStep,
   uploadDocument,
 } from '../services/api';
@@ -183,6 +184,9 @@ export function CompleteProfileScreen({
     dob: initialDob ? ddmmyyyy(initialDob) : '',
     address: initialAddress ?? '',
   });
+  // Optional referral code, applied once the application is submitted. The
+  // "Have a referral code?" box under Refer & Earn stays for drivers who skip it.
+  const [referralCode, setReferralCode] = useState('');
   const [dobPickerOpen, setDobPickerOpen] = useState(false);
 
   const [bank, setBank] = useState({
@@ -287,6 +291,33 @@ export function CompleteProfileScreen({
           passbookUrl: bank.passbookUrl ?? undefined,
         },
       });
+
+      // Referral code (optional). The application is already saved, so a bad
+      // code must not block it — report it and let them fix it or continue.
+      const code = referralCode.trim().toUpperCase();
+      if (code) {
+        try {
+          const r: any = await applyReferral(code);
+          if (r && r.applied === false) throw new Error(r.message || 'Invalid referral code');
+        } catch (refErr: any) {
+          setSubmitting(false);
+          Alert.alert(
+            'Referral code not applied',
+            `${refErr?.message ?? 'Invalid referral code'}. You can also add it later from Refer & Earn.`,
+            [
+              { text: 'Fix code', style: 'cancel' },
+              {
+                text: 'Skip',
+                onPress: () => {
+                  setReferralCode('');
+                  onSubmit();
+                },
+              },
+            ],
+          );
+          return;
+        }
+      }
       onSubmit();
     } catch (err: any) {
       console.warn('[complete-profile] save failed:', err);
@@ -373,6 +404,13 @@ export function CompleteProfileScreen({
                 placeholder="Full address"
                 onChangeText={v => setPersonal(p => ({ ...p, address: v }))}
                 multiline
+              />
+              <LabelledInput
+                label="Referral Code (optional)"
+                value={referralCode}
+                placeholder="Enter a referral code if you have one"
+                onChangeText={setReferralCode}
+                autoCapitalize="characters"
               />
             </View>
           )}

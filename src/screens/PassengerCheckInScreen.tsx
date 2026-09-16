@@ -20,6 +20,7 @@ interface CheckInPassenger {
   initial: string;
   seat: string;
   route: string;
+  gender?: string | null;
   contact?: string;
   status: PassengerStatus;
   bookingId?: string;
@@ -85,7 +86,7 @@ function StatusChip({ status }: { status: PassengerStatus }) {
 
 export function PassengerCheckInScreen({
   journeyKey,
-  journeyId = 'SCH001',
+  journeyId = '—',
   boarded: boardedProp = 0,
   total: totalProp = 0,
   passengers: passengersProp = DEFAULT_PASSENGERS,
@@ -112,6 +113,7 @@ export function PassengerCheckInScreen({
             initial: (p.name?.[0] ?? '?').toUpperCase(),
             seat: String(p.seat),
             route: p.contact || '',
+            gender: p.gender ?? null,
             contact: p.contact || '',
             status: p.noShow
               ? ('no-show' as const)
@@ -317,7 +319,7 @@ export function PassengerCheckInScreen({
                     style={{ fontSize: fs(13), marginTop: vs(2) }}
                     numberOfLines={2}
                   >
-                    Seat: {p.seat} • {p.route}
+                    Seat {p.seat}{p.gender ? ` · ${p.gender.charAt(0).toUpperCase()}${p.gender.slice(1)}` : ''}
                   </Text>
                 </View>
               </View>

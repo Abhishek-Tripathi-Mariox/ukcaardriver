@@ -30,6 +30,7 @@ import {
   fetchPendingEarlyDrops,
   type EarlyDropApproveResult,
 } from './src/services/api';
+import { cancelActiveRide } from './src/services/api';
 import RatePassengerModal from './src/components/RatePassengerModal';
 import { DriverMenuSheet, type DriverMenuItem } from './src/components/DriverMenuSheet';
 import {
@@ -325,6 +326,18 @@ function App() {
   // land on Home, not walk them back through every screen. Multi-step flows
   // (registration, ride, wallet sub-flows) keep goBack.
   const goHome = useCallback(() => setStage('dashboard'), [setStage]);
+
+  // Driver Instructions opens from Profile (approved drivers) and from the
+  // registration banner / pending / locked-feature screens (unapproved ones).
+  // Remember where it was opened from so Back and "I agree" return there.
+  const instructionsReturnRef = useRef<Stage>('profile');
+  const openDriverInstructions = useCallback(
+    (from: Stage) => {
+      instructionsReturnRef.current = from;
+      setStage('driver-instructions');
+    },
+    [setStage],
+  );
 
   const [mobile, setMobile] = useState('');
   const [currentUser, setCurrentUser] = useState<ApiUser | null>(null);
@@ -1249,6 +1262,7 @@ function App() {
 
       {stage === 'vehicle-details' && (
         <VehicleDetailsScreen
+          serviceType={currentUser?.driverProfile?.serviceType}
           onBack={goBack}
           onNext={() => setStage('driver-details')}
           onLogout={handleLogout}
@@ -1324,6 +1338,7 @@ function App() {
       {stage === 'registration-pending' && (
         <RegistrationPendingScreen
           onBack={() => setStage('dashboard')}
+          onOpenInstructions={() => openDriverInstructions('registration-pending')}
           driverName={
             (() => {
               const fl = `${currentUser?.firstName ?? ''} ${currentUser?.lastName ?? ''}`.trim();
@@ -1358,6 +1373,7 @@ function App() {
         <NotVerifiedScreen
           status={regStatus}
           featureName={GATED_FEATURE_NAMES[stage]}
+          onOpenInstructions={() => openDriverInstructions(stage)}
           onBack={() => setStage('dashboard')}
           onAction={() => {
             if (regStatus === 'pending') setStage('registration-pending');
@@ -1379,6 +1395,7 @@ function App() {
       {stage === 'dashboard' && permissionsOk !== false && (
         <DriverDashboardScreen
           registrationStatus={regStatus}
+          onOpenDriverInstructions={() => openDriverInstructions('dashboard')}
           onRegistrationAction={() => {
             // Banner / popup tap routes by state: start or resume the funnel,
             // open the review screen while pending, or jump to the profile
@@ -1429,7 +1446,7 @@ function App() {
           onOpenWallet={() => setStage('wallet')}
           onOpenRefer={() => setStage('refer-earn')}
           onOpenHelp={() => setStage('help-support')}
-          onOpenDriverInstructions={() => setStage('driver-instructions')}
+          onOpenDriverInstructions={() => openDriverInstructions('profile')}
           onOpenOnePass={() => setStage('onepass')}
           onOpenIncentives={() => setStage('incentives')}
           onOpenRouteChange={() => setStage('change-route')}
@@ -1530,8 +1547,8 @@ function App() {
 
       {stage === 'driver-instructions' && (
         <DriverInstructionsScreen
-          onBack={goHome}
-          onAgree={() => setStage('profile')}
+          onBack={() => setStage(instructionsReturnRef.current)}
+          onAgree={() => setStage(instructionsReturnRef.current)}
         />
       )}
 
@@ -1766,6 +1783,15 @@ function App() {
           }
           onBack={goBack}
           onVerified={() => setStage('ride-in-progress')}
+          onChat={() => setStage('ride-chat')}
+          onCancelRide={async (reason) => {
+            const id = activeRideRef.current?.rideId;
+            if (!id) return;
+            await cancelActiveRide(id, reason);
+            stopRideAlert();
+            setActiveRide(null);
+            setStage('dashboard');
+          }}
         />
       )}
 

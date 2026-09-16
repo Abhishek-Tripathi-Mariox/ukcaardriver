@@ -31,7 +31,7 @@ const DEFAULT_ABSENT: AbsentPassenger[] = [];
 
 export function BoardingSummaryScreen({
   journeyKey,
-  journeyId = 'SCH001',
+  journeyId = '—',
   boarded: boardedProp = 0,
   total: totalProp = 0,
   absentCount: absentCountProp = 0,
@@ -47,9 +47,12 @@ export function BoardingSummaryScreen({
     pending: number;
     absent: AbsentPassenger[];
   } | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [fetchNonce, setFetchNonce] = useState(0);
 
   useEffect(() => {
     if (!journeyKey) return;
+    setLoadFailed(false);
     fetchJourneyPassengers(journeyKey)
       .then((r) =>
         setCounts({
@@ -64,8 +67,8 @@ export function BoardingSummaryScreen({
             .map((p) => ({ id: `${p.bookingId}-${p.seat}`, name: p.name, seat: String(p.seat) })),
         }),
       )
-      .catch(() => {});
-  }, [journeyKey]);
+      .catch(() => setLoadFailed(true));
+  }, [journeyKey, fetchNonce]);
 
   const boarded = counts?.boarded ?? boardedProp;
   const total = counts?.total ?? totalProp;
@@ -74,7 +77,11 @@ export function BoardingSummaryScreen({
   // Block departure while passengers remain unprocessed (must be boarded or
   // marked no-show first). An empty trip (total 0) is fine to start.
   const pending = counts?.pending ?? 0;
-  const canStart = total === 0 || pending === 0;
+  // With a journeyKey, the gate must wait for real counts: a failed fetch
+  // used to leave 0/0 on screen with Start ENABLED — the driver could depart
+  // "empty" past a bus full of unprocessed passengers.
+  const countsReady = !journeyKey || counts !== null;
+  const canStart = countsReady && (total === 0 || pending === 0);
 
   return (
     <View className="flex-1 bg-[#F9FAFB]">
@@ -242,14 +249,30 @@ export function BoardingSummaryScreen({
           paddingTop: vs(8),
         }}
       >
-        {!canStart && (
+        {loadFailed ? (
+          <Pressable onPress={() => setFetchNonce((n) => n + 1)} hitSlop={8}>
+            <Text
+              className="text-center font-poppins-regular text-[#B91C1C]"
+              style={{ fontSize: fs(13), marginBottom: vs(8) }}
+            >
+              Couldn't load passenger status — tap to retry.
+            </Text>
+          </Pressable>
+        ) : !countsReady ? (
+          <Text
+            className="text-center font-poppins-regular text-[#6A7282]"
+            style={{ fontSize: fs(13), marginBottom: vs(8) }}
+          >
+            Checking passenger status…
+          </Text>
+        ) : !canStart ? (
           <Text
             className="text-center font-poppins-regular text-[#B45309]"
             style={{ fontSize: fs(13), marginBottom: vs(8) }}
           >
             {pending} passenger{pending === 1 ? '' : 's'} not yet checked in or marked no-show.
           </Text>
-        )}
+        ) : null}
         <Pressable
           onPress={() => canStart && onStartJourney?.()}
           disabled={!canStart}

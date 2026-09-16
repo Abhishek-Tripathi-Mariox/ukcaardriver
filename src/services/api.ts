@@ -238,10 +238,12 @@ function phoneAuthMessage(code?: string): string {
 export async function sendOtp(
   phone: string,
   countryCode = '+91',
+  /** true = the Resend button: forces a fresh SMS instead of Firebase's dedupe. */
+  forceResend = false,
 ): Promise<SendOtpResponse> {
   const fullPhone = `${countryCode}${phone.replace(/\s/g, '')}`;
   try {
-    phoneConfirmation = await auth().signInWithPhoneNumber(fullPhone);
+    phoneConfirmation = await auth().signInWithPhoneNumber(fullPhone, forceResend);
     return { success: true, message: 'Code sent' };
   } catch (e: any) {
     throw new Error(phoneAuthMessage(e?.code));
@@ -553,6 +555,8 @@ export interface CatalogueType {
   _id: string;
   name: string;
   code: string;
+  /** Service tier this vehicle type belongs to (admin-defined). */
+  tier?: 'instant' | 'private';
   description?: string;
   isActive: boolean;
   sortOrder: number;
@@ -1181,7 +1185,7 @@ export interface JourneyPassenger {
   noShow: boolean;
   /** Got off early (before their booked stop) — no longer on board. */
   dropped?: boolean;
-  gender?: 'F' | 'M';
+  gender?: string | null;
   age?: number;
   stop?: number;
 }
@@ -1655,6 +1659,9 @@ export async function updateRideStatus(
     | 'in_progress'
     | 'payment_pending'
     | 'completed',
+  /** Driver's current GPS fix — the server uses it to check "I've arrived"
+   *  was pressed near the pickup. */
+  opts?: { lat?: number; lng?: number },
 ): Promise<void> {
   // Settlement (the payment_pending → completed transition) shifts earnings,
   // the dashboard's today/upcoming counts, and the wallet balance — drop
@@ -1668,8 +1675,47 @@ export async function updateRideStatus(
   await request<{ success: boolean }>(`/rides/${rideId}/status`, {
     method: 'PUT',
     auth: true,
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({
+      status,
+      ...(opts?.lat != null && opts?.lng != null ? { lat: opts.lat, lng: opts.lng } : {}),
+    }),
   });
+}
+
+/**
+ * Driver cancels a ride they have accepted (before or after pickup). The
+ * backend records cancelledBy:'driver' and notifies the rider; any
+ * cancellation fee is never charged to the customer on a driver cancel.
+ */
+export async function cancelActiveRide(rideId: string, reason?: string): Promise<void> {
+  await request<{ success: boolean }>(`/rides/${rideId}/cancel`, {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify({ reason: reason || 'Cancelled by driver' }),
+  });
+  invalidate(CACHE_KEYS.DASHBOARD);
+}
+
+/** Apply someone else's referral code to this driver's account (once). */
+export async function applyReferral(code: string): Promise<{
+  applied: boolean;
+  bonusCredited?: number;
+  referrerName?: string;
+  message?: string;
+}> {
+  const res = await request<{
+    success: boolean;
+    data?: { applied: boolean; bonusCredited: number; referrerName: string };
+    message?: string;
+  }>('/auth/apply-referral', { method: 'POST', auth: true, body: JSON.stringify({ code }) });
+  return { ...(res.data ?? { applied: false }), message: res.message };
+}
+
+/** Permanently delete this driver's account (server anonymises the record). */
+export async function deleteAccount(): Promise<void> {
+  await request<{ success: boolean }>('/auth/me', { method: 'DELETE', auth: true });
+  await clearTokens();
+  clearAllCache();
 }
 
 /**
@@ -1741,6 +1787,8 @@ export type DocumentType =
   | 'aadhaar-back'
   | 'profile-photo'
   | 'vehicle'
+  // Exterior photo of the vehicle (number plate visible) — separate from the RC.
+  | 'vehicle-photo'
   | 'insurance'
   | 'dbs'
   | 'phv'
@@ -2041,12 +2089,28 @@ export interface MyRouteRegistration {
   registeredAt?: string;
 }
 
-export async function fetchMyRouteRegistration(): Promise<MyRouteRegistration | null> {
+/**
+ * The driver's approved route (`current`) and any pending change request.
+ * Both can exist at once — a change request leaves the current route serving
+ * until an admin approves it.
+ */
+export async function fetchMyRouteRegistration(): Promise<{
+  current: MyRouteRegistration | null;
+  pendingRequest: MyRouteRegistration | null;
+}> {
   const res = await request<{
     success: boolean;
-    data: { registration: MyRouteRegistration | null };
+    data: {
+      current?: MyRouteRegistration | null;
+      pendingRequest?: MyRouteRegistration | null;
+      registration: MyRouteRegistration | null;
+    };
   }>('/routes/my-registration', { method: 'GET', auth: true });
-  return res.data.registration;
+  return {
+    // Older backend builds only send `registration` — treat it as current.
+    current: res.data.current ?? res.data.registration ?? null,
+    pendingRequest: res.data.pendingRequest ?? null,
+  };
 }
 
 /**

@@ -14,8 +14,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import { OsmMap, type LatLng } from '../components/OsmMap';
 import {
+  fetchMyRouteRegistration,
   fetchScheduledRoutes,
   registerForRoute,
+  type MyRouteRegistration,
   updateRegistrationStep,
   type ScheduledRouteApi,
 } from '../services/api';
@@ -62,6 +64,13 @@ export function ChooseScheduledRouteScreen({
   onRegistered,
 }: ChooseScheduledRouteScreenProps) {
   const [routes, setRoutes] = useState<ScheduledRouteApi[] | null>(null);
+  // Current (approved) route + any pending change request — shown on the
+  // change screen so the driver can see what they're switching FROM, and
+  // which card in the list is already theirs.
+  const [myReg, setMyReg] = useState<{
+    current: MyRouteRegistration | null;
+    pendingRequest: MyRouteRegistration | null;
+  } | null>(null);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<ScheduledRouteApi | null>(null);
   const [selectedDepartureIdx, setSelectedDepartureIdx] = useState<number | null>(null);
@@ -70,6 +79,11 @@ export function ChooseScheduledRouteScreen({
 
   useEffect(() => {
     let cancelled = false;
+    if (isChangeRequest) {
+      fetchMyRouteRegistration()
+        .then(setMyReg)
+        .catch(() => {}); // banner is informational — the list still works
+    }
     fetchScheduledRoutes()
       .then(rs => {
         if (cancelled) return;
@@ -172,6 +186,7 @@ export function ChooseScheduledRouteScreen({
           routes={routes}
           loadingError={loadingError}
           onPickRoute={handlePickRoute}
+          myReg={isChangeRequest ? myReg : null}
         />
       )}
     </View>
@@ -184,10 +199,15 @@ function RouteList({
   routes,
   loadingError,
   onPickRoute,
+  myReg,
 }: {
   routes: ScheduledRouteApi[] | null;
   loadingError: string | null;
   onPickRoute: (r: ScheduledRouteApi) => void;
+  myReg: {
+    current: MyRouteRegistration | null;
+    pendingRequest: MyRouteRegistration | null;
+  } | null;
 }) {
   const insets = useSafeAreaInsets();
   if (loadingError) {
@@ -223,6 +243,33 @@ function RouteList({
       // pb-8 (32) + nav-bar inset — this step has no bottom footer overlay.
       contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
     >
+      {myReg?.current && (
+        <View className="rounded-2xl bg-[#E0F7FA] px-4 py-3">
+          <Text className="text-xs font-poppins-medium text-[#00647A]">Your current route</Text>
+          <Text className="mt-1 font-poppins-semibold text-[#0097B3]" numberOfLines={1}>
+            {myReg.current.route.name}
+            {myReg.current.route.schedule?.departures?.[myReg.current.departureIndex ?? -1]?.time
+              ? ` · ${myReg.current.route.schedule.departures[myReg.current.departureIndex!].time}`
+              : ''}
+          </Text>
+          <Text className="mt-1 text-xs text-[#00647A]">
+            You keep driving this route until an admin approves your change.
+          </Text>
+        </View>
+      )}
+      {myReg?.pendingRequest && (
+        <View className="rounded-2xl bg-[#FEF3C7] px-4 py-3">
+          <Text className="text-xs font-poppins-medium text-[#92400E]">
+            Change already requested · awaiting approval
+          </Text>
+          <Text className="mt-1 font-poppins-semibold text-[#B45309]" numberOfLines={1}>
+            {myReg.pendingRequest.route.name}
+          </Text>
+          <Text className="mt-1 text-xs text-[#92400E]">
+            Applying again replaces this request.
+          </Text>
+        </View>
+      )}
       <Text className="px-2 text-xs text-[#6A7282]">
         Pick the route you'd like to drive. You'll choose a departure time on
         the next screen.
@@ -231,6 +278,8 @@ function RouteList({
         const first = r.stops[0];
         const last = r.stops[r.stops.length - 1];
         const slots = r.schedule?.departures?.length ?? 0;
+        const isCurrent = myReg?.current?.route._id === r._id;
+        const isRequested = myReg?.pendingRequest?.route._id === r._id;
         return (
           <Pressable
             key={r._id}
@@ -244,7 +293,25 @@ function RouteList({
               elevation: 1,
             }}
           >
-            <Text className="text-base font-poppins-bold text-[#1E293B]">{r.name}</Text>
+            <View className="flex-row items-center justify-between gap-2">
+              <Text className="flex-1 text-base font-poppins-bold text-[#1E293B]" numberOfLines={1}>
+                {r.name}
+              </Text>
+              {isCurrent && (
+                <View className="rounded-full bg-[#E0F7FA] px-2.5 py-1">
+                  <Text className="text-[10px] font-poppins-semibold uppercase text-[#0097B3]">
+                    Current
+                  </Text>
+                </View>
+              )}
+              {isRequested && (
+                <View className="rounded-full bg-[#FEF3C7] px-2.5 py-1">
+                  <Text className="text-[10px] font-poppins-semibold uppercase text-[#B45309]">
+                    Requested
+                  </Text>
+                </View>
+              )}
+            </View>
             {r.description ? (
               <Text className="mt-1 text-xs text-[#6A7282]">{r.description}</Text>
             ) : null}

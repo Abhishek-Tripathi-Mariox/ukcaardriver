@@ -224,9 +224,14 @@ export function JourneyInProgressScreen({
                   Next Stop
                 </Text>
               </View>
-              <Text className="font-poppins-semibold text-[#9810FA]" style={{ fontSize: fs(14) }}>
-                ETA: {etaMins} mins
-              </Text>
+              {/* No live ETA source exists yet — nothing passes or computes
+                  etaMins, so this used to render "ETA: 0 mins" for the whole
+                  journey. Show it only when a real value arrives. */}
+              {etaMins > 0 && (
+                <Text className="font-poppins-semibold text-[#9810FA]" style={{ fontSize: fs(14) }}>
+                  ETA: {etaMins} min{etaMins === 1 ? '' : 's'}
+                </Text>
+              )}
             </View>
             <Text
               className="font-poppins-semibold text-[#1E293B]"
@@ -282,7 +287,7 @@ export function JourneyInProgressScreen({
                     On Board
                   </Text>
                   <Text className="font-poppins-semibold text-[#1E293B]" style={{ fontSize: fs(16) }}>
-                    {onBoardCount} Passengers
+                    {onBoardCount} Passenger{onBoardCount === 1 ? '' : 's'}
                   </Text>
                 </View>
               </View>

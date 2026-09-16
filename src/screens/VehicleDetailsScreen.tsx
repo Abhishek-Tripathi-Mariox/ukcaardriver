@@ -50,11 +50,16 @@ export interface VehicleDetails {
   // mandatory at this step so admins have proof against the numbers above.
   vehicleRcUrl: string | null;
   insuranceUrl: string | null;
+  /** Exterior photo of the vehicle with the number plate visible. */
+  vehiclePhotoUrl: string | null;
   /** Pollution Under Control certificate — optional at submit. */
   pucUrl: string | null;
 }
 
 interface VehicleDetailsScreenProps {
+  /** Driver's chosen service (instant | private | scheduled) — vehicle
+   *  types are filtered to the admin-defined tier for it. */
+  serviceType?: string;
   onBack: () => void;
   onNext: (details: VehicleDetails) => void;
   onLogout: () => void;
@@ -227,6 +232,7 @@ function PickerModal({ visible, title, options, onSelect, onClose }: PickerModal
 }
 
 export function VehicleDetailsScreen({
+  serviceType,
   onBack,
   onNext,
   onLogout,
@@ -253,6 +259,7 @@ export function VehicleDetailsScreen({
     insuranceExpiry: '',
     vehicleRcUrl: initialRc?.url ?? null,
     insuranceUrl: initialInsurance?.url ?? null,
+    vehiclePhotoUrl: initialDocs?.find(d => d.type === 'vehicle-photo')?.url ?? null,
     pucUrl: initialDocs?.find(d => d.type === 'puc')?.url ?? null,
   });
   const [uploading, setUploading] = useState<{ [k in DocumentType]?: boolean }>({});
@@ -275,7 +282,14 @@ export function VehicleDetailsScreen({
     Promise.all([listVehicleTypes(), listFuelTypes()])
       .then(([vts, fts]) => {
         if (cancelled) return;
-        setVehicleTypes(vts);
+        // Instant and Private each have their own admin-defined vehicle types
+        // (VehicleType.tier). Showing every type let a driver register e.g. a
+        // Private-tier car under Instant. Types with no tier stay visible.
+        const tierFiltered =
+          serviceType === 'instant' || serviceType === 'private'
+            ? vts.filter(t => !t.tier || t.tier === serviceType)
+            : vts;
+        setVehicleTypes(tierFiltered.length > 0 ? tierFiltered : vts);
         setFuelTypes(fts);
       })
       .catch(err => {
@@ -304,13 +318,14 @@ export function VehicleDetailsScreen({
     details.insuranceNo.trim().length > 0 &&
     details.insuranceExpiry.trim().length > 0 &&
     details.vehicleRcUrl !== null &&
+    details.vehiclePhotoUrl !== null &&
     details.insuranceUrl !== null &&
     !submitting;
 
   // Upload a picked asset (from camera or gallery) and stash the returned
   // S3 URL against the right field. Shared by both source pickers below.
   const uploadAsset = async (
-    type: 'vehicle' | 'insurance' | 'puc',
+    type: 'vehicle' | 'vehicle-photo' | 'insurance' | 'puc',
     asset: { uri?: string; fileName?: string; type?: string } | undefined,
   ) => {
     if (!asset?.uri) return;
@@ -321,6 +336,7 @@ export function VehicleDetailsScreen({
         type,
       );
       if (type === 'vehicle') update('vehicleRcUrl', url);
+      else if (type === 'vehicle-photo') update('vehiclePhotoUrl', url);
       else if (type === 'puc') update('pucUrl', url);
       else update('insuranceUrl', url);
     } catch (err: any) {
@@ -333,11 +349,15 @@ export function VehicleDetailsScreen({
 
   // Tapping an upload tile offers Camera (capture a photo) or Gallery
   // (pick an existing document image) via the shared source chooser.
-  const chooseUploadSource = async (type: 'vehicle' | 'insurance' | 'puc') => {
+  const chooseUploadSource = async (
+    type: 'vehicle' | 'vehicle-photo' | 'insurance' | 'puc',
+  ) => {
     if (uploading[type]) return;
     const label =
       type === 'vehicle'
         ? 'Vehicle RC'
+        : type === 'vehicle-photo'
+        ? 'Vehicle Photo'
         : type === 'puc'
         ? 'Pollution Certificate (PUC)'
         : 'Insurance Certificate';
@@ -512,6 +532,14 @@ export function VehicleDetailsScreen({
             uploadedUrl={details.vehicleRcUrl}
             uploading={!!uploading.vehicle}
             onPress={() => chooseUploadSource('vehicle')}
+          />
+
+          <DocUploadField
+            label="Upload Vehicle Photo"
+            prompt="Click to upload a photo of your vehicle (number plate visible)"
+            uploadedUrl={details.vehiclePhotoUrl}
+            uploading={!!uploading['vehicle-photo']}
+            onPress={() => chooseUploadSource('vehicle-photo')}
           />
 
           <DocUploadField

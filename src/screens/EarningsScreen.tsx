@@ -402,6 +402,9 @@ export function EarningsScreen({
                     -{formatRupees(bd?.platformFee ?? 0)}
                   </Text>
                 </View>
+                {/* Fuel allowance was a fabricated 12% and is now always 0 on
+                    the server; a "+₹0 (0%)" line only reads as a broken sum. */}
+                {(bd?.fuelAllowance ?? 0) > 0 && (
                 <View className="flex-row justify-between">
                   <Text className="text-[14px] text-[#6A7282]">
                     Fuel Allowance ({bd?.fuelPct ?? 0}%)
@@ -410,6 +413,7 @@ export function EarningsScreen({
                     +{formatRupees(bd?.fuelAllowance ?? 0)}
                   </Text>
                 </View>
+                )}
               </View>
               <View className="mt-4 border-t border-[#E5E7EB] pt-4">
                 <View className="flex-row items-center justify-between">

@@ -16,7 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Asset } from 'react-native-image-picker';
 import DriverIdCardModal from '../components/DriverIdCardModal';
-import { fetchCurrentUser, fetchMyDashboard, uploadAvatar, updateProfile } from '../services/api';
+import { fetchCurrentUser, fetchMyDashboard, uploadAvatar, updateProfile, deleteAccount } from '../services/api';
 import { pickImageFromSource } from '../services/imagePicker';
 import { driverRatingText } from '../utils/driverRating';
 import {
@@ -427,6 +427,32 @@ export function ProfileScreen({
             icon={<ClipboardListIcon size={20} color="#0097B3" />}
             label="Driver Instructions"
             onPress={onOpenDriverInstructions}
+          />
+          <MenuRow
+            icon={<LogoutIcon size={20} color="#E02D3C" />}
+            label="Delete Account"
+            color="#E02D3C"
+            onPress={() =>
+              Alert.alert(
+                'Delete your account?',
+                'This permanently removes your driver profile, documents and wallet history. It cannot be undone.',
+                [
+                  { text: 'Keep account', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await deleteAccount();
+                        onLogout?.();
+                      } catch (err: any) {
+                        Alert.alert('Could not delete', err?.message ?? 'Please try again.');
+                      }
+                    },
+                  },
+                ],
+              )
+            }
           />
           <MenuRow
             icon={<LogoutIcon size={20} color="#E02D3C" />}

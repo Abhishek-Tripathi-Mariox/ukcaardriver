@@ -73,6 +73,7 @@ interface DocumentsScreenProps {
 const DOC_DISPLAY: Record<string, { title: string; icon: string }> = {
   licence: { title: 'Driving License', icon: 'card' },
   vehicle: { title: 'Vehicle RC', icon: 'car' },
+  'vehicle-photo': { title: 'Vehicle Photo', icon: 'car' },
   insurance: { title: 'Insurance', icon: 'clipboard' },
   'aadhaar-front': { title: 'Aadhaar (Front)', icon: 'card' },
   'aadhaar-back': { title: 'Aadhaar (Back)', icon: 'card' },
@@ -107,6 +108,7 @@ function DocTypeIcon({ kind }: { kind: string }) {
 const STANDARD_TYPES: DocumentType[] = [
   'licence',
   'vehicle',
+  'vehicle-photo',
   'insurance',
   // Aadhaar is captured as two files. The old single 'aadhaar' entry always
   // showed "not uploaded" (drivers only ever upload front + back), so it was

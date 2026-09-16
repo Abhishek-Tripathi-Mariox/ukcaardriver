@@ -140,13 +140,32 @@ function PassengerRow({
           >
             {passenger.name}
           </Text>
-          <Text
-            className="text-[#6A7282] font-poppins-regular"
-            style={{ fontSize: fs(14) }}
-          >
-            Seat {passenger.seat} •{' '}
-            {passenger.noShow ? 'No-show' : passenger.boarded ? 'Boarded' : 'Not boarded'}
-          </Text>
+          {/* Seat gets its own fixed-width column so status text starts at the
+              same x-position on every row — inline, "Seat 7 •" and "Seat 12 •"
+              pushed it around and the list never lined up. */}
+          <View className="flex-row items-center" style={{ gap: s(6), marginTop: vs(2) }}>
+            <View
+              className="items-center justify-center rounded-md bg-[#EDE9FE]"
+              style={{ minWidth: s(34), paddingHorizontal: s(5), paddingVertical: vs(1) }}
+            >
+              <Text
+                className="font-poppins-semibold text-[#6D28D9]"
+                style={{ fontSize: fs(12) }}
+              >
+                S{passenger.seat}
+              </Text>
+            </View>
+            <Text
+              className="font-poppins-regular"
+              style={{
+                fontSize: fs(13),
+                color: passenger.noShow ? '#E7000B' : passenger.boarded ? '#00A63E' : '#6A7282',
+              }}
+              numberOfLines={1}
+            >
+              {passenger.noShow ? 'No-show' : passenger.boarded ? 'Boarded' : 'Not boarded'}
+            </Text>
+          </View>
         </View>
       </View>
       <Pressable
@@ -331,7 +350,7 @@ export function CompletedRideScreen({
                 className="text-[#8200DB] font-poppins-medium"
                 style={{ fontSize: fs(14), marginTop: vs(4) }}
               >
-                {stopsCount} Stops
+                {stopsCount} Stop{stopsCount === 1 ? '' : 's'}
               </Text>
             </View>
             <View className="flex-1 items-center">
@@ -340,7 +359,7 @@ export function CompletedRideScreen({
                 className="text-[#8200DB] font-poppins-medium"
                 style={{ fontSize: fs(14), marginTop: vs(4) }}
               >
-                {passengerCount} Passengers
+                {passengerCount} Passenger{passengerCount === 1 ? '' : 's'}
               </Text>
             </View>
             <View className="flex-1 items-center">

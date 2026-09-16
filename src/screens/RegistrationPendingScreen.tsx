@@ -16,12 +16,15 @@ interface RegistrationPendingScreenProps {
   /** Back to Home — under-review drivers live on the dashboard now and open
    *  this screen from the waiting-approval banner. */
   onBack?: () => void;
+  /** Open the Driver Instructions screen while the review is pending. */
+  onOpenInstructions?: () => void;
 }
 
 export function RegistrationPendingScreen({
   driverName,
   onLogout,
   onBack,
+  onOpenInstructions,
 }: RegistrationPendingScreenProps) {
   const greetingName = driverName?.trim() || 'Driver';
   return (
@@ -107,6 +110,24 @@ export function RegistrationPendingScreen({
             </Text>
           </View>
         </View>
+
+        {onOpenInstructions && (
+          <Pressable
+            onPress={onOpenInstructions}
+            style={{
+              marginTop: vs(20),
+              paddingVertical: vs(12),
+              borderRadius: s(14),
+              borderWidth: 1,
+              borderColor: '#0097B3',
+            }}
+            className="w-full items-center"
+          >
+            <Text style={{ fontSize: fs(14) }} className="font-poppins-medium text-brand-teal">
+              Read Driver Instructions while you wait
+            </Text>
+          </Pressable>
+        )}
 
         <Text className="mt-6 text-center text-xs text-slate-500">
           Once approved, you'll receive a notification and be taken to your

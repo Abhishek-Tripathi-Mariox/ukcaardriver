@@ -33,6 +33,10 @@ interface VerifyRideOtpScreenProps {
   pickupCoord?: LatLng | null;
   onBack?: () => void;
   onVerified?: () => void;
+  /** Open the in-ride chat thread with this passenger. */
+  onChat?: () => void;
+  /** Driver cancels the accepted ride; caller does the API call + reset. */
+  onCancelRide?: (reason: string) => void | Promise<void>;
   onSos?: () => void;
 }
 
@@ -44,6 +48,8 @@ export function VerifyRideOtpScreen({
   pickupCoord = null,
   onBack,
   onVerified,
+  onChat,
+  onCancelRide,
   onSos,
 }: VerifyRideOtpScreenProps) {
   const insets = useSafeAreaInsets();
@@ -112,11 +118,42 @@ export function VerifyRideOtpScreen({
   // backend accepts it from driver_assigned/driver_arriving and is
   // idempotent when the geofence already flipped the ride to arrived, so a
   // success here always means "the rider knows you're there".
+  // Gate "I've arrived" on the live driving distance the map reports. If
+  // the map hasn't produced a route yet we don't block — the server enforces
+  // the same 300 m rule and returns a clear message.
+  const ARRIVAL_RADIUS_KM = 0.3;
+  const nearPickup = !routeInfo || routeInfo.distanceKm <= ARRIVAL_RADIUS_KM;
+
+  const handleCancel = () => {
+    if (!onCancelRide) return;
+    const fire = (reason: string) =>
+      Promise.resolve(onCancelRide(reason)).catch((err: any) =>
+        Alert.alert('Could not cancel', err?.message ?? 'Please try again.'),
+      );
+    Alert.alert('Cancel this ride?', 'The rider will be told you cancelled and matched again.', [
+      { text: 'Keep ride', style: 'cancel' },
+      { text: 'Rider not reachable', onPress: () => fire('Rider not reachable') },
+      { text: 'Vehicle issue', onPress: () => fire('Vehicle issue') },
+      { text: 'Other reason', style: 'destructive', onPress: () => fire('Cancelled by driver') },
+    ]);
+  };
+
   const handleMarkArrived = async () => {
     if (!rideId || arrived || arriveBusy) return;
+    if (!nearPickup) {
+      Alert.alert(
+        'Not at the pickup yet',
+        `You're ${routeInfo!.distanceKm.toFixed(1)} km away. "I've arrived" unlocks within ${Math.round(ARRIVAL_RADIUS_KM * 1000)} m of the pickup.`,
+      );
+      return;
+    }
     setArriveBusy(true);
     try {
-      await updateRideStatus(rideId, 'driver_arrived');
+      await updateRideStatus(
+        rideId,
+        'driver_arrived',
+        driverPos ? { lat: driverPos.lat, lng: driverPos.lng } : undefined,
+      );
       setArrived(true);
     } catch (err: any) {
       Alert.alert(
@@ -147,17 +184,35 @@ export function VerifyRideOtpScreen({
               <Text className="text-sm text-white/80">Ride ID: {displayRideId}</Text>
             </View>
             {rideId && (
-              <Pressable
-                onPress={handleMarkArrived}
-                disabled={arrived || arriveBusy}
-                hitSlop={6}
-                className={`rounded-full px-3 py-1.5 ${arrived ? 'bg-white/40' : 'bg-white/20'}`}
-                style={{ opacity: arriveBusy ? 0.6 : 1 }}
-              >
-                <Text className="text-xs font-poppins-medium text-white">
-                  {arrived ? 'Arrived' : arriveBusy ? 'Marking...' : "I've arrived"}
-                </Text>
-              </Pressable>
+              <View className="flex-row items-center" style={{ gap: 6 }}>
+                {onChat && (
+                  <Pressable onPress={onChat} hitSlop={6} className="rounded-full bg-white/20 px-3 py-1.5">
+                    <Text className="text-xs font-poppins-medium text-white">Chat</Text>
+                  </Pressable>
+                )}
+                {onCancelRide && !arrived && (
+                  <Pressable onPress={handleCancel} hitSlop={6} className="rounded-full bg-white/20 px-3 py-1.5">
+                    <Text className="text-xs font-poppins-medium text-white">Cancel</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={handleMarkArrived}
+                  disabled={arrived || arriveBusy}
+                  hitSlop={6}
+                  className={`rounded-full px-3 py-1.5 ${arrived ? 'bg-white/40' : nearPickup ? 'bg-white/20' : 'bg-white/10'}`}
+                  style={{ opacity: arriveBusy ? 0.6 : 1 }}
+                >
+                  <Text className="text-xs font-poppins-medium text-white">
+                    {arrived
+                      ? 'Arrived'
+                      : arriveBusy
+                        ? 'Marking...'
+                        : nearPickup
+                          ? "I've arrived"
+                          : `${routeInfo!.distanceKm.toFixed(1)} km away`}
+                  </Text>
+                </Pressable>
+              </View>
             )}
           </View>
         </SafeAreaView>

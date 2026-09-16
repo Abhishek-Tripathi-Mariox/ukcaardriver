@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Image,
   Keyboard,
@@ -20,7 +20,7 @@ import {
   IconPhone,
   logoUkcaar,
 } from '../assets/images';
-import { ApiError, ApiUser, verifyOtp } from '../services/api';
+import { ApiError, ApiUser, sendOtp, verifyOtp } from '../services/api';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { fs, s, vs } from '../theme/responsive';
 
@@ -41,6 +41,30 @@ export function VerifyOtpScreen({
   const [otp, setOtp] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Resend cooldown (seconds). Starts at 30 on mount and after each resend so
+  // a tap can't spam Firebase (auth/too-many-requests locks the number out).
+  const [resendIn, setResendIn] = useState(30);
+  const [resending, setResending] = useState(false);
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  const handleResend = async () => {
+    if (resendIn > 0 || resending) return;
+    setResending(true);
+    setError(null);
+    try {
+      await sendOtp(mobile, '+91', true);
+      setOtp('');
+      setResendIn(30);
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not resend the code. Please try again.');
+    } finally {
+      setResending(false);
+    }
+  };
   const canSubmit = otp.length === 6 && !submitting;
 
   const handleSubmit = async () => {
@@ -171,6 +195,19 @@ export function VerifyOtpScreen({
             <Text className="font-poppins text-slate-500" style={{ marginTop: vs(8), fontSize: fs(12) }}>
               OTP sent to {mobile}
             </Text>
+            <Pressable
+              onPress={handleResend}
+              disabled={resendIn > 0 || resending}
+              hitSlop={8}
+              style={{ marginTop: vs(6), alignSelf: 'flex-start' }}
+            >
+              <Text
+                className={resendIn > 0 || resending ? 'font-poppins text-slate-400' : 'font-poppins-semibold text-[#0097B3]'}
+                style={{ fontSize: fs(12) }}
+              >
+                {resending ? 'Sending…' : resendIn > 0 ? `Resend OTP in ${resendIn}s` : "Didn't get it? Resend OTP"}
+              </Text>
+            </Pressable>
 
             {error && (
               <Text className="font-poppins text-red-600" style={{ marginTop: vs(8), fontSize: fs(12) }}>{error}</Text>

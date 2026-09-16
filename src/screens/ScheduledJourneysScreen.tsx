@@ -39,13 +39,18 @@ interface ScheduledJourneysScreenProps {
 // journeyKey so taps thread the real trip identity forward.
 function toCard(j: JourneySummary): ScheduledJourney {
   const completed = j.status === 'completed';
-  const fareVal = completed ? j.earnings : j.passengerCount * j.seatPrice;
+  // Completed journeys show real earnings. Upcoming ones used to show
+  // passengerCount × seatPrice — a projected gross that ignores per-segment
+  // fares and commission (the history card refuses to show exactly this,
+  // calling it fiction). Show the admin-set per-seat price instead: real,
+  // and matches the details screen's stat strip.
+  const fareVal = completed ? `₹${Math.round(j.earnings)}` : `₹${Math.round(j.seatPrice)}/seat`;
   return {
     id: j.journeyKey,
     title: j.routeName,
     date: j.departureDate,
     time: j.departureTime,
-    fare: `₹${Math.round(fareVal)}`,
+    fare: fareVal,
     from: j.from,
     to: j.to,
     stops: j.stopCount,
@@ -269,21 +274,28 @@ export function ScheduledJourneysScreen({
   const [upcoming, setUpcoming] = useState<ScheduledJourney[]>([]);
   const [past, setPast] = useState<ScheduledJourney[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [fetchNonce, setFetchNonce] = useState(0);
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
+    setLoadFailed(false);
     Promise.all([fetchJourneys('upcoming'), fetchJourneys('past')])
       .then(([up, pa]) => {
         if (!alive) return;
         setUpcoming(up.map(toCard));
         setPast(pa.map(toCard));
       })
-      .catch(() => {})
+      // A failed load used to be swallowed, leaving the "no journeys" empty
+      // state — indistinguishable from genuinely having none, which was the
+      // client's original "scheduled screen is empty" complaint.
+      .catch(() => alive && setLoadFailed(true))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [fetchNonce]);
 
   const items = tab === 'upcoming' ? upcoming : past;
 
@@ -365,6 +377,15 @@ export function ScheduledJourneysScreen({
       >
         {loading ? (
           <ActivityIndicator style={{ marginTop: vs(40) }} color="#9810FA" />
+        ) : loadFailed ? (
+          <Pressable onPress={() => setFetchNonce((n) => n + 1)} hitSlop={8}>
+            <Text
+              className="text-center font-poppins-regular text-[#B91C1C]"
+              style={{ marginTop: vs(40), fontSize: fs(14) }}
+            >
+              Couldn't load your journeys — tap to retry.
+            </Text>
+          </Pressable>
         ) : items.length === 0 ? (
           <Text
             className="text-center font-poppins-regular text-[#6A7282]"

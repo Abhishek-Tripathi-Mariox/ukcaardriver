@@ -69,6 +69,7 @@ const toUiTxn = (p: WalletTransactionApi): UiTxn => {
     'refund',
     'incentive',
     'bonus',
+    'tip',
   ]);
   const isCredit = CREDIT_TYPES.has(p.type);
   const niceTitle = (() => {

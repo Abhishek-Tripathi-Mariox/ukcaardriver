@@ -20,6 +20,8 @@ interface NotVerifiedScreenProps {
   /** Primary CTA: start/resume registration, view status, or fix documents. */
   onAction: () => void;
   onBack: () => void;
+  /** Optional secondary action: open the Driver Instructions screen. */
+  onOpenInstructions?: () => void;
 }
 
 const COPY: Record<
@@ -61,6 +63,7 @@ export function NotVerifiedScreen({
   featureName,
   onAction,
   onBack,
+  onOpenInstructions,
 }: NotVerifiedScreenProps) {
   const copy = COPY[status];
   const Icon =
@@ -141,6 +144,25 @@ export function NotVerifiedScreen({
             {copy.cta}
           </Text>
         </Pressable>
+
+        {onOpenInstructions && (
+          <Pressable
+            onPress={onOpenInstructions}
+            style={{
+              marginTop: vs(12),
+              paddingVertical: vs(12),
+              paddingHorizontal: s(24),
+              borderRadius: s(14),
+              borderWidth: 1,
+              borderColor: '#0097B3',
+            }}
+            className="items-center"
+          >
+            <Text style={{ fontSize: fs(14) }} className="font-poppins-medium text-brand-teal">
+              Read Driver Instructions
+            </Text>
+          </Pressable>
+        )}
 
         <Pressable onPress={onBack} style={{ marginTop: vs(14), paddingVertical: vs(8) }}>
           <Text style={{ fontSize: fs(13) }} className="font-poppins text-slate-500">

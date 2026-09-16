@@ -57,7 +57,9 @@ interface UpcomingBookingDetailsScreenProps {
   onStartJourney?: () => void;
 }
 
-// Neutral fallbacks — real stops/passengers are fetched on mount.
+// Neutral fallbacks — real values are fetched on mount. These were 12
+// passengers / 5 stops / 40 min / SCH001, which rendered as real figures
+// for the first frames and looked like arbitrary numbers on the card.
 const DEFAULT_STOPS: Stop[] = [];
 
 const DEFAULT_PASSENGERS: Passenger[] = [];
@@ -156,13 +158,30 @@ function PassengerRow({
           >
             {passenger.name}
           </Text>
-          <Text
-            className="text-[#6A7282] font-poppins-regular"
-            style={{ fontSize: fs(14) }}
-            numberOfLines={1}
-          >
-            Seat {passenger.seat} • <Text style={{ color: status.color }}>{status.label}</Text>
-          </Text>
+          {/* Seat sits in its own fixed-width column rather than inline in the
+              sentence. As one string, "Seat 7 • Boarded" and "Seat 12 • Boarded"
+              start their status at different x-positions, so nothing lined up
+              down the list. */}
+          <View className="flex-row items-center" style={{ gap: s(6), marginTop: vs(2) }}>
+            <View
+              className="items-center justify-center rounded-md bg-[#EDE9FE]"
+              style={{ minWidth: s(34), paddingHorizontal: s(5), paddingVertical: vs(1) }}
+            >
+              <Text
+                className="font-poppins-semibold text-[#6D28D9]"
+                style={{ fontSize: fs(12) }}
+              >
+                S{passenger.seat}
+              </Text>
+            </View>
+            <Text
+              className="font-poppins-regular"
+              style={{ fontSize: fs(13), color: status.color }}
+              numberOfLines={1}
+            >
+              {status.label}
+            </Text>
+          </View>
         </View>
       </View>
       <View className="flex-row items-center" style={{ gap: s(8) }}>
@@ -191,15 +210,15 @@ function PassengerRow({
 
 export function UpcomingBookingDetailsScreen({
   journeyKey,
-  journeyId = 'SCH001',
+  journeyId = '—',
   title: titleProp = 'Scheduled Journey',
   routeFrom: routeFromProp = '—',
   routeTo: routeToProp = '—',
   date: dateProp = '—',
   time: timeProp = '—',
-  stopsCount: stopsCountProp = 5,
-  passengerCount: passengerCountProp = 12,
-  durationMins = 40,
+  stopsCount: stopsCountProp = 0,
+  passengerCount: passengerCountProp = 0,
+  durationMins = 0,
   stops: stopsProp = DEFAULT_STOPS,
   passengers: passengersProp = DEFAULT_PASSENGERS,
   totalFare: totalFareProp = '—',
@@ -276,23 +295,48 @@ export function UpcomingBookingDetailsScreen({
   // Server enforces this too; the client mirrors it so the driver is not
   // offered a button that can only fail.
   const startWindowMinutes = j?.startWindowMinutes ?? 30;
-  // IST-correct departure instant: pin the offset so the device timezone
-  // never shifts the result.
-  const departureMs =
-    /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{1,2}:\d{2}$/.test(time)
-      ? Date.parse(`${date}T${time.padStart(5, '0')}:00+05:30`)
-      : NaN;
-  const windowOpensMs = departureMs - startWindowMinutes * 60_000;
   // Today's IST civil date, independent of the device timezone.
   const istToday = new Date(now + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const departureKnown = Number.isFinite(departureMs);
-  const isFutureDate = departureKnown && date > istToday;
-  // Pure epoch rule — no civil-date veto, so a start window that spans
-  // midnight (e.g. a 00:10 slot startable from 23:40) works. When departure
-  // info is unknown (detail fetch failed / missing date+time) we FAIL OPEN:
-  // the server enforces the window authoritatively and returns a clean
-  // message, so the driver is never silently locked out by a client gap.
-  const canStart = !!journeyKey && (!departureKnown || now >= windowOpensMs);
+
+  // The journey's DATE is always known — it is encoded in the journeyKey
+  // (`route_index_YYYY-MM-DD`), so we can gate on it before the detail fetch
+  // returns. App.tsx passes only the key (no date/time props), so relying on
+  // `date` alone meant an unloaded screen defaulted to '—' and FAILED OPEN,
+  // enabling START JOURNEY for a tomorrow trip. This was the QA report.
+  const keyDate = (() => {
+    const seg = (journeyKey ?? '').split('_');
+    const d = seg[seg.length - 1];
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+  })();
+  const effectiveDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : keyDate;
+
+  // IST-correct departure instant: pin the offset so the device timezone
+  // never shifts the result. Time comes from the detail fetch (route slot).
+  const timeKnown = /^\d{1,2}:\d{2}$/.test(time);
+  const departureMs =
+    effectiveDate && timeKnown
+      ? Date.parse(`${effectiveDate}T${time.padStart(5, '0')}:00+05:30`)
+      : NaN;
+  const windowOpensMs = departureMs - startWindowMinutes * 60_000;
+
+  const isFutureDate = !!effectiveDate && effectiveDate > istToday;
+  const isPastDate = !!effectiveDate && effectiveDate < istToday;
+
+  // Fail CLOSED, not open. A start is allowed only when we can prove the
+  // window is open:
+  //   • future date               → never (wait for the day)
+  //   • past date                 → never (expired)
+  //   • today + time known        → epoch window rule (handles midnight spans)
+  //   • today + time NOT yet loaded→ hold until the detail fetch fills it in
+  //   • date genuinely unknown     → hold (can't prove it's startable)
+  // The server still enforces the window authoritatively as the backstop.
+  const canStart =
+    !!journeyKey &&
+    !isFutureDate &&
+    !isPastDate &&
+    !!effectiveDate &&
+    timeKnown &&
+    now >= windowOpensMs;
 
   const istClock = (ms: number) =>
     new Date(ms).toLocaleTimeString('en-IN', {
@@ -300,22 +344,33 @@ export function UpcomingBookingDetailsScreen({
       hour: '2-digit',
       minute: '2-digit',
     });
-  const istDate = (ms: number) =>
-    new Date(ms).toLocaleDateString('en-IN', {
+  const istDateStrHuman = (isoDate: string) =>
+    new Date(`${isoDate}T00:00:00+05:30`).toLocaleDateString('en-IN', {
       timeZone: 'Asia/Kolkata',
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
 
+  // Tells the driver WHY Start is disabled — never leave the button dead with
+  // no explanation.
   let startHelper: string | null = null;
-  if (!canStart && journeyKey && departureKnown) {
-    // Before the window opens: a genuinely future IST date reads better as a
-    // date; otherwise (today, or a window that opens later today for an
-    // after-midnight slot) show the exact opening time.
-    startHelper = isFutureDate
-      ? `This journey is scheduled for ${istDate(departureMs)}`
-      : `Journey can be started from ${istClock(windowOpensMs)}`;
+  if (!canStart && journeyKey) {
+    if (isPastDate) {
+      startHelper = 'This journey date has passed and can no longer be started.';
+    } else if (isFutureDate && effectiveDate) {
+      startHelper = `This journey is scheduled for ${istDateStrHuman(effectiveDate)}.`;
+    } else if (effectiveDate && !timeKnown) {
+      // Today's journey, but the departure time hasn't loaded yet — hold
+      // rather than fail open. Resolves the moment the detail fetch returns.
+      startHelper = detailError
+        ? 'Could not load the journey time — tap Retry above.'
+        : 'Checking journey time…';
+    } else if (effectiveDate && timeKnown) {
+      startHelper = `Journey can be started from ${istClock(windowOpensMs)}.`;
+    } else {
+      startHelper = 'Loading journey details…';
+    }
   }
 
   const handleStart = async () => {
@@ -444,33 +499,28 @@ export function UpcomingBookingDetailsScreen({
             className="flex-row border-t border-[#E9D4FF]"
             style={{ marginTop: vs(16), paddingTop: vs(16) }}
           >
-            <View className="flex-1 items-center">
-              <LocationPinSmallIcon size={s(20)} color="#8200DB" />
-              <Text
-                className="text-[#8200DB] font-poppins-medium"
-                style={{ fontSize: fs(14), marginTop: vs(4) }}
-              >
-                {stopsCount} Stops
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <UsersIcon size={s(20)} color="#8200DB" />
-              <Text
-                className="text-[#8200DB] font-poppins-medium"
-                style={{ fontSize: fs(14), marginTop: vs(4) }}
-              >
-                {passengerCount} Passengers
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <ClockSmallIcon size={s(20)} color="#8200DB" />
-              <Text
-                className="text-[#8200DB] font-poppins-medium"
-                style={{ fontSize: fs(14), marginTop: vs(4) }}
-              >
-                ₹{seatPrice.toLocaleString('en-IN')}/seat
-              </Text>
-            </View>
+            {/* Each stat is a fixed-height, centered column so the icon row and
+                the label row line up across all three regardless of value
+                width — previously the differing label lengths and a stray
+                baseline left them looking misaligned. */}
+            {[
+              { icon: <LocationPinSmallIcon size={s(20)} color="#8200DB" />, label: `${stopsCount} Stop${stopsCount === 1 ? '' : 's'}` },
+              { icon: <UsersIcon size={s(20)} color="#8200DB" />, label: `${passengerCount} Passenger${passengerCount === 1 ? '' : 's'}` },
+              { icon: <ClockSmallIcon size={s(20)} color="#8200DB" />, label: `₹${seatPrice.toLocaleString('en-IN')}/seat` },
+            ].map((stat, i) => (
+              <View key={i} className="flex-1 items-center justify-start" style={{ gap: vs(6) }}>
+                <View style={{ height: s(22), alignItems: 'center', justifyContent: 'center' }}>
+                  {stat.icon}
+                </View>
+                <Text
+                  className="text-[#8200DB] font-poppins-medium text-center"
+                  style={{ fontSize: fs(13) }}
+                  numberOfLines={1}
+                >
+                  {stat.label}
+                </Text>
+              </View>
+            ))}
           </View>
         </LinearGradient>
 

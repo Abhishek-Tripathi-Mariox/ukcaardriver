@@ -12,6 +12,7 @@ import {
   Text,
   ToastAndroid,
   View,
+  TextInput,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +21,7 @@ import {
   CopyIcon,
   GiftIcon,
 } from '../components/icons/ServiceTypeIcons';
-import { fetchCurrentUser, fetchAppSettings } from '../services/api';
+import { fetchCurrentUser, fetchAppSettings, applyReferral } from '../services/api';
 
 interface ReferAndEarnScreenProps {
   onBack?: () => void;
@@ -29,6 +30,28 @@ interface ReferAndEarnScreenProps {
 export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
   const insets = useSafeAreaInsets();
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  // "Have a code?" — apply someone else's code to THIS account (once).
+  const [inputCode, setInputCode] = useState('');
+  const [applying, setApplying] = useState(false);
+  const [appliedNote, setAppliedNote] = useState<string | null>(null);
+  const handleApply = async () => {
+    const code = inputCode.trim().toUpperCase();
+    if (!code || applying) return;
+    setApplying(true);
+    try {
+      const r = await applyReferral(code);
+      setAppliedNote(
+        r.applied
+          ? `Applied${r.referrerName ? ` — referred by ${r.referrerName}` : ''}${r.bonusCredited ? `. ₹${r.bonusCredited} added to your wallet.` : '.'}`
+          : r.message ?? 'Code applied.',
+      );
+      setInputCode('');
+    } catch (err: any) {
+      Alert.alert('Could not apply code', err?.message ?? 'Please check the code and try again.');
+    } finally {
+      setApplying(false);
+    }
+  };
   const [referralCount, setReferralCount] = useState<number>(0);
   // Amounts are admin-configured and differ per side: the referring driver
   // earns `driverReward`, the friend who joins gets `joinerBonus`. Never
@@ -169,6 +192,33 @@ export function ReferAndEarnScreen({ onBack }: ReferAndEarnScreenProps) {
 
         <View className="mt-6 rounded-t-3xl bg-white px-5 pb-8 pt-5">
           <Text className="text-[18px] font-poppins-semibold text-[#0B0A08]">
+            Have a referral code?
+          </Text>
+          <View className="mt-3 flex-row items-center gap-2">
+            <TextInput
+              value={inputCode}
+              onChangeText={setInputCode}
+              placeholder="Enter code"
+              placeholderTextColor="#99A1AF"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!applying && !appliedNote}
+              className="flex-1 rounded-xl border border-[#D3DDE7] bg-white px-4 py-3 font-poppins-medium text-[#1E293B]"
+            />
+            <Pressable
+              onPress={handleApply}
+              disabled={!inputCode.trim() || applying || !!appliedNote}
+              className="rounded-xl bg-[#0097B3] px-4 py-3"
+              style={{ opacity: !inputCode.trim() || applying || !!appliedNote ? 0.5 : 1 }}
+            >
+              <Text className="font-poppins-semibold text-white">{applying ? '…' : 'Apply'}</Text>
+            </Pressable>
+          </View>
+          {appliedNote && (
+            <Text className="mt-2 text-xs font-poppins-medium text-[#00875A]">{appliedNote}</Text>
+          )}
+
+          <Text className="mt-6 text-[18px] font-poppins-semibold text-[#0B0A08]">
             How it works?
           </Text>
 
