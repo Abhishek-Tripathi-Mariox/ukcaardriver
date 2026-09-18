@@ -245,15 +245,12 @@ export function CompleteProfileScreen({
       const asset = await pickImageFromSource('Upload Bank Passbook');
       if (!asset?.uri) return;
       setUploadingPassbook(true);
-      // Reuse the same /uploads endpoint with a passbook type. The backend
-      // routes anything not in the driver-doc set to a generic folder, but
-      // we want it under the driver tree, so we tag it as 'phv' for now —
-      // it lands in driver/{id}/docs/phv/ on S3.
-      // (If you want a dedicated 'passbook' type later, add it to
-      // DRIVER_DOC_TYPES in uploadController.ts.)
+      // Uploads under its own 'passbook' type (added to DRIVER_DOC_TYPES on
+      // the backend). It used to be filed as 'phv', so the passbook showed up
+      // as "PHV Licence" in the driver's documents and in admin.
       const { url } = await uploadDocument(
         { uri: asset.uri, fileName: asset.fileName, type: asset.type },
-        'phv' as any,
+        'passbook',
       );
       setBank(b => ({ ...b, passbookUrl: url }));
     } catch (err: any) {

@@ -1789,6 +1789,8 @@ export type DocumentType =
   | 'vehicle'
   // Exterior photo of the vehicle (number plate visible) — separate from the RC.
   | 'vehicle-photo'
+  // Bank passbook / cancelled cheque for payouts.
+  | 'passbook'
   | 'insurance'
   | 'dbs'
   | 'phv'

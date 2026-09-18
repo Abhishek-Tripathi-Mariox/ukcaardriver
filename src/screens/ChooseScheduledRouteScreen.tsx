@@ -248,8 +248,13 @@ function RouteList({
           <Text className="text-xs font-poppins-medium text-[#00647A]">Your current route</Text>
           <Text className="mt-1 font-poppins-semibold text-[#0097B3]" numberOfLines={1}>
             {myReg.current.route.name}
+            {/* fmtTime, not the raw "17:30" the API stores — the picker on the
+                next screen shows 12-hour times, so the two disagreed and the
+                driver read their slot as a different time. */}
             {myReg.current.route.schedule?.departures?.[myReg.current.departureIndex ?? -1]?.time
-              ? ` · ${myReg.current.route.schedule.departures[myReg.current.departureIndex!].time}`
+              ? ` · ${fmtTime(
+                  myReg.current.route.schedule.departures[myReg.current.departureIndex!].time,
+                )}`
               : ''}
           </Text>
           <Text className="mt-1 text-xs text-[#00647A]">

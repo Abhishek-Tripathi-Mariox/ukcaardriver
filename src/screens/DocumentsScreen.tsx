@@ -74,6 +74,7 @@ const DOC_DISPLAY: Record<string, { title: string; icon: string }> = {
   licence: { title: 'Driving License', icon: 'card' },
   vehicle: { title: 'Vehicle RC', icon: 'car' },
   'vehicle-photo': { title: 'Vehicle Photo', icon: 'car' },
+  passbook: { title: 'Bank Passbook', icon: 'document' },
   insurance: { title: 'Insurance', icon: 'clipboard' },
   'aadhaar-front': { title: 'Aadhaar (Front)', icon: 'card' },
   'aadhaar-back': { title: 'Aadhaar (Back)', icon: 'card' },
