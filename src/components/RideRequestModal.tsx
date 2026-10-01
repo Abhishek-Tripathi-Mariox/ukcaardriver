@@ -24,7 +24,11 @@ export interface RideRequest {
   passengerAvatar?: string | null;
   pickup: string;
   drop: string;
+  /** What the RIDER pays — also the cash "Amount to be Collected". */
   fare: string;
+  /** What the driver is settled on (rider discounts are platform-funded).
+   *  Shown on the offer; absent from older backends. */
+  earningFare?: string;
   distance: string;
   eta: string;
   /** Pickup/drop coords from the dispatch payload — used by the in-progress
@@ -226,7 +230,9 @@ export function RideRequestModal({
                   className="text-base font-poppins-semibold"
                   style={{ color: styles.fareColor }}
                 >
-                  {request.fare}
+                  {/* The fare the driver earns on: a discounted or free-voucher
+                      ride no longer reads as a Rs 0 job. */}
+                  {request.earningFare ?? request.fare}
                 </Text>
               </View>
               <View className="flex-1">

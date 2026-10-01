@@ -471,6 +471,9 @@ function App() {
       pickup: d.pickup ?? '',
       drop: d.drop ?? '',
       fare: `₹${Number(fare).toFixed(2)}`,
+      ...(d.earningFare != null
+        ? { earningFare: `₹${Number(d.earningFare).toFixed(2)}` }
+        : {}),
       distance: `${distance.toFixed(1)} km`,
       eta: `${Math.round(duration)} min`,
       pickupLat: Number(d.pickupLat ?? 0),
@@ -688,6 +691,9 @@ function App() {
           pickup: payload.pickup,
           drop: payload.drop,
           fare: `₹${Number(payload.fare).toFixed(2)}`,
+          ...((payload as any).earningFare != null
+            ? { earningFare: `₹${Number((payload as any).earningFare).toFixed(2)}` }
+            : {}),
           distance: `${payload.distance.toFixed(1)} km`,
           eta: `${Math.round(payload.duration)} min`,
           pickupLat: payload.pickupLat,
@@ -844,6 +850,9 @@ function App() {
             pickup: p.pickup ?? '',
             drop: p.drop ?? '',
             fare: `₹${Number(p.fare ?? 0).toFixed(2)}`,
+            ...(p.earningFare != null
+              ? { earningFare: `₹${Number(p.earningFare).toFixed(2)}` }
+              : {}),
             distance: `${Number(p.distance ?? 0).toFixed(1)} km`,
             eta: `${Math.round(Number(p.duration ?? 0))} min`,
             pickupLat: Number(p.pickupLat ?? 0),

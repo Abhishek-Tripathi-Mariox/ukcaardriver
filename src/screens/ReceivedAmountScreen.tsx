@@ -64,7 +64,7 @@ function RideEntry({ ride }: { ride: ReceivedAmountItem }) {
       <View className="flex-row items-center border-b border-[#E9F0F7] py-3">
         <View className="flex-1">
           <Text className="text-[15px] font-poppins-bold text-[#132235]">
-            Fare Collected
+            {ride.kind === 'journey' ? 'Scheduled Journey Fare' : 'Fare Collected'}
           </Text>
           <Text className="mt-0.5 text-xs text-[#364B63]">
             Reference ID: {ref}
@@ -80,7 +80,8 @@ function RideEntry({ ride }: { ride: ReceivedAmountItem }) {
             Net Earning (after commission)
           </Text>
           <Text className="mt-0.5 text-xs text-[#364B63]">
-            Commission: {fmtRupees(ride.commission)} · Ref: {ref}
+            Commission: {fmtRupees(ride.commission)}
+            {ride.tip > 0 ? ` · Tip: +${fmtRupees(ride.tip)}` : ''} · Ref: {ref}
           </Text>
         </View>
         <Text className="text-[17px] font-poppins-bold text-[#08875D]">

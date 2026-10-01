@@ -298,6 +298,13 @@ export function WalletScreen({
               {fmtRupees(balance ?? 0)}
             </Text>
           )}
+          {balance !== null && balance < 0 && (
+            // On cash rides the driver keeps the cash and the commission is
+            // charged here, so the balance can dip below zero.
+            <Text className="mt-1 text-center text-xs font-poppins-medium text-[#FFE4E4]">
+              Commission due on cash rides — recharge to clear it
+            </Text>
+          )}
           <View className="absolute right-0 top-0 h-full w-32 opacity-20">
             <View className="absolute right-2 top-3 h-24 w-24 rounded-full border-2 border-white" />
             <View className="absolute right-10 top-10 h-16 w-16 rounded-full border-2 border-white" />

@@ -385,11 +385,11 @@ export function EarningsScreen({
               }}
             >
               <Text className="text-[16px] font-poppins-semibold text-[#1E293B]">
-                Earnings Breakdown
+                Earnings Breakdown (all time)
               </Text>
               <View className="mt-4 gap-3">
                 <View className="flex-row justify-between">
-                  <Text className="text-[14px] text-[#6A7282]">Total Earned</Text>
+                  <Text className="text-[14px] text-[#6A7282]">Fares & Tips (before fee)</Text>
                   <Text className="text-[14px] font-poppins-semibold text-[#1E293B]">
                     {formatRupees(bd?.totalEarned ?? 0)}
                   </Text>

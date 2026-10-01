@@ -891,6 +891,8 @@ export async function fetchWalletStatement(
 
 export interface ReceivedAmountItem {
   _id: string;
+  /** Instant/private ride, or a completed scheduled journey. */
+  kind?: 'ride' | 'journey';
   grossFare: number;
   commission: number;
   netEarnings: number;
@@ -1577,7 +1579,10 @@ export interface AvailableRidePayload {
   pickupLng: number;
   dropLat?: number;
   dropLng?: number;
+  /** What the rider pays (also the cash amount to collect). */
   fare: number;
+  /** What the driver is settled on — rider discounts are platform-funded. */
+  earningFare?: number;
   distance: number;
   duration: number;
 }
