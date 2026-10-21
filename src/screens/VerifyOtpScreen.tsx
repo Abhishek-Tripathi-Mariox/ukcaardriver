@@ -42,7 +42,7 @@ export function VerifyOtpScreen({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Resend cooldown (seconds). Starts at 30 on mount and after each resend so
-  // a tap can't spam Firebase (auth/too-many-requests locks the number out).
+  // repeated taps cannot spam the selected OTP provider.
   const [resendIn, setResendIn] = useState(30);
   const [resending, setResending] = useState(false);
   useEffect(() => {
