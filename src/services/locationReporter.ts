@@ -38,6 +38,8 @@ let watchId: number | null = null;
 let heartbeatId: ReturnType<typeof setInterval> | null = null;
 let permissionGranted = false;
 let lastEmittedAt = 0;
+let reportingRequested = false;
+let reportingGeneration = 0;
 
 export async function ensureLocationPermission(): Promise<boolean> {
   return ensurePermission();
@@ -87,10 +89,10 @@ function pushPosition(pos: { coords: { latitude: number; longitude: number; head
  * covers the "driver parked at the airport for 30 minutes" case where
  * watchPosition stays quiet because nothing crossed the 100m threshold.
  */
-function heartbeat(): void {
+function heartbeat(reportPosition: typeof pushPosition): void {
   if (Date.now() - lastEmittedAt < HEARTBEAT_MS - 5_000) return;
   Geolocation.getCurrentPosition(
-    pushPosition,
+    reportPosition,
     err => {
       // Common codes: 1 (permission), 2 (position unavailable), 3 (timeout).
       // Transient — the next heartbeat or a movement event will recover.
@@ -106,23 +108,37 @@ function heartbeat(): void {
  * Idempotent — safe to call repeatedly.
  */
 export async function startLocationReporting(): Promise<void> {
-  const granted = await ensurePermission();
+  if (reportingRequested) return;
+  reportingRequested = true;
+  const generation = ++reportingGeneration;
+  let granted: boolean;
+  try {
+    granted = await ensurePermission();
+  } catch (error) {
+    if (generation === reportingGeneration) reportingRequested = false;
+    throw error;
+  }
+  if (generation !== reportingGeneration || !reportingRequested) return;
   if (!granted) {
+    reportingRequested = false;
     console.warn('[location-reporter] permission denied — not starting');
     return;
   }
   if (watchId !== null) return; // already running
+  const reportPosition: typeof pushPosition = pos => {
+    if (reportingRequested && generation === reportingGeneration) pushPosition(pos);
+  };
 
   // One immediate fix so the first emit doesn't wait for either trigger.
   Geolocation.getCurrentPosition(
-    pushPosition,
+    reportPosition,
     err => console.warn('[location-reporter] initial fix failed:', err?.message),
     { enableHighAccuracy: true, timeout: 8_000, maximumAge: 60_000 },
   );
 
   // Movement-based stream — emits whenever the OS detects 100m of travel.
   watchId = Geolocation.watchPosition(
-    pushPosition,
+    reportPosition,
     err => {
       console.warn('[location-reporter] watch error:', err?.message);
     },
@@ -140,10 +156,15 @@ export async function startLocationReporting(): Promise<void> {
   // Heartbeat safety-net for stationary drivers. interval just under 60s
   // so the "5s less than HEARTBEAT_MS" check inside heartbeat() always
   // passes the first time.
-  heartbeatId = setInterval(heartbeat, HEARTBEAT_MS);
+  heartbeatId = setInterval(() => {
+    if (reportingRequested && generation === reportingGeneration) heartbeat(reportPosition);
+  }, HEARTBEAT_MS);
 }
 
 export function stopLocationReporting(): void {
+  reportingRequested = false;
+  reportingGeneration++;
+  lastEmittedAt = 0;
   if (watchId !== null) {
     Geolocation.clearWatch(watchId);
     watchId = null;

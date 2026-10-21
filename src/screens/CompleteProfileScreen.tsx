@@ -1,3 +1,4 @@
+import RegistrationDocumentField from '../components/RegistrationDocumentField';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -194,8 +195,9 @@ export function CompleteProfileScreen({
     bankName: initialBank?.bankName ?? '',
     accountNumber: initialBank?.accountNumber ?? '',
     ifsc: initialBank?.ifsc ?? '',
-    passbookUrl: initialBank?.passbookUrl ?? null,
+    passbookUrl: initialBank?.passbookUrl ?? initialDocs?.find(doc => doc.type === 'passbook')?.url ?? null,
   });
+  const [passbookStatus, setPassbookStatus] = useState(initialDocs?.find(doc => doc.type === 'passbook')?.status);
   const [uploadingPassbook, setUploadingPassbook] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -253,6 +255,7 @@ export function CompleteProfileScreen({
         'passbook',
       );
       setBank(b => ({ ...b, passbookUrl: url }));
+      setPassbookStatus('pending');
     } catch (err: any) {
       Alert.alert('Upload failed', err?.message ?? 'Try again.');
     } finally {
@@ -536,29 +539,14 @@ export function CompleteProfileScreen({
                 onChangeText={v => setBank(b => ({ ...b, ifsc: v.toUpperCase() }))}
                 autoCapitalize="characters"
               />
-              <View className="mb-4">
-                <Text className="mb-2 text-sm font-poppins-medium text-slate-800">
-                  Upload Passbook/Cheque
-                </Text>
-                <Pressable
-                  onPress={uploadingPassbook ? undefined : pickPassbook}
-                  className={`h-12 flex-row items-center justify-between rounded-2xl border px-3 ${
-                    bank.passbookUrl ? 'border-brand-teal bg-brand-teal/5' : 'border-slate-300'
-                  }`}
-                >
-                  {uploadingPassbook ? (
-                    <ActivityIndicator color="#0097B3" />
-                  ) : (
-                    <Text
-                      className={`text-base ${
-                        bank.passbookUrl ? 'text-brand-teal' : 'text-slate-400'
-                      }`}
-                    >
-                      {bank.passbookUrl ? 'Uploaded — tap to replace' : 'Upload passbook/cheque'}
-                    </Text>
-                  )}
-                </Pressable>
-              </View>
+              <RegistrationDocumentField
+                label="Upload Passbook/Cheque"
+                prompt="Upload passbook/cheque"
+                uploadedUrl={bank.passbookUrl}
+                uploading={uploadingPassbook}
+                status={passbookStatus}
+                onPress={pickPassbook}
+              />
             </View>
           )}
 

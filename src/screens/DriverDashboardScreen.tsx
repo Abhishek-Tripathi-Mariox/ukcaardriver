@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Modal,
   Pressable,
   RefreshControl,
@@ -49,6 +50,7 @@ import {
 } from '../services/locationReporter';
 import { fs, s, vs } from '../theme/responsive';
 import { driverDisplayRating } from '../utils/driverRating';
+import { subscribeDriverStatus } from '../services/socketService';
 
 type ServiceType = 'instant' | 'private' | 'scheduled';
 
@@ -294,6 +296,17 @@ export function DriverDashboardScreen({
     load();
   }, [load]);
 
+  useEffect(() => subscribeDriverStatus(isOnline => {
+    setData(current => current ? { ...current, driver: { ...current.driver, isOnline } } : current);
+  }), []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') load();
+    });
+    return () => subscription.remove();
+  }, [load]);
+
   // Poll the unread count so the badge stays fresh while the user sits on
   // the dashboard. 30s is a sensible cadence — short enough to feel live,
   // long enough to be cheap. (Push will arrive faster via FCM regardless.)
@@ -367,7 +380,8 @@ export function DriverDashboardScreen({
         if (granted) coords = await getOneShotCoords();
       }
       console.log('[toggle-online] sending coords=', coords);
-      await setOnlineStatus(next, coords ?? undefined);
+      const status = await setOnlineStatus(next, coords ?? undefined);
+      setData(current => current ? { ...current, driver: { ...current.driver, isOnline: status.isOnline } } : current);
       // Tie the GPS reporter to the online switch — drivers shouldn't be
       // broadcasting their location while offline. start/stop are both
       // idempotent so calling them either way is safe.
@@ -391,24 +405,18 @@ export function DriverDashboardScreen({
 
   // If the driver is *already* online when the dashboard mounts (returning
   // user / Metro reload), start the reporter without waiting for them to
-  // toggle. Cleanup stops it whenever the online flag flips false.
+  // toggle. Keep trip tracking even when presence has expired.
   //
-  // Gated on approval too: a driver rejected while online keeps isOnline:true
-  // on their server record (nothing in the app can clear it — the toggle is
-  // replaced by the banner below), so without this they'd silently keep
-  // broadcasting GPS after losing approval.
+  // Approval still gates reporting after an admin rejects the driver.
   useEffect(() => {
-    if (isApprovedDriver && data?.driver.isOnline) {
+    if (isApprovedDriver && (data?.driver.isOnline || activeRide)) {
       startLocationReporting().catch(() => {});
     } else {
       stopLocationReporting();
     }
-    return () => {
-      // Stop on unmount too — if the user navigates back to login the
-      // dashboard unmounts and we no longer have a socket to emit on.
-      stopLocationReporting();
-    };
-  }, [data?.driver.isOnline, isApprovedDriver]);
+    // Keep reporting across authenticated navigation. Logout owns cleanup;
+    // unmounting the dashboard does not mean the driver closed the app.
+  }, [data?.driver.isOnline, isApprovedDriver, activeRide]);
 
   // Socket + ride-request modal live at the App level now (see App.tsx),
   // so this screen no longer subscribes to ride:new-request. Lifting the

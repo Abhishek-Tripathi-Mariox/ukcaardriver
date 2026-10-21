@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -12,6 +12,7 @@ import {
 } from '../components/icons/ServiceTypeIcons';
 import { fetchJourneys, type JourneySummary } from '../services/api';
 import { fs, s, vs } from '../theme/responsive';
+import { partitionJourneys } from '../utils/journeyTiming';
 
 interface ScheduledJourney {
   id: string;
@@ -28,7 +29,12 @@ interface ScheduledJourney {
 }
 
 interface ScheduledJourneysScreenProps {
+  initialTab?: 'upcoming' | 'past';
+  headerTitle?: string;
+  historyFilter?: ReactNode;
+  bottomPadding?: number;
   onBack?: () => void;
+  onOpenAvailability?: () => void;
   /** `status` lets the caller resume an already active/in-progress journey
    *  at the right screen instead of restarting from the details page. */
   onOpenUpcoming?: (id: string, status: JourneySummary['status']) => void;
@@ -265,39 +271,64 @@ function PastJourneyCard({
 }
 
 export function ScheduledJourneysScreen({
+  initialTab = 'upcoming',
+  headerTitle,
+  historyFilter,
+  bottomPadding = 32,
   onBack,
   onOpenUpcoming,
   onOpenPast,
+  onOpenAvailability,
 }: ScheduledJourneysScreenProps) {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [upcoming, setUpcoming] = useState<ScheduledJourney[]>([]);
-  const [past, setPast] = useState<ScheduledJourney[]>([]);
+  const [tab, setTab] = useState<'upcoming' | 'past'>(initialTab);
+  const [journeys, setJourneys] = useState<JourneySummary[]>([]);
+  const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [fetchNonce, setFetchNonce] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setLoadFailed(false);
-    Promise.all([fetchJourneys('upcoming'), fetchJourneys('past')])
-      .then(([up, pa]) => {
+    let fetching = false;
+    const load = async (initial = false) => {
+      if (fetching) return;
+      fetching = true;
+      if (initial) setLoading(true);
+      try {
+        const [upcoming, past] = await Promise.all([fetchJourneys('upcoming'), fetchJourneys('past')]);
         if (!alive) return;
-        setUpcoming(up.map(toCard));
-        setPast(pa.map(toCard));
-      })
-      // A failed load used to be swallowed, leaving the "no journeys" empty
-      // state — indistinguishable from genuinely having none, which was the
-      // client's original "scheduled screen is empty" complaint.
-      .catch(() => alive && setLoadFailed(true))
-      .finally(() => alive && setLoading(false));
+        setJourneys([...upcoming, ...past]);
+        setNow(Date.now());
+        setLoadFailed(false);
+      } catch {
+        // Keep already-loaded cards usable on transient refresh failures.
+        if (alive && initial) setLoadFailed(true);
+      } finally {
+        fetching = false;
+        if (alive) setLoading(false);
+      }
+    };
+    load(true);
+    const clock = setInterval(() => {
+      if (AppState.currentState === 'active') setNow(Date.now());
+    }, 1_000);
+    const refresh = setInterval(() => {
+      if (AppState.currentState === 'active') load();
+    }, 15_000);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') { setNow(Date.now()); load(); }
+    });
     return () => {
       alive = false;
+      clearInterval(clock);
+      clearInterval(refresh);
+      subscription.remove();
     };
   }, [fetchNonce]);
 
-  const items = tab === 'upcoming' ? upcoming : past;
+  const partitions = useMemo(() => partitionJourneys(journeys, now), [journeys, now]);
+  const items = (tab === 'upcoming' ? partitions.upcoming : partitions.past).map(toCard);
 
   return (
     <View className="flex-1 bg-white">
@@ -321,7 +352,7 @@ export function ScheduledJourneysScreen({
                 className="font-poppins-semibold text-white"
                 style={{ fontSize: fs(20), lineHeight: fs(28) }}
               >
-                {tab === 'past' ? 'Past Journeys' : 'Scheduled Journeys'}
+                {headerTitle ?? (tab === 'past' ? 'Past Journeys' : 'Scheduled Journeys')}
               </Text>
               <Text
                 className="text-white/80 font-poppins-regular"
@@ -333,6 +364,9 @@ export function ScheduledJourneysScreen({
           </View>
         </SafeAreaView>
       </LinearGradient>
+
+      {onOpenAvailability && <Pressable onPress={onOpenAvailability} accessibilityRole="button" className="bg-white px-6 py-3"><Text className="font-poppins-medium text-brand-teal">Manage availability</Text></Pressable>}
+      {historyFilter}
 
       <View style={{ paddingHorizontal: s(24), paddingTop: vs(24) }}>
         <View
@@ -372,7 +406,7 @@ export function ScheduledJourneysScreen({
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: s(24), paddingBottom: vs(32) + insets.bottom, gap: vs(16) }}
+        contentContainerStyle={{ padding: s(24), paddingBottom: vs(bottomPadding) + insets.bottom, gap: vs(16) }}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (

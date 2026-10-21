@@ -79,7 +79,7 @@ function StopRow({ stop, isLast }: { stop: Stop; isLast: boolean }) {
           className="text-[#6A7282]"
           style={{ fontSize: fs(14), marginTop: vs(2) }}
         >
-          {stop.time || 'Completed Stop'}
+          {stop.time || '—'}
         </Text>
         <View className="flex-row" style={{ marginTop: vs(8), gap: s(16) }}>
           {stop.board != null && (
@@ -269,7 +269,7 @@ export function CompletedRideScreen({
                 className="font-poppins-semibold text-white"
                 style={{ fontSize: fs(20), lineHeight: fs(28) }}
               >
-                Completed Ride
+                {j?.status === 'expired' ? 'Missed Ride' : j?.status === 'cancelled' ? 'Cancelled Ride' : j?.status === 'completed' ? 'Completed Ride' : 'Ride Details'}
               </Text>
               <Text
                 className="text-white/80 font-poppins-regular"
@@ -277,6 +277,9 @@ export function CompletedRideScreen({
               >
                 Journey ID: {journeyId}
               </Text>
+              {j?.vehicle && <Text className="text-white/80 font-poppins-regular" style={{ fontSize: fs(12) }}>
+                {[j.vehicle.make, j.vehicle.model, j.vehicle.typeCode, `${j.vehicle.capacity} passenger seats`].filter(Boolean).join(' · ')}
+              </Text>}
             </View>
           </View>
         </SafeAreaView>

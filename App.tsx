@@ -1,3 +1,5 @@
+import { mergeRegistrationDocuments } from './src/utils/registrationDocuments';
+import { AvailabilityScreen } from './src/screens/AvailabilityScreen';
 import './global.css';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, BackHandler, Linking, Modal, StatusBar, View } from 'react-native';
@@ -252,6 +254,7 @@ type Stage =
   | 'ride-summary'
   | 'earnings'
   | 'profile'
+  | 'availability'
   | 'documents'
   | 'bank-details'
   | 'notifications'
@@ -1083,6 +1086,7 @@ function App() {
     'onepass',
     'incentives',
     'scheduled-journeys',
+    'availability',
   ];
   const GATED_FEATURE_NAMES: Partial<Record<Stage, string>> = {
     earnings: 'Earnings',
@@ -1095,6 +1099,7 @@ function App() {
     onepass: 'OnePass',
     incentives: 'Incentives',
     'scheduled-journeys': 'My Journeys',
+    availability: 'Availability',
   };
   const gatedBlocked =
     regStatus !== 'approved' && GATED_WHEN_UNVERIFIED.includes(stage);
@@ -1143,6 +1148,11 @@ function App() {
   const handleLogout = () => {
     setMobile('');
     setCurrentUser(null);
+    setActiveRide(null);
+    setPendingRequests([]);
+    setIncomingRequest(null);
+    setIncomingVisible(false);
+    stopRideAlert();
     // Drop the cached driver profile so the next user who logs in gets a
     // fresh hydrate instead of seeing the previous user's name/phone in
     // Razorpay or the profile screen.
@@ -1235,7 +1245,13 @@ function App() {
       {stage === 'service-type' && (
         <ChooseServiceTypeScreen
           onBack={goBack}
-          onNext={() => setStage('owner-details')}
+          onNext={serviceType => {
+            setCurrentUser(user => user ? {
+              ...user, registrationStep: 'owner-details',
+              driverProfile: { ...user.driverProfile, serviceType },
+            } : user);
+            setStage('owner-details');
+          }}
           onLogout={handleLogout}
         />
       )}
@@ -1273,16 +1289,34 @@ function App() {
         <VehicleDetailsScreen
           serviceType={currentUser?.driverProfile?.serviceType}
           onBack={goBack}
-          onNext={() => setStage('driver-details')}
+          onNext={details => {
+            setCurrentUser(user => user ? { ...user, driverProfile: {
+              ...user.driverProfile, vehicleMake: details.brand, vehicleModel: details.model,
+              vehicleTypeCode: details.vehicleTypeCode, fuelTypeCode: details.fuelTypeCode,
+              vehicleColor: details.color, vehicleYear: details.year,
+              seatingCapacity: Number(details.seating), plateNumber: details.registrationNo,
+              insuranceNumber: details.insuranceNo,
+              documents: mergeRegistrationDocuments(user.driverProfile?.documents, { vehicle: details.vehicleRcUrl, insurance: details.insuranceUrl, 'vehicle-photo': details.vehiclePhotoUrl, puc: details.pucUrl }),
+            } } : user);
+            setStage('driver-details');
+          }}
           onLogout={handleLogout}
           initialDocs={currentUser?.driverProfile?.documents ?? []}
+          initialVehicle={currentUser?.driverProfile}
         />
       )}
 
       {stage === 'driver-details' && (
         <DriverDetailsScreen
           onBack={goBack}
-          onNext={() => setStage('complete-profile')}
+          onNext={details => {
+            const [day, month, year] = details.dlExpiry.split('/');
+            setCurrentUser(user => user ? { ...user, registrationStep: 'complete-profile', driverProfile: {
+              ...user.driverProfile, licenceNumber: details.dlNumber, licenceExpiry: new Date(`${year}-${month}-${day}T00:00:00Z`).toISOString(), yearsExperience: Number(details.yearsExperience),
+              documents: mergeRegistrationDocuments(user.driverProfile?.documents, { 'aadhaar-front': details.aadhaarFrontUrl, 'aadhaar-back': details.aadhaarBackUrl, licence: details.drivingLicenseUrl, 'profile-photo': details.profilePhotoUrl }),
+            } } : user);
+            setStage('complete-profile');
+          }}
           onLogout={handleLogout}
           initialDlNumber={currentUser?.driverProfile?.licenceNumber}
           initialDlExpiryIso={currentUser?.driverProfile?.licenceExpiry ?? null}
@@ -1459,6 +1493,7 @@ function App() {
           onOpenOnePass={() => setStage('onepass')}
           onOpenIncentives={() => setStage('incentives')}
           onOpenRouteChange={() => setStage('change-route')}
+          onOpenAvailability={() => setStage('availability')}
           serviceType={currentUser?.driverProfile?.serviceType}
         />
       )}
@@ -1466,6 +1501,8 @@ function App() {
       {stage === 'onepass' && !gatedBlocked && <OnePassScreen onBack={goHome} />}
 
       {stage === 'incentives' && !gatedBlocked && <IncentivesScreen onBack={goHome} />}
+
+      {stage === 'availability' && !gatedBlocked && <AvailabilityScreen onBack={goBack} onOpenSupport={() => setStage('help-support')} />}
 
       {stage === 'documents' && (
         <DocumentsScreen onBack={goHome} />
@@ -1483,6 +1520,17 @@ function App() {
       {stage === 'history' && (
         <HistoryScreen
           onBack={goHome}
+          serviceType={currentUser?.driverProfile?.serviceType}
+          onOpenUpcoming={(key, status) => {
+            setActiveJourneyKey(key);
+            if (status === 'in_progress') setStage('journey-in-progress');
+            else if (status === 'active') setStage('passenger-checkin');
+            else setStage('upcoming-booking-details');
+          }}
+          onOpenPast={key => {
+            setActiveJourneyKey(key);
+            setStage('completed-ride');
+          }}
           onOpenRide={(rideId) => {
             setOpenHistoryRideId(rideId);
             setStage('history-detail');
@@ -1563,6 +1611,7 @@ function App() {
 
       {stage === 'scheduled-journeys' && !gatedBlocked && (
         <ScheduledJourneysScreen
+          onOpenAvailability={() => setStage('availability')}
           onBack={goHome}
           onOpenUpcoming={(key: string, status) => {
             setActiveJourneyKey(key);

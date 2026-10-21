@@ -100,6 +100,9 @@ export interface ApiUser {
     vehicleModel?: string;
     vehicleYear?: string;
     vehicleColor?: string;
+    vehicleTypeCode?: string;
+    fuelTypeCode?: string;
+    insuranceNumber?: string;
     seatingCapacity?: number;
     plateNumber?: string;
     insuranceExpiry?: string | null;
@@ -306,7 +309,19 @@ export async function persistTokens(tokens: AuthTokens): Promise<void> {
 }
 
 export async function clearTokens(): Promise<void> {
-  await AsyncStorage.removeMany([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY]);
+  try {
+    await stopDriverRealtime();
+  } finally {
+    await AsyncStorage.removeMany([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY]);
+  }
+}
+
+async function stopDriverRealtime(): Promise<void> {
+  // Dynamic imports avoid the api/socket/location module cycle at startup.
+  const { stopLocationReporting } = await import('./locationReporter');
+  const { disconnectSocket } = await import('./socketService');
+  stopLocationReporting();
+  disconnectSocket();
 }
 
 /**
@@ -357,6 +372,9 @@ async function fetchCurrentUserUncached(): Promise<ApiUser | null> {
             vehicleYear: u.driverProfile.vehicleYear,
             vehicleColor: u.driverProfile.vehicleColor,
             seatingCapacity: u.driverProfile.seatingCapacity,
+            vehicleTypeCode: u.driverProfile.vehicleTypeCode,
+            fuelTypeCode: u.driverProfile.fuelTypeCode,
+            insuranceNumber: u.driverProfile.insuranceNumber,
             plateNumber: u.driverProfile.plateNumber,
             insuranceExpiry: u.driverProfile.insuranceExpiry ?? null,
             rating: u.driverProfile.rating,
@@ -440,6 +458,8 @@ export async function updateProfile(input: {
  * requests keep ringing on a logged-out driver's phone.
  */
 export async function logout(): Promise<void> {
+  // Stop advertising presence immediately, even if FCM/API cleanup fails.
+  await stopDriverRealtime();
   try {
     const { clearFcmToken } = await import('./fcmService');
     await clearFcmToken();
@@ -1019,6 +1039,8 @@ export interface OnePassPlan {
   price: number;
   days: number;
   currency: string;
+  category: 'instant' | 'private' | 'scheduled';
+  commissionPct: number;
 }
 
 export async function fetchOnePassPlans(): Promise<OnePassPlan[]> {
@@ -1032,6 +1054,10 @@ export async function fetchOnePassPlans(): Promise<OnePassPlan[]> {
 export interface OnePassStatus {
   isActive: boolean;
   expiresAt: string | null;
+  category: 'instant' | 'private' | 'scheduled' | null;
+  commissionPct: number | null;
+  legacy: { expiresAt: string; commissionPct: number } | null;
+  memberships: { category: 'instant' | 'private' | 'scheduled'; startsAt: string; expiresAt: string; commissionRate: number; label: string; planKey: string }[];
 }
 
 export async function fetchOnePassStatus(): Promise<OnePassStatus> {
@@ -1043,7 +1069,7 @@ export async function fetchOnePassStatus(): Promise<OnePassStatus> {
 }
 
 /** Create a Razorpay order for a OnePass plan (price is server-authoritative). */
-export async function createOnePassOrder(plan: string): Promise<{
+export async function createOnePassOrder(plan: string, expectedPlan?: Pick<OnePassPlan, 'category' | 'price' | 'days' | 'commissionPct'>): Promise<{
   orderId: string;
   amount: number;
   currency: string;
@@ -1056,7 +1082,7 @@ export async function createOnePassOrder(plan: string): Promise<{
   }>('/payments/create-order', {
     method: 'POST',
     auth: true,
-    body: JSON.stringify({ type: 'subscription', plan }),
+    body: JSON.stringify({ type: 'subscription', plan, expectedPlan }),
   });
   return res.data;
 }
@@ -1148,6 +1174,7 @@ export async function fetchMyRatings(): Promise<DriverRatings> {
 // ── Scheduled journeys (shuttle operation) ──
 
 export interface JourneySummary {
+  vehicle?: { make: string; model: string; color: string; plateNumber: string; typeCode: string | null; capacity: number };
   journeyKey: string;
   routeId: string;
   routeName: string;
@@ -2008,12 +2035,16 @@ export interface RouteStop {
 }
 
 export interface RouteDeparture {
+  direction?: 'outbound' | 'return';
   stopIndex: number;
   /** Local time HH:mm. */
   time: string;
 }
 
 export interface RouteSchedule {
+  minimumJourneyMinutes?: number;
+  turnaroundMinutes?: number;
+  returnDepartures?: Array<{ stopIndex: number; time: string }>;
   daysOfWeek: number[];
   departures: RouteDeparture[];
   seatPrice?: number;
@@ -2062,24 +2093,30 @@ export async function fetchRouteById(id: string): Promise<ScheduledRouteApi> {
 export async function registerForRoute(
   routeId: string,
   payload: {
-    /** Free-form 24h "HH:mm" time the driver picked. Backend will reuse an
-     *  existing admin-defined slot if one matches, or append a new one. */
+    /** Exact admin-published time. Drivers cannot create shared slots. */
     departureTime?: string;
     /** Legacy path: register against a specific existing admin slot index.
      *  Either this or departureTime must be supplied. */
     departureIndex?: number;
     roundTrip?: boolean;
+    returnDepartureIndex?: number;
+    returnDepartureTime?: string;
+    replaceRoute?: boolean;
   },
-): Promise<{ status: 'pending' }> {
+): Promise<{ status: 'pending' | 'approved' }> {
   const res = await request<{
     success: boolean;
-    data: { routeId: string; departureIndex: number; status: 'pending' };
+    data: { routeId: string; departureIndex: number; status: 'pending' | 'approved' };
   }>(`/routes/${routeId}/register`, {
     method: 'POST',
     auth: true,
     body: JSON.stringify(payload),
   });
   return { status: res.data.status };
+}
+
+export async function checkRouteSchedule(routeId: string, payload: Parameters<typeof registerForRoute>[1]): Promise<void> {
+  await request(`/routes/${routeId}/schedule-check`, { method: 'POST', auth: true, body: JSON.stringify(payload) });
 }
 
 export interface MyRouteRegistration {
@@ -2094,6 +2131,8 @@ export interface MyRouteRegistration {
   departureIndex?: number;
   roundTrip?: boolean;
   registeredAt?: string;
+  firstServiceDate?: string;
+  lastServiceDate?: string;
 }
 
 /**
@@ -2104,6 +2143,8 @@ export interface MyRouteRegistration {
 export async function fetchMyRouteRegistration(): Promise<{
   current: MyRouteRegistration | null;
   pendingRequest: MyRouteRegistration | null;
+  currentAssignments: MyRouteRegistration[];
+  pendingRequests: MyRouteRegistration[];
 }> {
   const res = await request<{
     success: boolean;
@@ -2111,12 +2152,16 @@ export async function fetchMyRouteRegistration(): Promise<{
       current?: MyRouteRegistration | null;
       pendingRequest?: MyRouteRegistration | null;
       registration: MyRouteRegistration | null;
+      currentAssignments?: MyRouteRegistration[];
+      pendingRequests?: MyRouteRegistration[];
     };
   }>('/routes/my-registration', { method: 'GET', auth: true });
   return {
     // Older backend builds only send `registration` — treat it as current.
-    current: res.data.current ?? res.data.registration ?? null,
-    pendingRequest: res.data.pendingRequest ?? null,
+    current: 'current' in res.data ? res.data.current ?? null : res.data.registration?.status === 'approved' ? res.data.registration : null,
+    pendingRequest: res.data.pendingRequest ?? (res.data.registration?.status === 'pending' ? res.data.registration : null),
+    currentAssignments: res.data.currentAssignments ?? (res.data.current ? [res.data.current] : []),
+    pendingRequests: res.data.pendingRequests ?? (res.data.pendingRequest ? [res.data.pendingRequest] : []),
   };
 }
 
@@ -2136,4 +2181,23 @@ export async function fetchChatHistory(rideId: string): Promise<{
   } catch {
     return null;
   }
+}
+
+export interface AvailabilitySlot {
+  routeId: string; routeName: string; departureDate: string; departureIndex: number;
+  departureKey: string; departureTime: string; available: boolean; bookings: number;
+  bookedSeats: number; running: boolean; canChange: boolean;
+}
+export interface DriverAvailabilityData {
+  assignments: { routeId: string; routeName: string; departureIndex: number; departureTime: string; firstServiceDate: string | null }[];
+  slots: AvailabilitySlot[];
+  exceptions: { routeId: string; routeName: string; departureDate: string; departureTime: string; available: false }[];
+}
+export async function fetchDriverAvailability(date: string): Promise<DriverAvailabilityData> {
+  const res = await request<{ data: DriverAvailabilityData }>(`/drivers/availability?from=${encodeURIComponent(date)}&to=${encodeURIComponent(date)}`, { method: 'GET', auth: true });
+  return res.data;
+}
+export async function setDepartureAvailability(slot: AvailabilitySlot, available: boolean): Promise<void> {
+  await request('/drivers/availability', { method: 'PUT', auth: true, body: JSON.stringify({ routeId: slot.routeId, departureDate: slot.departureDate, departureIndex: slot.departureIndex, departureKey: slot.departureKey, available }) });
+  invalidate(CACHE_KEYS.DASHBOARD);
 }

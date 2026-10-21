@@ -69,9 +69,7 @@ export function ChooseServiceTypeScreen({
     setError(null);
     setSubmitting(true);
     try {
-      // All service types advance straight to owner-details. Scheduled
-      // drivers used to have an extra route-selection step here, but that
-      // is no longer part of the registration funnel.
+      // Route selection for scheduled drivers happens in Driver Details.
       await updateRegistrationStep('owner-details', {
         serviceType: selected,
       });

@@ -1,3 +1,4 @@
+import DocUploadField from '../components/RegistrationDocumentField';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,7 +20,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickImageFromSource } from '../services/imagePicker';
 import {
   ChevronDownIcon,
-  UploadIcon,
 } from '../components/icons/ServiceTypeIcons';
 import RegistrationHeader from '../components/RegistrationHeader';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -57,6 +57,12 @@ export interface VehicleDetails {
 }
 
 interface VehicleDetailsScreenProps {
+  initialVehicle?: {
+    vehicleMake?: string; vehicleModel?: string; vehicleTypeCode?: string;
+    fuelTypeCode?: string; vehicleColor?: string; vehicleYear?: string;
+    seatingCapacity?: number; plateNumber?: string; insuranceNumber?: string;
+    insuranceExpiry?: string | null;
+  };
   /** Driver's chosen service (instant | private | scheduled) — vehicle
    *  types are filtered to the admin-defined tier for it. */
   serviceType?: string;
@@ -157,46 +163,6 @@ interface PickerModalProps {
   onClose: () => void;
 }
 
-interface DocUploadFieldProps {
-  label: string;
-  prompt: string;
-  uploadedUrl: string | null;
-  uploading: boolean;
-  onPress: () => void;
-}
-
-function DocUploadField({
-  label,
-  prompt,
-  uploadedUrl,
-  uploading,
-  onPress,
-}: DocUploadFieldProps) {
-  const hasFile = uploadedUrl !== null;
-  return (
-    <View className="mb-4">
-      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
-      <Pressable
-        onPress={uploading ? undefined : onPress}
-        className={`h-28 items-center justify-center rounded-2xl border ${
-          hasFile ? 'border-brand-teal bg-brand-teal/5' : 'border-slate-300 bg-white'
-        }`}
-      >
-        {uploading ? (
-          <ActivityIndicator color="#0097B3" />
-        ) : (
-          <>
-            <UploadIcon size={28} color={hasFile ? '#0097B3' : '#99A1AF'} />
-            <Text className="mt-2 text-sm text-slate-700">
-              {hasFile ? 'Uploaded — tap to replace' : prompt}
-            </Text>
-          </>
-        )}
-      </Pressable>
-    </View>
-  );
-}
-
 function PickerModal({ visible, title, options, onSelect, onClose }: PickerModalProps) {
   const insets = useSafeAreaInsets();
   return (
@@ -239,29 +205,31 @@ export function VehicleDetailsScreen({
   currentStep = 4,
   totalSteps = 6,
   initialDocs,
+  initialVehicle,
 }: VehicleDetailsScreenProps) {
   const insets = useSafeAreaInsets();
   const initialRc = initialDocs?.find(d => d.type === 'vehicle');
   const initialInsurance = initialDocs?.find(d => d.type === 'insurance');
 
   const [details, setDetails] = useState<VehicleDetails>({
-    brand: '',
-    model: '',
+    brand: initialVehicle?.vehicleMake ?? '',
+    model: initialVehicle?.vehicleModel ?? '',
     vehicleType: '',
-    vehicleTypeCode: '',
+    vehicleTypeCode: initialVehicle?.vehicleTypeCode ?? '',
     fuelType: '',
-    fuelTypeCode: '',
-    color: '',
-    year: '',
-    seating: '',
-    registrationNo: '',
-    insuranceNo: '',
-    insuranceExpiry: '',
+    fuelTypeCode: initialVehicle?.fuelTypeCode ?? '',
+    color: initialVehicle?.vehicleColor ?? '',
+    year: initialVehicle?.vehicleYear ?? '',
+    seating: initialVehicle?.seatingCapacity ? String(initialVehicle.seatingCapacity) : '',
+    registrationNo: initialVehicle?.plateNumber ?? '',
+    insuranceNo: initialVehicle?.insuranceNumber ?? '',
+    insuranceExpiry: initialVehicle?.insuranceExpiry ? formatDate(new Date(initialVehicle.insuranceExpiry)) : '',
     vehicleRcUrl: initialRc?.url ?? null,
     insuranceUrl: initialInsurance?.url ?? null,
     vehiclePhotoUrl: initialDocs?.find(d => d.type === 'vehicle-photo')?.url ?? null,
     pucUrl: initialDocs?.find(d => d.type === 'puc')?.url ?? null,
   });
+  const [docStatus, setDocStatus] = useState<Record<string, string>>(Object.fromEntries((initialDocs ?? []).map(doc => [doc.type, doc.status])));
   const [uploading, setUploading] = useState<{ [k in DocumentType]?: boolean }>({});
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [fuelPickerOpen, setFuelPickerOpen] = useState(false);
@@ -272,6 +240,9 @@ export function VehicleDetailsScreen({
   const [vehicleTypes, setVehicleTypes] = useState<CatalogueType[]>([]);
   const [fuelTypes, setFuelTypes] = useState<CatalogueType[]>([]);
   const [catalogueError, setCatalogueError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [catalogueLoading, setCatalogueLoading] = useState(true);
+  const [catalogueAttempt, setCatalogueAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch admin-managed vehicle / fuel types when the screen mounts.
@@ -279,29 +250,38 @@ export function VehicleDetailsScreen({
   // type pickers until they've loaded.
   useEffect(() => {
     let cancelled = false;
+    setCatalogueLoading(true);
+    setCatalogueError(null);
+    setVehicleTypes([]);
+    setTypePickerOpen(false);
     Promise.all([listVehicleTypes(), listFuelTypes()])
       .then(([vts, fts]) => {
         if (cancelled) return;
         // Instant and Private each have their own admin-defined vehicle types
         // (VehicleType.tier). Showing every type let a driver register e.g. a
-        // Private-tier car under Instant. Types with no tier stay visible.
+        // Private-tier car under Instant. Legacy types belong to Instant.
         const tierFiltered =
           serviceType === 'instant' || serviceType === 'private'
-            ? vts.filter(t => !t.tier || t.tier === serviceType)
-            : vts;
-        setVehicleTypes(tierFiltered.length > 0 ? tierFiltered : vts);
+            ? vts.filter(t => t.isActive !== false && (t.tier ?? 'instant') === serviceType)
+            : vts.filter(t => t.isActive !== false);
+        setVehicleTypes(tierFiltered);
         setFuelTypes(fts);
+        setDetails(previous => ({ ...previous,
+          vehicleType: tierFiltered.find(type => type.code === previous.vehicleTypeCode)?.name ?? '',
+          vehicleTypeCode: tierFiltered.some(type => type.code === previous.vehicleTypeCode) ? previous.vehicleTypeCode : '',
+          fuelType: fts.find(type => type.code === previous.fuelTypeCode)?.name ?? previous.fuelType,
+        }));
       })
       .catch(err => {
         console.warn('[vehicle-details] catalogue fetch failed:', err);
         if (!cancelled) {
-          setCatalogueError('Could not load vehicle / fuel types. Pull to retry.');
+          setCatalogueError('Could not load vehicle / fuel types. Please retry.');
         }
-      });
+      }).finally(() => { if (!cancelled) setCatalogueLoading(false); });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [serviceType, catalogueAttempt]);
 
   const update = <K extends keyof VehicleDetails>(key: K, value: VehicleDetails[K]) =>
     setDetails(prev => ({ ...prev, [key]: value }));
@@ -309,11 +289,11 @@ export function VehicleDetailsScreen({
   const canProceed =
     details.brand.trim().length > 0 &&
     details.model.trim().length > 0 &&
-    details.vehicleTypeCode.length > 0 &&
+    !catalogueLoading && vehicleTypes.some(type => type.code === details.vehicleTypeCode) &&
     details.fuelTypeCode.length > 0 &&
     details.color.length > 0 &&
     details.year.length === 4 &&
-    details.seating.length > 0 &&
+    Number.isInteger(Number(details.seating)) && Number(details.seating) >= 1 && Number(details.seating) <= 100 &&
     details.registrationNo.trim().length > 0 &&
     details.insuranceNo.trim().length > 0 &&
     details.insuranceExpiry.trim().length > 0 &&
@@ -335,6 +315,7 @@ export function VehicleDetailsScreen({
         { uri: asset.uri, fileName: asset.fileName, type: asset.type },
         type,
       );
+      setDocStatus(previous => ({ ...previous, [type]: 'pending' }));
       if (type === 'vehicle') update('vehicleRcUrl', url);
       else if (type === 'vehicle-photo') update('vehiclePhotoUrl', url);
       else if (type === 'puc') update('pucUrl', url);
@@ -367,6 +348,7 @@ export function VehicleDetailsScreen({
 
   const handleNext = async () => {
     if (!canProceed) return;
+    setSaveError(null);
     setSubmitting(true);
     try {
       // Convert DD/MM/YYYY → ISO so the backend stores a real Date.
@@ -388,7 +370,7 @@ export function VehicleDetailsScreen({
       onNext(details);
     } catch (err: any) {
       console.warn('[vehicle-details] save failed:', err);
-      setCatalogueError(err?.message ?? 'Could not save. Try again.');
+      setSaveError(err?.message ?? 'Could not save. Try again.');
     } finally {
       setSubmitting(false);
     }
@@ -439,12 +421,14 @@ export function VehicleDetailsScreen({
 
           <Field label="Vehicle type">
             <SelectField
-              value={details.vehicleType}
+              value={catalogueLoading ? '' : vehicleTypes.find(type => type.code === details.vehicleTypeCode)?.name ?? ''}
               placeholder={
-                vehicleTypes.length === 0 ? 'Loading…' : 'e.g., 2 Wheeler'
+                catalogueLoading ? 'Loading…' : vehicleTypes.length === 0 ? 'No vehicle types available' : 'Select vehicle type'
               }
               onPress={() => vehicleTypes.length > 0 && setTypePickerOpen(true)}
             />
+            {!catalogueLoading && !catalogueError && vehicleTypes.length === 0 && <Text className="mt-2 text-sm text-amber-700">No vehicle types are configured for this service. Contact support.</Text>}
+            {catalogueError && <Pressable accessibilityRole="button" onPress={() => setCatalogueAttempt(attempt => attempt + 1)}><Text className="mt-2 text-sm text-red-600">{catalogueError} Tap to retry.</Text></Pressable>}
           </Field>
 
           <Field label="Fuel type">
@@ -489,13 +473,13 @@ export function VehicleDetailsScreen({
               />
             </View>
             <View className="flex-1">
-              <Text className="mb-2 text-sm font-poppins-medium text-slate-800">Seating</Text>
+              <Text className="mb-2 text-sm font-poppins-medium text-slate-800">Passenger seats (excludes driver)</Text>
               <TextField
                 value={details.seating}
                 placeholder="7"
-                onChangeText={v => update('seating', v.replace(/\D/g, '').slice(0, 2))}
+                onChangeText={v => update('seating', v.replace(/\D/g, '').slice(0, 3))}
                 keyboardType="number-pad"
-                maxLength={2}
+                maxLength={3}
               />
             </View>
           </View>
@@ -531,6 +515,7 @@ export function VehicleDetailsScreen({
             prompt="Click to upload RC certificate"
             uploadedUrl={details.vehicleRcUrl}
             uploading={!!uploading.vehicle}
+            status={docStatus['vehicle']}
             onPress={() => chooseUploadSource('vehicle')}
           />
 
@@ -539,6 +524,7 @@ export function VehicleDetailsScreen({
             prompt="Click to upload a photo of your vehicle (number plate visible)"
             uploadedUrl={details.vehiclePhotoUrl}
             uploading={!!uploading['vehicle-photo']}
+            status={docStatus['vehicle-photo']}
             onPress={() => chooseUploadSource('vehicle-photo')}
           />
 
@@ -547,6 +533,7 @@ export function VehicleDetailsScreen({
             prompt="Click to upload insurance"
             uploadedUrl={details.insuranceUrl}
             uploading={!!uploading.insurance}
+            status={docStatus['insurance']}
             onPress={() => chooseUploadSource('insurance')}
           />
 
@@ -555,11 +542,12 @@ export function VehicleDetailsScreen({
             prompt="Click to upload PUC certificate"
             uploadedUrl={details.pucUrl}
             uploading={!!uploading.puc}
+            status={docStatus['puc']}
             onPress={() => chooseUploadSource('puc')}
           />
 
-          {catalogueError && (
-            <Text className="font-poppins text-red-600" style={{ marginBottom: vs(8), fontSize: fs(12) }}>{catalogueError}</Text>
+          {saveError && (
+            <Text className="font-poppins text-red-600" style={{ marginBottom: vs(8), fontSize: fs(12) }}>{saveError}</Text>
           )}
 
           <PrimaryButton

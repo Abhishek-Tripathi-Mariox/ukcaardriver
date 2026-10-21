@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from './api';
+import { CACHE_KEYS, invalidate } from './apiCache';
 
 /**
  * Socket.IO client for the driver app. The backend Socket.IO server lives
@@ -15,6 +17,21 @@ const SOCKET_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
 const ACCESS_TOKEN_KEY = 'auth.accessToken';
 
 let socket: Socket | null = null;
+let connectionGeneration = 0;
+let presenceTimer: ReturnType<typeof setInterval> | null = null;
+let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+const statusSubscribers = new Set<(isOnline: boolean) => void>();
+
+export function subscribeDriverStatus(callback: (isOnline: boolean) => void): () => void {
+  statusSubscribers.add(callback);
+  return () => { statusSubscribers.delete(callback); };
+}
+
+function publishDriverStatus(isOnline: boolean): void {
+  invalidate(CACHE_KEYS.CURRENT_USER);
+  invalidate(CACHE_KEYS.DASHBOARD);
+  statusSubscribers.forEach(callback => callback(isOnline));
+}
 
 type RideRequestPayload = {
   rideId: string;
@@ -94,17 +111,18 @@ export function clearSocketListeners(): void {
  * after any explicit token refresh.
  */
 export async function connectSocket(): Promise<Socket | null> {
+  const generation = connectionGeneration;
   const token = await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
-  if (!token) return null;
+  if (!token || generation !== connectionGeneration) return null;
 
-  if (socket && socket.connected) return socket;
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+  // Reuse a connecting/reconnecting socket too; stage changes must not
+  // create duplicate connections or duplicate presence timers.
+  if (socket) return socket;
 
   const s = io(SOCKET_URL, {
-    auth: { token },
+    auth: callback => {
+      AsyncStorage.getItem(ACCESS_TOKEN_KEY).then(current => callback({ token: current ?? '' }));
+    },
     transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: Infinity,
@@ -112,13 +130,33 @@ export async function connectSocket(): Promise<Socket | null> {
     reconnectionDelayMax: 5000,
   });
 
+  const heartbeat = () => {
+    // Backgrounded/killed apps must not retain online status indefinitely.
+    // Do not buffer heartbeats while disconnected and replay stale contact.
+    if (!s.connected || AppState.currentState !== 'active') return;
+    s.emit('driver:heartbeat', (status: { isOnline: boolean }) => {
+      if (socket === s && typeof status?.isOnline === 'boolean') {
+        publishDriverStatus(status.isOnline);
+      }
+    });
+  };
+  presenceTimer = setInterval(heartbeat, 30_000);
+  appStateSubscription = AppState.addEventListener('change', state => {
+    if (state === 'active') heartbeat();
+  });
+
   s.on('connect', () => {
     console.log('[socket] connected');
+    heartbeat();
     // Replay queued joins so a connect-after-join doesn't lose membership,
     // and the same after a reconnect (server forgets rooms on disconnect).
     for (const rideId of joinedRideRooms) {
       s.emit('ride:join', rideId);
     }
+  });
+
+  s.on('driver:status', (status: { isOnline: boolean }) => {
+    if (typeof status?.isOnline === 'boolean') publishDriverStatus(status.isOnline);
   });
 
   s.on('disconnect', reason => {
@@ -178,10 +216,17 @@ export async function connectSocket(): Promise<Socket | null> {
 }
 
 export function disconnectSocket(): void {
+  connectionGeneration++;
+  if (presenceTimer !== null) clearInterval(presenceTimer);
+  presenceTimer = null;
+  appStateSubscription?.remove();
+  appStateSubscription = null;
   if (socket) {
     socket.disconnect();
     socket = null;
   }
+  joinedRideRooms.clear();
+  clearSocketListeners();
 }
 
 export function getSocket(): Socket | null {
@@ -219,7 +264,9 @@ export function emitDriverLocation(loc: {
   lng: number;
   heading?: number;
 }): void {
-  socket?.emit('driver:location', loc);
+  if (socket?.connected && AppState.currentState === 'active') {
+    socket.emit('driver:location', loc);
+  }
 }
 
 /** Send a chat message over the joined ride room. Backend echoes it back

@@ -50,6 +50,7 @@ interface ProfileScreenProps {
   onOpenOnePass?: () => void;
   onOpenIncentives?: () => void;
   onOpenRouteChange?: () => void;
+  onOpenAvailability?: () => void;
   /** Route change only applies to scheduled-shuttle drivers. */
   serviceType?: 'instant' | 'private' | 'scheduled';
 }
@@ -97,6 +98,7 @@ export function ProfileScreen({
   onOpenOnePass,
   onOpenIncentives,
   onOpenRouteChange,
+  onOpenAvailability,
   serviceType,
 }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
@@ -379,10 +381,11 @@ export function ProfileScreen({
           {(serviceType ?? dp?.serviceType) === 'scheduled' && (
             <MenuRow
               icon={<MapPinIcon size={20} color="#0097B3" />}
-              label="Apply for Route Change"
+              label="Manage route & departures"
               onPress={onOpenRouteChange}
             />
           )}
+          {(serviceType ?? dp?.serviceType) === 'scheduled' && <MenuRow icon={<ClockSmallIcon size={20} color="#0097B3" />} label="Availability" onPress={onOpenAvailability} />}
           <MenuRow
             icon={<ClockSmallIcon size={20} color="#0097B3" />}
             label="History"

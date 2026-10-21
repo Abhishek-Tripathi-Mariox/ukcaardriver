@@ -16,6 +16,7 @@ import {
 } from './icons/ServiceTypeIcons';
 import {
   fetchScheduledRoutes,
+  checkRouteSchedule,
   type ScheduledRouteApi,
 } from '../services/api';
 
@@ -27,15 +28,17 @@ export interface RouteSelection {
     routeName: string;
     fromName: string;
     toName: string;
-    /** 24h "HH:mm" — the hour the driver picked. The backend reuses an
-     *  existing admin departure at this time if one exists, otherwise it
-     *  appends a new slot. */
+    /** Exact admin-published HH:mm departure time. */
     departureTime: string;
+    departureIndex?: number;
   };
   returnMode: ReturnMode;
   /** Set when returnMode === 'same' — return departure time on the same
    *  route. */
   sameReturnDepartureTime?: string;
+  sameReturnDepartureIndex?: number;
+  sameReturnFromName?: string;
+  sameReturnToName?: string;
   /** Set when returnMode === 'different' — driver picked a separate route
    * for the return leg. */
   returnRoute?: {
@@ -55,317 +58,116 @@ interface RoutePickerModalProps {
   initial?: RouteSelection | null;
 }
 
-// Format an integer hour (0–23) as "9 AM" / "12 PM" style label.
-const fmtHourLabel = (hour: number): string => {
+// Format a published time without losing its minutes.
+const fmtDepartureLabel = (time: string): string => {
+  const [hour, minute] = time.split(':').map(Number);
   const period = hour >= 12 ? 'PM' : 'AM';
   const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${h12} ${period}`;
+  return `${h12}:${String(minute).padStart(2, '0')} ${period}`;
 };
 
-// Parse the leading hour out of an "HH:mm" departure time string.
-const hourOf = (hhmm: string): number => {
-  const [h] = hhmm.split(':').map(Number);
-  return Number.isNaN(h) ? -1 : h;
-};
+// Validate saved departure labels before hydrating the picker.
+const publishedTime = (hhmm: string): string | null => /^([01]\d|2[0-3]):[0-5]\d$/.test(hhmm) ? hhmm : null;
 
 type Step = 'pick-primary' | 'pick-return';
 
-export function RoutePickerModal({
-  visible,
-  onClose,
-  onSave,
-  initial,
-}: RoutePickerModalProps) {
+export function RoutePickerModal({ visible, onClose, onSave, initial }: RoutePickerModalProps) {
   const insets = useSafeAreaInsets();
   const [routes, setRoutes] = useState<ScheduledRouteApi[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [primaryRoute, setPrimaryRoute] = useState<ScheduledRouteApi | null>(null);
+  const [primaryIndex, setPrimaryIndex] = useState(-1);
+  const [returnMode, setReturnMode] = useState<'none' | 'same'>('none');
+  const [returnIndex, setReturnIndex] = useState(-1);
   const [fromQuery, setFromQuery] = useState('');
   const [toQuery, setToQuery] = useState('');
-  const [step, setStep] = useState<Step>('pick-primary');
-  // Page through the filtered route list 10 at a time so we don't render
-  // dozens of cards eagerly. Resets whenever the filter inputs change.
-  const PAGE_SIZE = 10;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  // Primary leg selection — `Hour` values are 0..23 (free-form, NOT
-  // constrained to admin-defined slots). The backend creates a new slot
-  // for any hour not already in the route's schedule.
-  const [primaryRoute, setPrimaryRoute] = useState<ScheduledRouteApi | null>(null);
-  const [primaryDepartureHour, setPrimaryDepartureHour] = useState<number | null>(null);
-  const [returnMode, setReturnMode] = useState<ReturnMode>('none');
-  const [sameReturnDepartureHour, setSameReturnDepartureHour] = useState<number | null>(null);
-
-  // Different return route selection
-  const [returnRoute, setReturnRoute] = useState<ScheduledRouteApi | null>(null);
-  const [returnDepartureHour, setReturnDepartureHour] = useState<number | null>(null);
-
-  // Reset pagination whenever filters change OR the user switches between
-  // primary and return-route picking screens.
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [fromQuery, toQuery, step]);
-
-  // Reset state whenever the modal opens. If there's a prior selection we
-  // re-hydrate from it; otherwise everything starts blank.
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [checking, setChecking] = useState(false);
+  const [allowed, setAllowed] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const [checkAttempt, setCheckAttempt] = useState(0);
   useEffect(() => {
     if (!visible) return;
-    if (initial) {
-      // Hydrate primary leg. We need the full route object — wait until
-      // routes are fetched (handled in the next effect) and match by id.
-      setReturnMode(initial.returnMode);
-      setSameReturnDepartureHour(
-        initial.sameReturnDepartureTime
-          ? hourOf(initial.sameReturnDepartureTime)
-          : null,
-      );
-    } else {
-      setPrimaryRoute(null);
-      setPrimaryDepartureHour(null);
-      setReturnMode('none');
-      setSameReturnDepartureHour(null);
-      setReturnRoute(null);
-      setReturnDepartureHour(null);
-    }
-    setStep('pick-primary');
-    setFromQuery('');
-    setToQuery('');
-  }, [visible, initial]);
-
-  // Fetch routes once when the modal first opens.
-  useEffect(() => {
-    if (!visible || routes !== null) return;
     let cancelled = false;
-    fetchScheduledRoutes()
-      .then(rs => {
-        if (cancelled) return;
-        setRoutes(rs);
-      })
-      .catch(err => {
-        if (cancelled) return;
-        console.warn('[RoutePickerModal] fetch failed:', err);
-        setLoadError(err?.message ?? 'Could not load routes');
-      });
-    return () => {
-      cancelled = true;
+    setLoadError(null); setRoutes(null); setPrimaryRoute(null); setPrimaryIndex(-1);
+    setReturnMode('none'); setReturnIndex(-1); setFromQuery(''); setToQuery('');
+    fetchScheduledRoutes().then(result => {
+      if (cancelled) return;
+      setRoutes(result);
+      const saved = result.find(route => route._id === initial?.primary.routeId);
+      if (saved && initial) {
+        const restore = (index: number | undefined, time: string | undefined, returning: boolean) => {
+          const slots = saved.schedule?.departures ?? [];
+          if (index !== undefined && slots[index]?.time === time && (slots[index].direction === 'return') === returning) return index;
+          const matches = slots.map((slot, i) => slot.time === time && (slot.direction === 'return') === returning ? i : -1).filter(i => i >= 0);
+          return matches.length === 1 ? matches[0] : -1;
+        };
+        setPrimaryRoute(saved); setPrimaryIndex(restore(initial.primary.departureIndex, initial.primary.departureTime, false));
+        if (initial.returnMode === 'same') { setReturnMode('same'); setReturnIndex(restore(initial.sameReturnDepartureIndex, initial.sameReturnDepartureTime, true)); }
+      }
+    }).catch(error => { if (!cancelled) setLoadError(error?.message ?? 'Could not load routes.'); });
+    return () => { cancelled = true; };
+  }, [visible, initial]);
+  useEffect(() => setVisibleCount(10), [fromQuery, toQuery]);
+  const filtered = useMemo(() => (routes ?? []).filter(route => {
+    const matches = (query: string) => {
+      const value = query.trim().toLowerCase();
+      return !value || route.name.toLowerCase().includes(value) || route.stops.some(stop => /^\d+$/.test(value)
+        ? stop.pincode?.startsWith(value) : stop.name.toLowerCase().includes(value));
     };
-  }, [visible, routes]);
-
-  // Once routes are loaded, hydrate the saved selection's route objects.
+    return matches(fromQuery) && matches(toQuery);
+  }), [routes, fromQuery, toQuery]);
+  const primaryTime = primaryRoute?.schedule?.departures[primaryIndex]?.time;
+  const returnTime = primaryRoute?.schedule?.departures[returnIndex]?.time;
+  const complete = !!primaryRoute && primaryIndex >= 0 && (returnMode === 'none' || returnIndex >= 0);
   useEffect(() => {
-    if (!routes || !initial) return;
-    const pri = routes.find(r => r._id === initial.primary.routeId) ?? null;
-    setPrimaryRoute(pri);
-    setPrimaryDepartureHour(
-      pri && initial.primary.departureTime
-        ? hourOf(initial.primary.departureTime)
-        : null,
-    );
-    if (initial.returnMode === 'different' && initial.returnRoute) {
-      const ret = routes.find(r => r._id === initial.returnRoute!.routeId) ?? null;
-      setReturnRoute(ret);
-      setReturnDepartureHour(
-        ret && initial.returnRoute.departureTime
-          ? hourOf(initial.returnRoute.departureTime)
-          : null,
-      );
-    }
-  }, [routes, initial]);
-
-  const filtered = useMemo(() => {
-    if (!routes) return [];
-    const f = fromQuery.trim().toLowerCase();
-    const t = toQuery.trim().toLowerCase();
-    if (!f && !t) return routes;
-    // A query is treated as a pincode lookup if it's all digits. A digit
-    // query in "From" matches the start stop's pincode OR ANY stop along
-    // the route (so drivers can find a route by an intermediate PIN too).
-    // "To" digit query matches the end stop or any stop. Non-digit queries
-    // continue to substring-match against stop name / route name.
-    const isDigits = (s: string) => /^\d+$/.test(s);
-    return routes.filter(r => {
-      const stops = r.stops ?? [];
-      const first = stops[0];
-      const last = stops[stops.length - 1];
-      const routeName = r.name.toLowerCase();
-      const fromOk = !f
-        ? true
-        : isDigits(f)
-          ? (first?.pincode?.startsWith(f) ?? false) ||
-            stops.some(s => s.pincode?.startsWith(f))
-          : (first?.name?.toLowerCase().includes(f) ?? false) ||
-            routeName.includes(f);
-      const toOk = !t
-        ? true
-        : isDigits(t)
-          ? (last?.pincode?.startsWith(t) ?? false) ||
-            stops.some(s => s.pincode?.startsWith(t))
-          : (last?.name?.toLowerCase().includes(t) ?? false) ||
-            routeName.includes(t);
-      return fromOk && toOk;
-    });
-  }, [routes, fromQuery, toQuery]);
-
-  const hourToHHMM = (h: number) => `${String(h).padStart(2, '0')}:00`;
-
-  const handleSave = () => {
-    if (!primaryRoute || primaryDepartureHour === null) return;
-    if (returnMode === 'same' && sameReturnDepartureHour === null) return;
-    if (
-      returnMode === 'different' &&
-      (!returnRoute || returnDepartureHour === null)
-    ) {
-      return;
-    }
-    const primaryFirst = primaryRoute.stops[0];
-    const primaryLast = primaryRoute.stops[primaryRoute.stops.length - 1];
-
-    const selection: RouteSelection = {
-      primary: {
-        routeId: primaryRoute._id,
-        routeName: primaryRoute.name,
-        fromName: primaryFirst?.name ?? '',
-        toName: primaryLast?.name ?? '',
-        departureTime: hourToHHMM(primaryDepartureHour),
-      },
-      returnMode,
-    };
-    if (returnMode === 'same' && sameReturnDepartureHour !== null) {
-      selection.sameReturnDepartureTime = hourToHHMM(sameReturnDepartureHour);
-    }
-    if (
-      returnMode === 'different' &&
-      returnRoute &&
-      returnDepartureHour !== null
-    ) {
-      const rFirst = returnRoute.stops[0];
-      const rLast = returnRoute.stops[returnRoute.stops.length - 1];
-      selection.returnRoute = {
-        routeId: returnRoute._id,
-        routeName: returnRoute.name,
-        fromName: rFirst?.name ?? '',
-        toName: rLast?.name ?? '',
-        departureTime: hourToHHMM(returnDepartureHour),
-      };
-    }
-    onSave(selection);
+    setAllowed(false); setCheckError(null);
+    if (!visible || !complete || !primaryRoute) return;
+    let cancelled = false;
+    setChecking(true);
+    checkRouteSchedule(primaryRoute._id, { departureIndex: primaryIndex, roundTrip: returnMode === 'same',
+      ...(returnMode === 'same' ? { returnDepartureIndex: returnIndex } : {}) })
+      .then(() => { if (!cancelled) setAllowed(true); })
+      .catch(error => { if (!cancelled) setCheckError(error?.message ?? 'Could not check these departures.'); })
+      .finally(() => { if (!cancelled) setChecking(false); });
+    return () => { cancelled = true; };
+  }, [visible, complete, primaryRoute, primaryIndex, returnIndex, returnMode, checkAttempt]);
+  const save = () => {
+    if (!complete || !allowed || checking || !primaryRoute || !primaryTime) return;
+    onSave({ primary: { routeId: primaryRoute._id, routeName: primaryRoute.name,
+      fromName: primaryRoute.stops[primaryRoute.schedule!.departures[primaryIndex].stopIndex]?.name ?? '', toName: primaryRoute.stops[primaryRoute.stops.length - 1]?.name ?? '',
+      departureTime: primaryTime, departureIndex: primaryIndex }, returnMode,
+      ...(returnMode === 'same' ? { sameReturnDepartureTime: returnTime!, sameReturnDepartureIndex: returnIndex,
+        sameReturnFromName: primaryRoute.stops[primaryRoute.schedule!.departures[returnIndex].stopIndex]?.name ?? '', sameReturnToName: primaryRoute.stops[0]?.name ?? '' } : {}) });
   };
-
-  const canSave =
-    !!primaryRoute &&
-    primaryDepartureHour !== null &&
-    (returnMode === 'none' ||
-      (returnMode === 'same' && sameReturnDepartureHour !== null) ||
-      (returnMode === 'different' &&
-        !!returnRoute &&
-        returnDepartureHour !== null));
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      transparent={false}
-    >
-      <View className="flex-1 bg-white">
-        <SafeAreaView edges={['top']} className="bg-[#0097B3]">
-          <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
-            <Pressable onPress={onClose} hitSlop={10}>
-              <BackArrowIcon size={22} color="white" />
-            </Pressable>
-            <Text className="flex-1 text-[18px] font-poppins-semibold text-white">
-              {step === 'pick-return' ? 'Pick return route' : 'Pick your route'}
-            </Text>
-          </View>
-        </SafeAreaView>
-
-        {step === 'pick-primary' && !primaryRoute && (
-          <RouteSearchList
-            routes={filtered}
-            allRoutes={routes}
-            loadError={loadError}
-            fromQuery={fromQuery}
-            toQuery={toQuery}
-            onFromChange={setFromQuery}
-            onToChange={setToQuery}
-            visibleCount={visibleCount}
-            onLoadMore={() => setVisibleCount(c => c + PAGE_SIZE)}
-            onPick={r => {
-              setPrimaryRoute(r);
-              setPrimaryDepartureHour(null);
-            }}
-          />
-        )}
-
-        {step === 'pick-primary' && primaryRoute && (
-          <RouteDetailPane
-            route={primaryRoute}
-            selectedHour={primaryDepartureHour}
-            onSelectHour={setPrimaryDepartureHour}
-            onBackToList={() => {
-              setPrimaryRoute(null);
-              setPrimaryDepartureHour(null);
-            }}
-            footer={
-              <ReturnTripSection
-                route={primaryRoute}
-                returnMode={returnMode}
-                onChangeMode={setReturnMode}
-                sameReturnHour={sameReturnDepartureHour}
-                onChangeSameReturnHour={setSameReturnDepartureHour}
-                returnRoute={returnRoute}
-                onPickDifferentReturn={() => setStep('pick-return')}
-                onClearDifferentReturn={() => {
-                  setReturnRoute(null);
-                  setReturnDepartureHour(null);
-                }}
-                returnHour={returnDepartureHour}
-                onChangeReturnHour={setReturnDepartureHour}
-              />
-            }
-          />
-        )}
-
-        {step === 'pick-return' && !returnRoute && (
-          <RouteSearchList
-            routes={filtered}
-            allRoutes={routes}
-            loadError={loadError}
-            fromQuery={fromQuery}
-            toQuery={toQuery}
-            onFromChange={setFromQuery}
-            onToChange={setToQuery}
-            visibleCount={visibleCount}
-            onLoadMore={() => setVisibleCount(c => c + PAGE_SIZE)}
-            onPick={r => {
-              setReturnRoute(r);
-              setReturnDepartureHour(null);
-              setStep('pick-primary');
-            }}
-            hint="Pick the route you'll drive on the way back."
-          />
-        )}
-
-        {/* Save bar (only on pick-primary). */}
-        {step === 'pick-primary' && (
-          <View
-            className="border-t border-[#EBEBEB] bg-white px-4 pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}
-          >
-            <Pressable
-              disabled={!canSave}
-              onPress={handleSave}
-              className="h-12 items-center justify-center rounded-2xl"
-              style={{ backgroundColor: canSave ? '#0097B3' : '#9DD7E0' }}
-            >
-              <Text className="text-base font-poppins-medium text-white">Save selection</Text>
-            </Pressable>
-          </View>
-        )}
+  return <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent={false}>
+    <View className="flex-1 bg-white">
+      <SafeAreaView edges={['top']} className="bg-[#0097B3]">
+        <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
+          <Pressable onPress={onClose} hitSlop={10}><BackArrowIcon size={22} color="white" /></Pressable>
+          <Text className="flex-1 text-[18px] font-poppins-semibold text-white">Pick your route & departures</Text>
+        </View>
+      </SafeAreaView>
+      {!primaryRoute ? <RouteSearchList routes={filtered} allRoutes={routes} loadError={loadError} fromQuery={fromQuery} toQuery={toQuery}
+        onFromChange={setFromQuery} onToChange={setToQuery} visibleCount={visibleCount} onLoadMore={() => setVisibleCount(value => value + 10)}
+        onPick={route => { setPrimaryRoute(route); setPrimaryIndex(-1); setReturnMode('none'); setReturnIndex(-1); }} />
+        : <RouteDetailPane route={primaryRoute} selectedIndex={primaryIndex} onSelectIndex={setPrimaryIndex}
+          onBackToList={() => { setPrimaryRoute(null); setPrimaryIndex(-1); }} footer={<>
+            <Text className="text-xs text-[#6A7282]">Minimum one-way journey: {primaryRoute.schedule?.minimumJourneyMinutes ?? 'admin setup required'} minutes. Turnaround gap: {primaryRoute.schedule?.turnaroundMinutes ?? 0} minutes.</Text>
+            <ReturnTripSection route={primaryRoute} returnMode={returnMode} onChangeMode={mode => setReturnMode(mode === 'same' ? 'same' : 'none')}
+              sameReturnIndex={returnIndex} onChangeSameReturnIndex={setReturnIndex} />
+          </>} />}
+      <View className="border-t border-[#EBEBEB] bg-white px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 12) + 12 }}>
+        {checking && complete && <Text className="mb-2 text-sm text-[#00647A]">Checking your timetable…</Text>}
+        {checkError && <Pressable onPress={() => setCheckAttempt(value => value + 1)}><Text accessibilityRole="alert" className="mb-2 text-sm text-red-600">{checkError} Tap to check again.</Text></Pressable>}
+        <Pressable disabled={!complete || !allowed || checking} onPress={save} className="h-12 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: complete && allowed && !checking ? '#0097B3' : '#9DD7E0' }}>
+          <Text className="text-base font-poppins-medium text-white">Save selection</Text>
+        </Pressable>
       </View>
-    </Modal>
-  );
+    </View>
+  </Modal>;
 }
-
 // ────────────────── Sub-components ──────────────────
 
 function RouteSearchList({
@@ -513,26 +315,25 @@ function RouteSearchList({
 const PAGE_SIZE_HINT = 10;
 
 /**
- * 24-hour chip grid. Every hour is selectable — the driver picks any time
- * that suits them, regardless of what the admin pre-scheduled. The chosen
- * hour is sent to the backend as `departureTime: "HH:00"`; the backend
- * either reuses a matching admin slot or appends a new one.
+ * Only admin-published departure times can be selected.
  */
-function HourlyDepartureGrid({
-  selectedHour,
-  onSelectHour,
+function DepartureGrid({
+  departures,
+  selectedIndex,
+  onSelectIndex,
 }: {
-  selectedHour: number | null;
-  onSelectHour: (h: number) => void;
+  departures: { index: number; time: string; origin?: string }[];
+  selectedIndex: number;
+  onSelectIndex: (index: number) => void;
 }) {
   return (
     <View className="mt-2 flex-row flex-wrap gap-2">
-      {Array.from({ length: 24 }, (_, hour) => {
-        const isSelected = selectedHour === hour;
+      {[...departures].sort((a, b) => a.time.localeCompare(b.time)).map(({ index, time, origin }) => {
+        const isSelected = selectedIndex === index;
         return (
           <Pressable
-            key={hour}
-            onPress={() => onSelectHour(hour)}
+            key={index}
+            onPress={() => onSelectIndex(index)}
             className="rounded-xl border-2 px-3 py-2"
             style={{
               borderColor: isSelected ? '#0097B3' : '#D3DDE7',
@@ -543,25 +344,27 @@ function HourlyDepartureGrid({
               className="text-sm font-poppins-bold"
               style={{ color: isSelected ? '#0097B3' : '#1E293B' }}
             >
-              {fmtHourLabel(hour)}
+              {fmtDepartureLabel(time)}
             </Text>
+            <Text className="text-xs text-[#6A7282]">From {origin}</Text>
           </Pressable>
         );
       })}
+      {departures.length === 0 && <Text className="text-sm text-[#6A7282]">No departure times published. Contact support.</Text>}
     </View>
   );
 }
 
 function RouteDetailPane({
   route,
-  selectedHour,
-  onSelectHour,
+  selectedIndex,
+  onSelectIndex,
   onBackToList,
   footer,
 }: {
   route: ScheduledRouteApi;
-  selectedHour: number | null;
-  onSelectHour: (h: number) => void;
+  selectedIndex: number;
+  onSelectIndex: (index: number) => void;
   onBackToList: () => void;
   footer: React.ReactNode;
 }) {
@@ -599,9 +402,10 @@ function RouteDetailPane({
         <Text className="text-sm font-poppins-bold text-[#1E293B]">
           Pick a departure time
         </Text>
-        <HourlyDepartureGrid
-          selectedHour={selectedHour}
-          onSelectHour={onSelectHour}
+        <DepartureGrid
+          departures={(route.schedule?.departures ?? []).map((slot, index) => ({ ...slot, index, origin: route.stops[slot.stopIndex]?.name })).filter(slot => slot.direction !== 'return')}
+          selectedIndex={selectedIndex}
+          onSelectIndex={onSelectIndex}
         />
       </View>
 
@@ -610,157 +414,25 @@ function RouteDetailPane({
   );
 }
 
-function ReturnTripSection({
-  route,
-  returnMode,
-  onChangeMode,
-  sameReturnHour,
-  onChangeSameReturnHour,
-  returnRoute,
-  onPickDifferentReturn,
-  onClearDifferentReturn,
-  returnHour,
-  onChangeReturnHour,
-}: {
-  route: ScheduledRouteApi;
-  returnMode: ReturnMode;
-  onChangeMode: (m: ReturnMode) => void;
-  sameReturnHour: number | null;
-  onChangeSameReturnHour: (h: number) => void;
-  returnRoute: ScheduledRouteApi | null;
-  onPickDifferentReturn: () => void;
-  onClearDifferentReturn: () => void;
-  returnHour: number | null;
-  onChangeReturnHour: (h: number) => void;
+function ReturnTripSection({ route, returnMode, onChangeMode, sameReturnIndex, onChangeSameReturnIndex }: {
+  route: ScheduledRouteApi; returnMode: ReturnMode; onChangeMode: (mode: ReturnMode) => void;
+  sameReturnIndex: number; onChangeSameReturnIndex: (index: number) => void;
 }) {
-  return (
-    <View className="gap-3">
-      <View className="rounded-2xl border border-[#EBEBEB] bg-white p-4">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="text-sm font-poppins-semibold text-[#1E293B]">
-              I'll do a return trip
-            </Text>
-            <Text className="mt-1 text-xs text-[#6A7282]">
-              Toggle on if you'll also drive a return leg.
-            </Text>
-          </View>
-          <Switch
-            value={returnMode !== 'none'}
-            onValueChange={v => onChangeMode(v ? 'same' : 'none')}
-            trackColor={{ false: '#CBCED4', true: '#0097B3' }}
-          />
-        </View>
-
-        {returnMode !== 'none' && (
-          <View className="mt-4 gap-2">
-            <Pressable
-              onPress={() => onChangeMode('same')}
-              className="flex-row items-center gap-3 rounded-xl border p-3"
-              style={{
-                borderColor: returnMode === 'same' ? '#0097B3' : '#D3DDE7',
-                backgroundColor:
-                  returnMode === 'same' ? 'rgba(0,151,179,0.05)' : 'white',
-              }}
-            >
-              <Radio selected={returnMode === 'same'} />
-              <View className="flex-1">
-                <Text className="text-sm font-poppins-medium text-[#1E293B]">
-                  Same route, reversed
-                </Text>
-                <Text className="mt-0.5 text-xs text-[#6A7282]">
-                  {route.stops[route.stops.length - 1]?.name} →{' '}
-                  {route.stops[0]?.name}
-                </Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={() => onChangeMode('different')}
-              className="flex-row items-center gap-3 rounded-xl border p-3"
-              style={{
-                borderColor: returnMode === 'different' ? '#0097B3' : '#D3DDE7',
-                backgroundColor:
-                  returnMode === 'different' ? 'rgba(0,151,179,0.05)' : 'white',
-              }}
-            >
-              <Radio selected={returnMode === 'different'} />
-              <View className="flex-1">
-                <Text className="text-sm font-poppins-medium text-[#1E293B]">
-                  Different return route
-                </Text>
-                <Text className="mt-0.5 text-xs text-[#6A7282]">
-                  Pick a separate route for the return leg.
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        )}
+  return <View className="gap-3">
+    <View className="rounded-2xl border border-[#EBEBEB] p-4">
+      <View className="flex-row items-center justify-between">
+        <Text className="flex-1 text-sm font-poppins-medium text-[#1E293B]">Add a return departure on this route</Text>
+        <Switch value={returnMode === 'same'} onValueChange={value => onChangeMode(value ? 'same' : 'none')} />
       </View>
-
-      {returnMode === 'same' && (
-        <View className="rounded-2xl border border-[#EBEBEB] bg-white p-4">
-          <Text className="text-sm font-poppins-bold text-[#1E293B]">
-            Return departure time
-          </Text>
-          <Text className="mt-1 text-xs text-[#6A7282]">
-            Pick the time you'll start the return leg.
-          </Text>
-          <HourlyDepartureGrid
-            selectedHour={sameReturnHour}
-            onSelectHour={onChangeSameReturnHour}
-          />
-        </View>
-      )}
-
-      {returnMode === 'different' && (
-        <View className="rounded-2xl border border-[#EBEBEB] bg-white p-4">
-          <Text className="text-sm font-poppins-bold text-[#1E293B]">
-            Return route
-          </Text>
-          {!returnRoute ? (
-            <Pressable
-              onPress={onPickDifferentReturn}
-              className="mt-3 h-12 flex-row items-center justify-between rounded-xl border border-[#D3DDE7] px-3"
-            >
-              <Text className="text-sm text-[#717182]">
-                Search for a return route
-              </Text>
-              <ChevronDownIcon size={14} />
-            </Pressable>
-          ) : (
-            <View className="mt-3 gap-2">
-              <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-1">
-                  <Text className="text-sm font-poppins-semibold text-[#1E293B]">
-                    {returnRoute.name}
-                  </Text>
-                  <Text className="mt-0.5 text-xs text-[#6A7282]">
-                    {returnRoute.stops[0]?.name} →{' '}
-                    {returnRoute.stops[returnRoute.stops.length - 1]?.name}
-                  </Text>
-                </View>
-                <Pressable onPress={onClearDifferentReturn}>
-                  <Text className="text-xs font-poppins-medium text-[#0097B3]">
-                    Change
-                  </Text>
-                </Pressable>
-              </View>
-              <Text className="mt-2 text-xs font-poppins-medium text-[#1E293B]">
-                Pick a return departure time
-              </Text>
-              <HourlyDepartureGrid
-                selectedHour={returnHour}
-                onSelectHour={onChangeReturnHour}
-              />
-            </View>
-          )}
-        </View>
-      )}
+      <Text className="mt-2 text-xs text-[#6A7282]">Only one route is allowed. Return trips use this route’s published return departures.</Text>
     </View>
-  );
+    {returnMode === 'same' && <View className="rounded-2xl border border-[#EBEBEB] p-4">
+      <Text className="text-sm font-poppins-medium text-[#1E293B]">Return departure time</Text>
+      <DepartureGrid departures={(route.schedule?.departures ?? []).map((slot, index) => ({ ...slot, index, origin: route.stops[slot.stopIndex]?.name })).filter(slot => slot.direction === 'return')}
+        selectedIndex={sameReturnIndex} onSelectIndex={onChangeSameReturnIndex} />
+    </View>}
+  </View>;
 }
-
 function Radio({ selected }: { selected: boolean }) {
   return (
     <View

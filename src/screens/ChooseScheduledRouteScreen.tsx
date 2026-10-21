@@ -5,7 +5,6 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -17,6 +16,7 @@ import {
   fetchMyRouteRegistration,
   fetchScheduledRoutes,
   registerForRoute,
+  checkRouteSchedule,
   type MyRouteRegistration,
   updateRegistrationStep,
   type ScheduledRouteApi,
@@ -32,6 +32,7 @@ interface ChooseScheduledRouteScreenProps {
 }
 
 const fmtTime = (hhmm: string): string => {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(hhmm)) return 'Needs departure selection';
   // Convert 24h HH:mm to 12h with am/pm for display.
   const [h, m] = hhmm.split(':').map(Number);
   if (Number.isNaN(h)) return hhmm;
@@ -70,11 +71,16 @@ export function ChooseScheduledRouteScreen({
   const [myReg, setMyReg] = useState<{
     current: MyRouteRegistration | null;
     pendingRequest: MyRouteRegistration | null;
+    currentAssignments?: MyRouteRegistration[];
+    pendingRequests?: MyRouteRegistration[];
   } | null>(null);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<ScheduledRouteApi | null>(null);
   const [selectedDepartureIdx, setSelectedDepartureIdx] = useState<number | null>(null);
-  const [roundTrip, setRoundTrip] = useState(false);
+  const [scheduleChecking, setScheduleChecking] = useState(false);
+  const [scheduleAllowed, setScheduleAllowed] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleAttempt, setScheduleAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -104,16 +110,29 @@ export function ChooseScheduledRouteScreen({
     // Default to the first departure so the submit button is enabled
     // immediately if there's only one slot.
     setSelectedDepartureIdx(r.schedule?.departures?.length ? 0 : null);
-    setRoundTrip(false);
   };
 
+  const replacesRoute = !!isChangeRequest && !!myReg?.current && myReg.current.route._id !== selectedRoute?._id &&
+    !(myReg.currentAssignments ?? []).some(reg => reg.route._id === selectedRoute?._id);
+  useEffect(() => {
+    setScheduleAllowed(false); setScheduleError(null);
+    if (!selectedRoute || selectedDepartureIdx === null) return;
+    let cancelled = false;
+    setScheduleChecking(true);
+    checkRouteSchedule(selectedRoute._id, { departureIndex: selectedDepartureIdx, replaceRoute: replacesRoute })
+      .then(() => { if (!cancelled) setScheduleAllowed(true); })
+      .catch(error => { if (!cancelled) setScheduleError(error?.message ?? 'Could not check this departure. Please retry.'); })
+      .finally(() => { if (!cancelled) setScheduleChecking(false); });
+    return () => { cancelled = true; };
+  }, [selectedRoute, selectedDepartureIdx, replacesRoute, scheduleAttempt]);
+
   const handleSubmit = async () => {
-    if (!selectedRoute || selectedDepartureIdx === null || submitting) return;
+    if (!selectedRoute || selectedDepartureIdx === null || submitting || !scheduleAllowed) return;
     setSubmitting(true);
     try {
       await registerForRoute(selectedRoute._id, {
         departureIndex: selectedDepartureIdx,
-        roundTrip,
+        replaceRoute: replacesRoute,
       });
       if (!isChangeRequest) {
         // Advance the backend registrationStep so a re-login resumes at
@@ -127,9 +146,9 @@ export function ChooseScheduledRouteScreen({
         }
       }
       Alert.alert(
-        isChangeRequest ? 'Route Change Requested' : 'Registration submitted',
+        replacesRoute ? 'Route change requested' : 'Departure requested',
         isChangeRequest
-          ? 'Your request to change your assigned route has been submitted. An admin can approve your new route from the admin portal.'
+          ? replacesRoute ? 'Your current route stays in place until approval and the new route’s first service date.' : 'This departure is awaiting approval. Your other approved departures stay in place.'
           : 'Your route registration is pending admin approval. You can continue with the rest of your profile while we review it.',
         [{ text: 'Continue', onPress: () => onRegistered() }],
       );
@@ -164,7 +183,7 @@ export function ChooseScheduledRouteScreen({
               {selectedRoute
                 ? selectedRoute.name
                 : isChangeRequest
-                ? 'Apply for Route Change'
+                ? 'Manage route & departures'
                 : 'Choose your route'}
             </Text>
           </View>
@@ -176,8 +195,10 @@ export function ChooseScheduledRouteScreen({
           route={selectedRoute}
           selectedDepartureIdx={selectedDepartureIdx}
           onSelectDeparture={setSelectedDepartureIdx}
-          roundTrip={roundTrip}
-          onRoundTripChange={setRoundTrip}
+          scheduleAllowed={scheduleAllowed}
+          scheduleChecking={scheduleChecking}
+          scheduleError={scheduleError}
+          onRetrySchedule={() => setScheduleAttempt(attempt => attempt + 1)}
           onSubmit={handleSubmit}
           submitting={submitting}
         />
@@ -207,6 +228,8 @@ function RouteList({
   myReg: {
     current: MyRouteRegistration | null;
     pendingRequest: MyRouteRegistration | null;
+    currentAssignments?: MyRouteRegistration[];
+    pendingRequests?: MyRouteRegistration[];
   } | null;
 }) {
   const insets = useSafeAreaInsets();
@@ -258,7 +281,10 @@ function RouteList({
               : ''}
           </Text>
           <Text className="mt-1 text-xs text-[#00647A]">
-            You keep driving this route until an admin approves your change.
+            Approved departures: {(myReg.currentAssignments ?? [myReg.current]).filter(reg => reg.route._id === myReg.current!.route._id).map(reg => fmtTime(reg.route.schedule?.departures?.[reg.departureIndex ?? -1]?.time ?? '')).join(', ')}
+          </Text>
+          <Text className="mt-1 text-xs text-[#00647A]">
+            Add departures on this route, or request a change. Only one route is active at a time.
           </Text>
         </View>
       )}
@@ -271,10 +297,17 @@ function RouteList({
             {myReg.pendingRequest.route.name}
           </Text>
           <Text className="mt-1 text-xs text-[#92400E]">
-            Applying again replaces this request.
+            Pending departures: {(myReg.pendingRequests ?? [myReg.pendingRequest]).map(reg => fmtTime(reg.route.schedule?.departures?.[reg.departureIndex ?? -1]?.time ?? '')).join(', ')}
+          </Text>
+          <Text className="mt-1 text-xs text-[#92400E]">
+            Each requested departure is reviewed separately. Approved trips stay in place.
           </Text>
         </View>
       )}
+      {(myReg?.currentAssignments ?? []).filter(reg => reg.route._id !== myReg?.current?.route._id).map(reg => <View key={`${reg.route._id}_${reg.departureIndex}`} className="rounded-2xl bg-[#E0F7FA] px-4 py-3">
+        <Text className="text-xs text-[#00647A]">Approved route change · begins {reg.firstServiceDate}</Text>
+        <Text className="mt-1 font-poppins-medium text-[#0097B3]">{reg.route.name} · {fmtTime(reg.route.schedule?.departures?.[reg.departureIndex ?? -1]?.time ?? '')}</Text>
+      </View>)}
       <Text className="px-2 text-xs text-[#6A7282]">
         Pick the route you'd like to drive. You'll choose a departure time on
         the next screen.
@@ -361,16 +394,20 @@ function RouteDetail({
   route,
   selectedDepartureIdx,
   onSelectDeparture,
-  roundTrip,
-  onRoundTripChange,
+  scheduleAllowed,
+  scheduleChecking,
+  scheduleError,
+  onRetrySchedule,
   onSubmit,
   submitting,
 }: {
   route: ScheduledRouteApi;
   selectedDepartureIdx: number | null;
   onSelectDeparture: (i: number) => void;
-  roundTrip: boolean;
-  onRoundTripChange: (v: boolean) => void;
+  scheduleAllowed: boolean;
+  scheduleChecking: boolean;
+  scheduleError: string | null;
+  onRetrySchedule: () => void;
   onSubmit: () => void;
   submitting: boolean;
 }) {
@@ -385,7 +422,7 @@ function RouteDetail({
   const dropoff: LatLng = { lat: last.lat, lng: last.lng };
 
   const departures = route.schedule?.departures ?? [];
-  const canSubmit = selectedDepartureIdx !== null && !submitting;
+  const canSubmit = selectedDepartureIdx !== null && !submitting && scheduleAllowed && !scheduleChecking;
 
   const intermediateStops = useMemo(
     () => route.stops.slice(1, -1),
@@ -457,7 +494,7 @@ function RouteDetail({
                     {fmtTime(d.time)}
                   </Text>
                   <Text className="mt-0.5 text-[10px] text-[#6A7282]">
-                    from {stop?.name ?? `Stop ${d.stopIndex + 1}`}
+                    {d.direction === 'return' ? 'Return' : 'Outward'} · from {stop?.name ?? `Stop ${d.stopIndex + 1}`}
                   </Text>
                 </Pressable>
               );
@@ -465,22 +502,9 @@ function RouteDetail({
           </View>
         )}
 
-        <View className="mt-6 flex-row items-center justify-between rounded-2xl border border-[#EBEBEB] bg-white p-4">
-          <View className="flex-1 pr-3">
-            <Text className="text-sm font-poppins-semibold text-[#1E293B]">
-              I'll do the return trip too
-            </Text>
-            <Text className="mt-1 text-xs text-[#6A7282]">
-              Tick this if you'll also drive back from the end stop to the start
-              at the matching return time.
-            </Text>
-          </View>
-          <Switch
-            value={roundTrip}
-            onValueChange={onRoundTripChange}
-            trackColor={{ false: '#CBCED4', true: '#0097B3' }}
-          />
-        </View>
+        <Text className="mt-4 text-xs text-[#6A7282]">Minimum one-way journey: {route.schedule?.minimumJourneyMinutes ?? 'admin setup required'} minutes. Turnaround gap: {route.schedule?.turnaroundMinutes ?? 0} minutes. Return departures must be on this same route.</Text>
+        {scheduleChecking && <Text className="mt-3 text-sm text-[#00647A]">Checking your other departures…</Text>}
+        {scheduleError && <Pressable onPress={onRetrySchedule}><Text accessibilityRole="alert" className="mt-3 text-sm text-red-600">{scheduleError} Tap to check again.</Text></Pressable>}
       </View>
 
       <View className="absolute bottom-0 left-0 right-0 bg-white px-4 pt-3"
@@ -503,7 +527,7 @@ function RouteDetail({
             <ActivityIndicator color="white" />
           ) : (
             <Text className="text-base font-poppins-medium text-white">
-              Register for this route
+              Request this departure
             </Text>
           )}
         </Pressable>

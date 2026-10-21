@@ -17,7 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { pickImageFromSource } from '../services/imagePicker';
 import RegistrationHeader from '../components/RegistrationHeader';
-import { UploadIcon } from '../components/icons/ServiceTypeIcons';
+import UploadField from '../components/RegistrationDocumentField';
 import RoutePickerModal, {
   type RouteSelection,
 } from '../components/RoutePickerModal';
@@ -51,76 +51,6 @@ interface DriverDetailsScreenProps {
    *  requires the driver to pick a route + departure (and optionally a
    *  return leg) before continuing. */
   serviceType?: 'instant' | 'private' | 'scheduled';
-}
-
-interface UploadFieldProps {
-  label: string;
-  prompt: string;
-  uploadedUrl: string | null;
-  uploading: boolean;
-  status?: 'pending' | 'verified' | 'rejected';
-  onPress: () => void;
-}
-
-function UploadField({
-  label,
-  prompt,
-  uploadedUrl,
-  uploading,
-  status,
-  onPress,
-}: UploadFieldProps) {
-  const hasFile = uploadedUrl !== null;
-  // Status takes priority over the local 'just uploaded' indicator — once
-  // the admin has reviewed it, that's what we show.
-  const tone =
-    status === 'verified'
-      ? 'border-emerald-500 bg-emerald-50'
-      : status === 'rejected'
-        ? 'border-red-500 bg-red-50'
-        : hasFile
-          ? 'border-brand-teal bg-brand-teal/5'
-          : 'border-slate-300 bg-white';
-  const iconColor =
-    status === 'verified'
-      ? '#10B981'
-      : status === 'rejected'
-        ? '#EF4444'
-        : hasFile
-          ? '#0097B3'
-          : '#99A1AF';
-  const subline =
-    status === 'verified'
-      ? 'Verified by admin'
-      : status === 'rejected'
-        ? 'Rejected — please re-upload'
-        : hasFile
-          ? 'Uploaded — pending review'
-          : prompt;
-
-  return (
-    <View className="mb-4">
-      <Text className="mb-2 text-sm font-poppins-medium text-slate-800">{label}</Text>
-      <Pressable
-        onPress={uploading ? undefined : onPress}
-        className={`h-32 items-center justify-center rounded-2xl border ${tone}`}
-      >
-        {uploading ? (
-          <ActivityIndicator color="#0097B3" />
-        ) : (
-          <>
-            <UploadIcon size={32} color={iconColor} />
-            <Text className="mt-2 text-sm text-slate-700">{subline}</Text>
-            {hasFile && status !== 'verified' && (
-              <Text className="mt-0.5 text-xs text-slate-400">
-                Tap to replace
-              </Text>
-            )}
-          </>
-        )}
-      </Pressable>
-    </View>
-  );
 }
 
 const formatHHMM = (hhmm: string): string => {
@@ -265,7 +195,7 @@ export function DriverDetailsScreen({
     details.aadhaarBackUrl !== null &&
     details.drivingLicenseUrl !== null &&
     details.profilePhotoUrl !== null &&
-    (!isScheduled || routeSelection !== null) &&
+    (!isScheduled || (routeSelection !== null && routeSelection.returnMode !== 'different')) &&
     !submitting;
 
   const handleNext = async () => {
@@ -279,17 +209,10 @@ export function DriverDetailsScreen({
       if (isScheduled && routeSelection) {
         await registerForRoute(routeSelection.primary.routeId, {
           departureTime: routeSelection.primary.departureTime,
+          ...(routeSelection.primary.departureIndex === undefined ? {} : { departureIndex: routeSelection.primary.departureIndex }),
           roundTrip: routeSelection.returnMode === 'same',
+          ...(routeSelection.returnMode === 'same' ? { returnDepartureTime: routeSelection.sameReturnDepartureTime, returnDepartureIndex: routeSelection.sameReturnDepartureIndex } : {}),
         });
-        if (
-          routeSelection.returnMode === 'different' &&
-          routeSelection.returnRoute
-        ) {
-          await registerForRoute(routeSelection.returnRoute.routeId, {
-            departureTime: routeSelection.returnRoute.departureTime,
-            roundTrip: false,
-          });
-        }
       }
       const expiryIso = ddmmyyyyToIso(details.dlExpiry);
       await updateRegistrationStep('complete-profile', {
@@ -359,8 +282,8 @@ export function DriverDetailsScreen({
                         Return: same route reversed
                       </Text>
                       <Text className="mt-0.5 text-xs text-slate-500">
-                        {routeSelection.primary.toName} →{' '}
-                        {routeSelection.primary.fromName}
+                        {routeSelection.sameReturnFromName ?? routeSelection.primary.toName} →{' '}
+                        {routeSelection.sameReturnToName ?? routeSelection.primary.fromName}
                         {routeSelection.sameReturnDepartureTime
                           ? ` · Departs ${formatHHMM(
                               routeSelection.sameReturnDepartureTime,

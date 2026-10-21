@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
+import { Alert, AppState, Linking, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, fetchJourney, fetchJourneyPassengers, startJourney } from '../services/api';
 import { dialPhone } from '../utils/navigation';
+import { journeyStartTiming } from '../utils/journeyTiming';
 import {
   BackArrowIcon,
   ChatBubbleIcon,
@@ -234,13 +235,20 @@ export function UpcomingBookingDetailsScreen({
   const [fetchNonce, setFetchNonce] = useState(0);
   const [pax, setPax] = useState<Passenger[] | null>(null);
   const [starting, setStarting] = useState(false);
-  // Re-evaluated every 30s so the Start button enables itself once the
-  // start window opens while the driver keeps the screen open.
+  // Keep both edges of the start window current while this screen is open.
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(tick);
+    const tick = setInterval(() => {
+      if (AppState.currentState === 'active') setNow(Date.now());
+    }, 1_000);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        setNow(Date.now());
+        setFetchNonce(value => value + 1);
+      }
+    });
+    return () => { clearInterval(tick); subscription.remove(); };
   }, []);
 
   useEffect(() => {
@@ -251,8 +259,7 @@ export function UpcomingBookingDetailsScreen({
         setDetail(d);
         setDetailError(false);
       })
-      // Don't leave the driver stuck: the failure is surfaced inline with a
-      // Retry action, and the Start gate fails open (server still enforces).
+      // Surface a Retry action; Start stays disabled until timing is known.
       .catch(() => setDetailError(true));
     fetchJourneyPassengers(journeyKey)
       .then((r) =>
@@ -295,8 +302,6 @@ export function UpcomingBookingDetailsScreen({
   // Server enforces this too; the client mirrors it so the driver is not
   // offered a button that can only fail.
   const startWindowMinutes = j?.startWindowMinutes ?? 30;
-  // Today's IST civil date, independent of the device timezone.
-  const istToday = new Date(now + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   // The journey's DATE is always known — it is encoded in the journeyKey
   // (`route_index_YYYY-MM-DD`), so we can gate on it before the detail fetch
@@ -310,33 +315,18 @@ export function UpcomingBookingDetailsScreen({
   })();
   const effectiveDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : keyDate;
 
-  // IST-correct departure instant: pin the offset so the device timezone
-  // never shifts the result. Time comes from the detail fetch (route slot).
-  const timeKnown = /^\d{1,2}:\d{2}$/.test(time);
-  const departureMs =
-    effectiveDate && timeKnown
-      ? Date.parse(`${effectiveDate}T${time.padStart(5, '0')}:00+05:30`)
-      : NaN;
-  const windowOpensMs = departureMs - startWindowMinutes * 60_000;
-
-  const isFutureDate = !!effectiveDate && effectiveDate > istToday;
-  const isPastDate = !!effectiveDate && effectiveDate < istToday;
-
-  // Fail CLOSED, not open. A start is allowed only when we can prove the
-  // window is open:
-  //   • future date               → never (wait for the day)
-  //   • past date                 → never (expired)
-  //   • today + time known        → epoch window rule (handles midnight spans)
-  //   • today + time NOT yet loaded→ hold until the detail fetch fills it in
-  //   • date genuinely unknown     → hold (can't prove it's startable)
-  // The server still enforces the window authoritatively as the backstop.
+  const timingAt = (at: number) => journeyStartTiming({
+    departureDate: effectiveDate ?? '',
+    departureTime: time,
+    startWindowMinutes,
+    status: j?.status ?? 'scheduled',
+  }, at);
+  const timing = timingAt(now);
+  // The exact instant permits a pre-midnight start for a 00:10 departure,
+  // but closes an unstarted journey at departure, independently of date.
   const canStart =
     !!journeyKey &&
-    !isFutureDate &&
-    !isPastDate &&
-    !!effectiveDate &&
-    timeKnown &&
-    now >= windowOpensMs;
+    (timing.state === 'open' || timing.state === 'running');
 
   const istClock = (ms: number) =>
     new Date(ms).toLocaleTimeString('en-IN', {
@@ -356,18 +346,17 @@ export function UpcomingBookingDetailsScreen({
   // no explanation.
   let startHelper: string | null = null;
   if (!canStart && journeyKey) {
-    if (isPastDate) {
-      startHelper = 'This journey date has passed and can no longer be started.';
-    } else if (isFutureDate && effectiveDate) {
-      startHelper = `This journey is scheduled for ${istDateStrHuman(effectiveDate)}.`;
-    } else if (effectiveDate && !timeKnown) {
-      // Today's journey, but the departure time hasn't loaded yet — hold
-      // rather than fail open. Resolves the moment the detail fetch returns.
+    if (timing.state === 'closed') {
+      startHelper = 'The scheduled departure time has passed. This journey can no longer be started.';
+    } else if (timing.state === 'finished') {
+      startHelper = 'This journey has already finished.';
+    } else if (timing.state === 'too_early') {
+      const opensDate = new Date(timing.windowOpens + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      startHelper = `Journey can be started from ${istClock(timing.windowOpens)} on ${istDateStrHuman(opensDate)}.`;
+    } else if (effectiveDate) {
       startHelper = detailError
         ? 'Could not load the journey time — tap Retry above.'
         : 'Checking journey time…';
-    } else if (effectiveDate && timeKnown) {
-      startHelper = `Journey can be started from ${istClock(windowOpensMs)}.`;
     } else {
       startHelper = 'Loading journey details…';
     }
@@ -376,7 +365,14 @@ export function UpcomingBookingDetailsScreen({
   const handleStart = async () => {
     // No trip identity — nothing legitimate to start. The button is disabled
     // in this state; this guard is the last line of defence.
-    if (!journeyKey || !canStart) return;
+    if (!journeyKey) return;
+    // Recheck at tap time so a render from just before departure cannot start
+    // a now-expired journey, even if a backgrounded phone delayed its timer.
+    const atTap = timingAt(Date.now());
+    if (atTap.state !== 'open' && atTap.state !== 'running') {
+      setNow(Date.now());
+      return;
+    }
     setStarting(true);
     try {
       await startJourney(journeyKey);
@@ -385,6 +381,7 @@ export function UpcomingBookingDetailsScreen({
       // Server 4xx messages are already clean business English; anything
       // else (network, parse) gets a generic fallback — never raw errors.
       const message = err instanceof ApiError ? err.message : 'Please try again.';
+      setNow(Date.now());
       Alert.alert('Could not start', message);
     } finally {
       setStarting(false);
@@ -421,6 +418,9 @@ export function UpcomingBookingDetailsScreen({
               >
                 Journey ID: {journeyId}
               </Text>
+              {j?.vehicle && <Text className="text-white/80 font-poppins-regular" style={{ fontSize: fs(12) }}>
+                {[j.vehicle.make, j.vehicle.model, j.vehicle.typeCode, `${j.vehicle.capacity} passenger seats`].filter(Boolean).join(' · ')}
+              </Text>}
             </View>
           </View>
         </SafeAreaView>

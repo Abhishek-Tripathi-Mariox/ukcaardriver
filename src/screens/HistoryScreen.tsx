@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,11 +18,15 @@ import {
   MoneyIcon,
   RoutingIcon,
 } from '../components/icons/ServiceTypeIcons';
-import { listMyRides, RideListItem } from '../services/api';
+import { listMyRides, RideListItem, type JourneySummary } from '../services/api';
+import { ScheduledJourneysScreen } from './ScheduledJourneysScreen';
 
 interface HistoryScreenProps {
   onBack?: () => void;
   onOpenRide?: (rideId: string) => void;
+  serviceType?: 'instant' | 'private' | 'scheduled';
+  onOpenUpcoming?: (key: string, status: JourneySummary['status']) => void;
+  onOpenPast?: (key: string) => void;
 }
 
 interface HistoryGroup {
@@ -185,7 +189,7 @@ function RideCard({
   );
 }
 
-export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
+function StandardRideHistory({ onBack, onOpenRide, historyFilter }: HistoryScreenProps & { historyFilter: ReactNode }) {
   const insets = useSafeAreaInsets();
   const [groups, setGroups] = useState<HistoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,6 +235,8 @@ export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
         </SafeAreaView>
       </LinearGradient>
 
+      {historyFilter}
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 120 + insets.bottom, gap: 16 }}
@@ -269,6 +275,42 @@ export function HistoryScreen({ onBack, onOpenRide }: HistoryScreenProps) {
       </ScrollView>
     </View>
   );
+}
+
+/** Keep scheduled journey keys on their own detail flow, while making both
+ * ride products available from the Rides tab and Profile > History. */
+export function HistoryScreen(props: HistoryScreenProps) {
+  const [kind, setKind] = useState<'rides' | 'scheduled'>(
+    props.serviceType === 'scheduled' ? 'scheduled' : 'rides',
+  );
+  const historyFilter = (
+    <View className="flex-row px-6 pt-4 gap-3">
+      {(['rides', 'scheduled'] as const).map(value => (
+        <Pressable
+          key={value}
+          onPress={() => setKind(value)}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: kind === value }}
+          className={`flex-1 items-center rounded-xl py-3 ${kind === value ? 'bg-[#F3E8FF]' : 'bg-[#ECECF0]'}`}
+        >
+          <Text className="font-poppins-medium text-[#1E293B]">
+            {value === 'scheduled' ? 'Scheduled' : 'Instant / Private'}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+  return kind === 'scheduled' ? (
+    <ScheduledJourneysScreen
+      onBack={props.onBack}
+      onOpenUpcoming={props.onOpenUpcoming}
+      onOpenPast={props.onOpenPast}
+      initialTab="past"
+      headerTitle="Ride History"
+      historyFilter={historyFilter}
+      bottomPadding={120}
+    />
+  ) : <StandardRideHistory {...props} historyFilter={historyFilter} />;
 }
 
 export default HistoryScreen;
