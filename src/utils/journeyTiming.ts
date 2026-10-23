@@ -14,10 +14,13 @@ function departureMs(date: string, time: string): number {
   return Date.parse(`${date}T${time.padStart(5, '0')}:00+05:30`);
 }
 
+/** Today's IST calendar date, YYYY-MM-DD. */
+export const istDate = (now = Date.now()) => new Date(now + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
 export function effectiveJourneyStatus(journey: JourneyTiming, now = Date.now()): JourneySummary['status'] {
   if (journey.status !== 'scheduled') return journey.status;
   const departure = departureMs(journey.departureDate, journey.departureTime);
-  const today = new Date(now + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const today = istDate(now);
   const missed = Number.isFinite(departure) ? now >= departure : journey.departureDate < today;
   return missed ? 'expired' : 'scheduled';
 }

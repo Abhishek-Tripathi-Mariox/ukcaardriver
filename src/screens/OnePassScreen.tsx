@@ -15,11 +15,15 @@ import { BackArrowIcon } from '../components/icons/ServiceTypeIcons';
 import {
   createOnePassOrder,
   cancelRechargeOrder,
+  clearPendingOnePassVerification,
   fetchOnePassPlans,
   fetchOnePassStatus,
+  loadPendingOnePassVerification,
+  savePendingOnePassVerification,
   verifyOnePassPayment,
   type OnePassPlan,
   type OnePassStatus,
+  type OnePassVerification,
 } from '../services/api';
 import { useUserStore } from '../store';
 
@@ -28,6 +32,10 @@ interface OnePassScreenProps {
 }
 
 const PRIMARY = '#0097B3';
+/** Whole rupees print without decimals; paise always show (never ₹99.99 as "₹100"). */
+const formatPrice = (price: number) => price.toFixed(Number.isInteger(price) ? 0 : 2);
+/** The server rounds already; this keeps an older server's float noise off screen. */
+const formatPct = (pct: number) => Math.round(pct * 100) / 100;
 
 export function OnePassScreen({ onBack }: OnePassScreenProps) {
   const user = useUserStore(s => s.user);
@@ -39,13 +47,15 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [pendingVerification, setPendingVerification] = useState<{ razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string } | null>(null);
+  const [pendingVerification, setPendingVerification] = useState<OnePassVerification | null>(null);
 
   const load = async () => {
     setLoadError(null);
     try {
-      const [p, s] = await Promise.all([fetchOnePassPlans(), fetchOnePassStatus()]);
+      const [p, s, saved] = await Promise.all([fetchOnePassPlans(), fetchOnePassStatus(), loadPendingOnePassVerification(user?.id)]);
       setStatus(s);
+      // A checkout that returned a payment survives leaving this screen.
+      setPendingVerification(current => saved ?? current);
       if (!['instant', 'private', 'scheduled'].includes(s.category ?? '')) {
         setPlans([]);
         setLoadError('Your service category could not be verified. Refresh or contact support before purchasing.');
@@ -65,8 +75,30 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Captured server-side but not applied yet: never sell another pass meanwhile.
+  const serverPending = status?.pendingActivation ?? [];
+  const purchaseBlocked = !!pendingVerification || serverPending.length > 0;
+
+  // Checkout returned a payment, so a failure here must never offer a second purchase.
+  const verificationFailed = async (err: any, retryMessage: string) => {
+    if (err?.payload?.code === 'ONEPASS_ACTIVATION_FAILED') {
+      await load();
+      Alert.alert('Activation pending', `${err.message} Your payment is recorded, so do not buy another pass. Contact support if this continues.`);
+      return;
+    }
+    if (err?.status === 400 || err?.status === 404) {
+      // The server refused this checkout outright; retrying can never verify it.
+      await clearPendingOnePassVerification();
+      setPendingVerification(null);
+      await load();
+      Alert.alert('Verification failed', `${err.message || 'This payment could not be verified.'} If money was debited, contact support before buying again.`);
+      return;
+    }
+    Alert.alert('Verification pending', retryMessage);
+  };
+
   const purchase = async (plan: OnePassPlan) => {
-    if (buying || pendingVerification) return;
+    if (buying || purchaseBlocked) return;
     setBuying(plan.key);
     let createdOrderId: string | null = null;
     let capturedPayment = false;
@@ -101,13 +133,12 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
       capturedPayment = true;
       const verification = { razorpay_order_id: order.orderId, razorpay_payment_id: paymentData.razorpay_payment_id, razorpay_signature: paymentData.razorpay_signature };
       setPendingVerification(verification);
+      // Saved before verifying: if the app dies now, reopening still offers the retry.
+      await savePendingOnePassVerification(verification, currentUser?.id);
 
       // 3. Verify server-side — backend activates OnePass on success.
-      await verifyOnePassPayment({
-        razorpay_order_id: order.orderId,
-        razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_signature: paymentData.razorpay_signature,
-      });
+      await verifyOnePassPayment(verification);
+      await clearPendingOnePassVerification();
       setPendingVerification(null);
 
       await load();
@@ -123,7 +154,7 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
         (!err?.description && !err?.message);
       // Once checkout returns a payment, retry verification without buying again.
       if (capturedPayment) {
-        Alert.alert('Verification pending', 'Payment checkout completed. Retry verification here instead of buying another pass.');
+        await verificationFailed(err, 'Payment checkout completed. Retry verification here instead of buying another pass.');
         return;
       }
       if (createdOrderId) cancelRechargeOrder(createdOrderId);
@@ -149,8 +180,13 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
   const retryVerification = async () => {
     if (!pendingVerification || buying) return;
     setBuying('verification');
-    try { await verifyOnePassPayment(pendingVerification); setPendingVerification(null); await load(); Alert.alert('Payment verified', 'Your purchased pass has been added.'); }
-    catch { Alert.alert('Verification pending', 'Please retry verification. Do not purchase another pass for this payment.'); }
+    try {
+      await verifyOnePassPayment(pendingVerification);
+      await clearPendingOnePassVerification();
+      setPendingVerification(null);
+      await load();
+      Alert.alert('Payment verified', 'Your purchased pass has been added.');
+    } catch (err) { await verificationFailed(err, 'Please retry verification. Do not purchase another pass for this payment.'); }
     finally { setBuying(null); }
   };
 
@@ -188,13 +224,16 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
             </Text>
             <Text style={styles.statusSub}>
               {status?.isActive && expiryLabel
-                ? status.commissionPct == null ? `Your existing pass is valid until ${expiryLabel}. Refresh to verify its service category.` : `Current benefit: ${status.commissionPct}% commission, valid until ${expiryLabel}. Renewals keep their purchased terms and start after existing validity.`
+                ? status.commissionPct == null ? `Your existing pass is valid until ${expiryLabel}. Refresh to verify its service category.` : `Current benefit: ${formatPct(status.commissionPct)}% commission, valid until ${expiryLabel}. Renewals keep their purchased terms and start after existing validity.`
                 : 'Subscribe for the commission benefit configured for your service.'}
             </Text>
           </View>
           <Pressable accessibilityRole="button" disabled={!!buying} onPress={load}><Text style={styles.statusSub}>Refresh OnePass status</Text></Pressable>
           {loadError && <Pressable accessibilityRole="button" onPress={load}><Text style={styles.empty}>{loadError}</Text></Pressable>}
           {pendingVerification && <Pressable accessibilityRole="button" disabled={!!buying} onPress={retryVerification}><Text style={styles.empty}>Payment verification pending. Tap to retry verification.</Text></Pressable>}
+          {serverPending.length > 0 && <Pressable accessibilityRole="button" disabled={!!buying} onPress={load}><Text style={styles.empty}>
+            Payment received for {serverPending.map(p => p.label).join(', ')}. {serverPending.find(p => p.message)?.message ?? 'Your pass is being activated.'} Tap to refresh status. Do not buy another pass for this payment.
+          </Text></Pressable>}
           {status?.legacy && <Text style={styles.statusSub}>Your existing pass keeps its current benefits until expiry. New purchases cover only their named service category.</Text>}
           {(status?.memberships ?? []).map((period, index) => <View key={`${period.category}_${period.startsAt}_${index}`} style={styles.statusCard}>
             <Text style={styles.planLabel}>{period.category} · {period.label}</Text>
@@ -226,12 +265,12 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
                   >
                     {plan.days} {plan.days === 1 ? 'day' : 'days'} · {plan.currency} {plan.price.toFixed(2)}
                   </Text>
-                  <Text style={styles.planMeta}>{plan.category} · {plan.commissionPct}% commission</Text>
+                  <Text style={styles.planMeta}>{plan.category} · {formatPct(plan.commissionPct)}% commission</Text>
                 </View>
                 <Pressable
                   style={[styles.buyBtn, buying === plan.key && styles.buyBtnDisabled]}
                   onPress={() => purchase(plan)}
-                  disabled={!!buying || !!loadError || !!pendingVerification}
+                  disabled={!!buying || !!loadError || purchaseBlocked}
                 >
                   {buying === plan.key ? (
                     <ActivityIndicator color="#fff" size="small" />
@@ -241,7 +280,7 @@ export function OnePassScreen({ onBack }: OnePassScreenProps) {
                       numberOfLines={1}
                       maxFontSizeMultiplier={1.2}
                     >
-                      Buy ₹{plan.price.toFixed(0)}
+                      Buy ₹{formatPrice(plan.price)}
                     </Text>
                   )}
                 </Pressable>

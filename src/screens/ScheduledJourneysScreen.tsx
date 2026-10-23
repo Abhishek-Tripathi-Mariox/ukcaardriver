@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  ArrowRightIcon,
   BackArrowIcon,
   CalendarIcon,
+  ChevronRightIcon,
   ClockSmallIcon,
   LocationPinSmallIcon,
   UsersIcon,
@@ -31,9 +31,9 @@ interface ScheduledJourney {
 interface ScheduledJourneysScreenProps {
   initialTab?: 'upcoming' | 'past';
   headerTitle?: string;
-  historyFilter?: ReactNode;
   bottomPadding?: number;
   onBack?: () => void;
+  onTabChange?: (tab: 'upcoming' | 'past') => void;
   onOpenAvailability?: () => void;
   /** `status` lets the caller resume an already active/in-progress journey
    *  at the right screen instead of restarting from the details page. */
@@ -273,15 +273,19 @@ function PastJourneyCard({
 export function ScheduledJourneysScreen({
   initialTab = 'upcoming',
   headerTitle,
-  historyFilter,
   bottomPadding = 32,
   onBack,
+  onTabChange,
   onOpenUpcoming,
   onOpenPast,
   onOpenAvailability,
 }: ScheduledJourneysScreenProps) {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<'upcoming' | 'past'>(initialTab);
+  const [tab, setTabState] = useState<'upcoming' | 'past'>(initialTab);
+  const setTab = (next: 'upcoming' | 'past') => {
+    setTabState(next);
+    onTabChange?.(next);
+  };
   const [journeys, setJourneys] = useState<JourneySummary[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
@@ -365,10 +369,41 @@ export function ScheduledJourneysScreen({
         </SafeAreaView>
       </LinearGradient>
 
-      {onOpenAvailability && <Pressable onPress={onOpenAvailability} accessibilityRole="button" className="bg-white px-6 py-3"><Text className="font-poppins-medium text-brand-teal">Manage availability</Text></Pressable>}
-      {historyFilter}
+      {onOpenAvailability && (
+        <View style={{ paddingHorizontal: s(24), paddingTop: vs(20) }}>
+          <Pressable
+            onPress={onOpenAvailability}
+            accessibilityRole="button"
+            accessibilityLabel="Manage availability"
+            className="flex-row items-center border border-[#E9D4FF] bg-[#FAF5FF]"
+            style={{ borderRadius: s(16), padding: s(14), gap: s(12) }}
+          >
+            <View
+              className="items-center justify-center rounded-full bg-[#F3E8FF]"
+              style={{ width: s(40), height: s(40) }}
+            >
+              <CalendarIcon size={s(20)} color="#8200DB" />
+            </View>
+            <View className="flex-1">
+              <Text
+                className="font-poppins-semibold text-[#1E293B]"
+                style={{ fontSize: fs(15) }}
+              >
+                Manage availability
+              </Text>
+              <Text
+                className="font-poppins-regular text-[#6A7282]"
+                style={{ fontSize: fs(12) }}
+              >
+                Block departures you can't run
+              </Text>
+            </View>
+            <ChevronRightIcon size={s(20)} color="#8200DB" />
+          </Pressable>
+        </View>
+      )}
 
-      <View style={{ paddingHorizontal: s(24), paddingTop: vs(24) }}>
+      <View style={{ paddingHorizontal: s(24), paddingTop: onOpenAvailability ? vs(16) : vs(24) }}>
         <View
           className="flex-row bg-[#ECECF0]"
           style={{ height: vs(40), borderRadius: s(16), padding: s(4) }}

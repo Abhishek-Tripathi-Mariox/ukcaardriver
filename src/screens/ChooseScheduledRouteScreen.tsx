@@ -114,12 +114,33 @@ export function ChooseScheduledRouteScreen({
 
   const replacesRoute = !!isChangeRequest && !!myReg?.current && myReg.current.route._id !== selectedRoute?._id &&
     !(myReg.currentAssignments ?? []).some(reg => reg.route._id === selectedRoute?._id);
+  // The displayed slot travels with its index, so an admin edit made since the
+  // list loaded is refused ("timetable changed") instead of booking another trip.
+  const selectedSlot = (route: ScheduledRouteApi, index: number) => {
+    const slot = route.schedule?.departures?.[index];
+    return { departureIndex: index, ...(slot ? { departureTime: slot.time, direction: slot.direction ?? 'outbound', stopIndex: slot.stopIndex } : {}) };
+  };
+  // Retrying reloads the published timetable; a slot that changed is deselected
+  // so the driver picks again from the current times.
+  const refreshAndRetry = () => {
+    fetchScheduledRoutes()
+      .then(rs => {
+        setRoutes(rs);
+        const fresh = rs.find(r => r._id === selectedRoute?._id);
+        if (!fresh || !selectedRoute || selectedDepartureIdx === null) return;
+        const same = JSON.stringify(selectedSlot(fresh, selectedDepartureIdx)) === JSON.stringify(selectedSlot(selectedRoute, selectedDepartureIdx));
+        setSelectedRoute(fresh);
+        if (!same) setSelectedDepartureIdx(null);
+      })
+      .catch(() => {})
+      .finally(() => setScheduleAttempt(attempt => attempt + 1));
+  };
   useEffect(() => {
     setScheduleAllowed(false); setScheduleError(null);
     if (!selectedRoute || selectedDepartureIdx === null) return;
     let cancelled = false;
     setScheduleChecking(true);
-    checkRouteSchedule(selectedRoute._id, { departureIndex: selectedDepartureIdx, replaceRoute: replacesRoute })
+    checkRouteSchedule(selectedRoute._id, { ...selectedSlot(selectedRoute, selectedDepartureIdx), replaceRoute: replacesRoute })
       .then(() => { if (!cancelled) setScheduleAllowed(true); })
       .catch(error => { if (!cancelled) setScheduleError(error?.message ?? 'Could not check this departure. Please retry.'); })
       .finally(() => { if (!cancelled) setScheduleChecking(false); });
@@ -131,7 +152,7 @@ export function ChooseScheduledRouteScreen({
     setSubmitting(true);
     try {
       await registerForRoute(selectedRoute._id, {
-        departureIndex: selectedDepartureIdx,
+        ...selectedSlot(selectedRoute, selectedDepartureIdx),
         replaceRoute: replacesRoute,
       });
       if (!isChangeRequest) {
@@ -198,7 +219,7 @@ export function ChooseScheduledRouteScreen({
           scheduleAllowed={scheduleAllowed}
           scheduleChecking={scheduleChecking}
           scheduleError={scheduleError}
-          onRetrySchedule={() => setScheduleAttempt(attempt => attempt + 1)}
+          onRetrySchedule={refreshAndRetry}
           onSubmit={handleSubmit}
           submitting={submitting}
         />
@@ -502,7 +523,7 @@ function RouteDetail({
           </View>
         )}
 
-        <Text className="mt-4 text-xs text-[#6A7282]">Minimum one-way journey: {route.schedule?.minimumJourneyMinutes ?? 'admin setup required'} minutes. Turnaround gap: {route.schedule?.turnaroundMinutes ?? 0} minutes. Return departures must be on this same route.</Text>
+        <Text className="mt-4 text-xs text-[#6A7282]">Minimum one-way journey: {route.schedule?.minimumJourneyMinutes ?? 'admin setup required'} minutes. Turnaround gap: {Math.max(route.schedule?.turnaroundMinutes ?? 0, route.schedule?.minRestMinutes ?? 0)} minutes. Return departures must be on this same route.</Text>
         {scheduleChecking && <Text className="mt-3 text-sm text-[#00647A]">Checking your other departures…</Text>}
         {scheduleError && <Pressable onPress={onRetrySchedule}><Text accessibilityRole="alert" className="mt-3 text-sm text-red-600">{scheduleError} Tap to check again.</Text></Pressable>}
       </View>

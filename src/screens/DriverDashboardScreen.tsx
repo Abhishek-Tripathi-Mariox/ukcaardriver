@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -50,6 +50,7 @@ import {
 } from '../services/locationReporter';
 import { fs, s, vs } from '../theme/responsive';
 import { driverDisplayRating } from '../utils/driverRating';
+import { istDate, partitionJourneys } from '../utils/journeyTiming';
 import { subscribeDriverStatus } from '../services/socketService';
 
 type ServiceType = 'instant' | 'private' | 'scheduled';
@@ -256,7 +257,8 @@ export function DriverDashboardScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [togglingOnline, setTogglingOnline] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
-  const [upcomingJourneys, setUpcomingJourneys] = useState<JourneySummary[]>([]);
+  const [journeys, setJourneys] = useState<JourneySummary[]>([]);
+  const [now, setNow] = useState(() => Date.now());
   // Real active ride (Current Ride card) + real reviews (Reviews list) — both
   // fetched live so neither renders fabricated placeholder people/trips.
   const [activeRide, setActiveRide] = useState<ActiveRide | null>(null);
@@ -273,15 +275,17 @@ export function DriverDashboardScreen({
 
   const load = useCallback(async () => {
     try {
-      const [fresh, journeys, active, ratings] = await Promise.all([
+      const [fresh, upcoming, past, active, ratings] = await Promise.all([
         fetchMyDashboardFresh(),
         fetchJourneys('upcoming').catch(() => [] as JourneySummary[]),
+        fetchJourneys('past').catch(() => [] as JourneySummary[]),
         getActiveRide().catch(() => null),
         fetchMyRatings().catch(() => null),
         refreshUnread(),
       ]);
       setData(fresh);
-      setUpcomingJourneys(journeys);
+      setJourneys([...upcoming, ...past]);
+      setNow(Date.now());
       setActiveRide(active);
       setReviews(ratings?.comments ?? []);
     } catch (err) {
@@ -306,6 +310,21 @@ export function DriverDashboardScreen({
     });
     return () => subscription.remove();
   }, [load]);
+
+  // Same rule and clock as Scheduled Journeys: a departure leaves Upcoming at
+  // its IST departure instant even if the dashboard is never refreshed.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (AppState.currentState === 'active') setNow(Date.now());
+    }, 10_000);
+    return () => clearInterval(id);
+  }, []);
+  const partitions = useMemo(() => partitionJourneys(journeys, now), [journeys, now]);
+  const upcomingJourneys = partitions.upcoming;
+  const todayJourneys = [...partitions.upcoming, ...partitions.past].filter(
+    j => j.departureDate === istDate(now) && j.status !== 'cancelled',
+  ).length;
+  const completedJourneys = partitions.past.filter(j => j.status === 'completed').length;
 
   // Poll the unread count so the badge stays fresh while the user sits on
   // the dashboard. 30s is a sensible cadence — short enough to feel live,
@@ -792,19 +811,19 @@ export function DriverDashboardScreen({
                   icon="rupee"
                 />
                 <CounterCard
-                  value={String(stats?.totalServices ?? 0)}
+                  value={String((stats?.totalServices ?? 0) + completedJourneys)}
                   label="Total Service"
                   icon="list"
                 />
               </View>
               <View className="flex-row gap-4">
                 <CounterCard
-                  value={String(Math.max(stats?.upcomingServices ?? 0, upcomingJourneys.length))}
+                  value={String((stats?.upcomingServices ?? 0) + upcomingJourneys.length)}
                   label="Upcoming Services"
                   icon="list"
                 />
                 <CounterCard
-                  value={String(stats?.todayServices ?? 0).padStart(2, '0')}
+                  value={String((stats?.todayServices ?? 0) + todayJourneys).padStart(2, '0')}
                   label="Today's Service"
                   icon="list"
                 />
@@ -1028,10 +1047,12 @@ export function DriverDashboardScreen({
               <View className="mt-6 rounded-2xl bg-white p-5 shadow-sm items-center">
                 <CalendarIcon size={32} color="#9CA3AF" />
                 <Text className="mt-2 text-base font-poppins-semibold text-[#0A0A0A]">
-                  No upcoming rides
+                  {driver?.serviceType === 'scheduled' ? 'No upcoming scheduled rides' : 'No upcoming rides'}
                 </Text>
                 <Text className="mt-1 text-center text-sm text-[#6C757D]">
-                  Go online and start accepting nearby ride requests.
+                  {driver?.serviceType === 'scheduled'
+                    ? "Your approved departures for today and tomorrow will appear here."
+                    : 'Go online and start accepting nearby ride requests.'}
                 </Text>
               </View>
             ) : null}

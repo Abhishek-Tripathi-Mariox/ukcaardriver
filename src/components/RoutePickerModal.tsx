@@ -125,8 +125,9 @@ export function RoutePickerModal({ visible, onClose, onSave, initial }: RoutePic
     if (!visible || !complete || !primaryRoute) return;
     let cancelled = false;
     setChecking(true);
-    checkRouteSchedule(primaryRoute._id, { departureIndex: primaryIndex, roundTrip: returnMode === 'same',
-      ...(returnMode === 'same' ? { returnDepartureIndex: returnIndex } : {}) })
+    // Times travel with the indices so an admin edit since loading is refused, not checked as another slot.
+    checkRouteSchedule(primaryRoute._id, { departureIndex: primaryIndex, departureTime: primaryTime, roundTrip: returnMode === 'same',
+      ...(returnMode === 'same' ? { returnDepartureIndex: returnIndex, returnDepartureTime: returnTime } : {}) })
       .then(() => { if (!cancelled) setAllowed(true); })
       .catch(error => { if (!cancelled) setCheckError(error?.message ?? 'Could not check these departures.'); })
       .finally(() => { if (!cancelled) setChecking(false); });
@@ -153,7 +154,7 @@ export function RoutePickerModal({ visible, onClose, onSave, initial }: RoutePic
         onPick={route => { setPrimaryRoute(route); setPrimaryIndex(-1); setReturnMode('none'); setReturnIndex(-1); }} />
         : <RouteDetailPane route={primaryRoute} selectedIndex={primaryIndex} onSelectIndex={setPrimaryIndex}
           onBackToList={() => { setPrimaryRoute(null); setPrimaryIndex(-1); }} footer={<>
-            <Text className="text-xs text-[#6A7282]">Minimum one-way journey: {primaryRoute.schedule?.minimumJourneyMinutes ?? 'admin setup required'} minutes. Turnaround gap: {primaryRoute.schedule?.turnaroundMinutes ?? 0} minutes.</Text>
+            <Text className="text-xs text-[#6A7282]">Minimum one-way journey: {primaryRoute.schedule?.minimumJourneyMinutes ?? 'admin setup required'} minutes. Turnaround gap: {Math.max(primaryRoute.schedule?.turnaroundMinutes ?? 0, primaryRoute.schedule?.minRestMinutes ?? 0)} minutes.</Text>
             <ReturnTripSection route={primaryRoute} returnMode={returnMode} onChangeMode={mode => setReturnMode(mode === 'same' ? 'same' : 'none')}
               sameReturnIndex={returnIndex} onChangeSameReturnIndex={setReturnIndex} />
           </>} />}

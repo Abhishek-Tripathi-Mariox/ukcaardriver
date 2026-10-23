@@ -206,6 +206,8 @@ export function DriverDetailsScreen({
       // Scheduled drivers: register the route(s) first. If this fails we
       // surface the error and don't advance — the driver hasn't actually
       // locked in their schedule yet, so moving on would be misleading.
+      // Before approval the server treats each submission as the whole
+      // request, replacing any earlier pending departures (on any route).
       if (isScheduled && routeSelection) {
         await registerForRoute(routeSelection.primary.routeId, {
           departureTime: routeSelection.primary.departureTime,
@@ -319,6 +321,10 @@ export function DriverDetailsScreen({
                   </Text>
                 </Pressable>
               )}
+              <Text className="mt-2 text-xs text-slate-500">
+                Until your application is approved, saving a new route or time
+                replaces your earlier request.
+              </Text>
             </View>
           )}
 

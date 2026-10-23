@@ -350,6 +350,8 @@ function App() {
   // <routeId>_<departureIndex>_<YYYY-MM-DD>). Threaded through the whole
   // scheduled-flow stage chain so each screen fetches the right trip.
   const [activeJourneyKey, setActiveJourneyKey] = useState<string | null>(null);
+  // Rides-tab Upcoming/Past choice survives opening a trip and coming back.
+  const [historyTab, setHistoryTab] = useState<'upcoming' | 'past'>('past');
   // The scheduled-journey passenger the driver is chatting with. Scheduled
   // trips have no Ride doc, so the chat thread is keyed by the passenger's
   // ScheduledBooking _id (both apps join the same `ride:<bookingId>` room
@@ -1100,9 +1102,13 @@ function App() {
     incentives: 'Incentives',
     'scheduled-journeys': 'My Journeys',
     availability: 'Availability',
+    history: 'My Journeys',
   };
+  // A scheduled driver's Rides tab is the same journeys list as
+  // 'scheduled-journeys', so it is locked the same way.
+  const scheduledHistory = stage === 'history' && currentUser?.driverProfile?.serviceType === 'scheduled';
   const gatedBlocked =
-    regStatus !== 'approved' && GATED_WHEN_UNVERIFIED.includes(stage);
+    regStatus !== 'approved' && (GATED_WHEN_UNVERIFIED.includes(stage) || scheduledHistory);
 
   useEffect(() => {
     // Poll while the registration is under review (the driver now waits on
@@ -1517,10 +1523,12 @@ function App() {
         />
       )}
 
-      {stage === 'history' && (
+      {stage === 'history' && !gatedBlocked && (
         <HistoryScreen
           onBack={goHome}
           serviceType={currentUser?.driverProfile?.serviceType}
+          scheduledTab={historyTab}
+          onScheduledTabChange={setHistoryTab}
           onOpenUpcoming={(key, status) => {
             setActiveJourneyKey(key);
             if (status === 'in_progress') setStage('journey-in-progress');

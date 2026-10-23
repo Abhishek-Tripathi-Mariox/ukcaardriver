@@ -1073,6 +1073,9 @@ export interface OnePassStatus {
   commissionPct: number | null;
   legacy: { expiresAt: string; commissionPct: number } | null;
   memberships: { category: 'instant' | 'private' | 'scheduled'; startsAt: string; expiresAt: string; commissionRate: number; label: string; planKey: string }[];
+  /** Captured payments whose pass is not applied yet (the server retries each
+   *  on every status read). While any exist the app must not sell another pass. */
+  pendingActivation?: { paymentId: string; orderId: string | null; category: 'instant' | 'private' | 'scheduled' | null; label: string; amount: number; paidAt: string | null; message: string | null }[];
 }
 
 export async function fetchOnePassStatus(): Promise<OnePassStatus> {
@@ -1102,12 +1105,51 @@ export async function createOnePassOrder(plan: string, expectedPlan?: Pick<OnePa
   return res.data;
 }
 
-/** Verify the OnePass payment. The backend activates OnePass on success. */
-export async function verifyOnePassPayment(payload: {
+export interface OnePassVerification {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
-}): Promise<void> {
+}
+
+const ONEPASS_PENDING_VERIFICATION_KEY = 'onepass.pendingVerification';
+
+/**
+ * A checkout that returned a payment but has not verified yet. Kept in
+ * storage so leaving the screen or killing the app still offers "retry
+ * verification" instead of a second purchase. Best-effort: the server's
+ * `pendingActivation` covers payments it has already captured.
+ */
+export async function savePendingOnePassVerification(verification: OnePassVerification, userId?: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ONEPASS_PENDING_VERIFICATION_KEY, JSON.stringify({ ...verification, userId: userId ?? null }));
+  } catch (err) {
+    console.warn('[onepass] could not save pending verification:', err);
+  }
+}
+
+export async function loadPendingOnePassVerification(userId?: string): Promise<OnePassVerification | null> {
+  try {
+    const saved = JSON.parse((await AsyncStorage.getItem(ONEPASS_PENDING_VERIFICATION_KEY)) ?? 'null');
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = saved ?? {};
+    if (![razorpay_order_id, razorpay_payment_id, razorpay_signature].every(v => typeof v === 'string' && v)) return null;
+    // Another account's checkout on this device stays for that account.
+    if (saved.userId && userId && saved.userId !== userId) return null;
+    return { razorpay_order_id, razorpay_payment_id, razorpay_signature };
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingOnePassVerification(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(ONEPASS_PENDING_VERIFICATION_KEY);
+  } catch (err) {
+    console.warn('[onepass] could not clear pending verification:', err);
+  }
+}
+
+/** Verify the OnePass payment. The backend activates OnePass on success. */
+export async function verifyOnePassPayment(payload: OnePassVerification): Promise<void> {
   await request<{ success: boolean }>('/payments/verify-payment', {
     method: 'POST',
     auth: true,
@@ -2059,6 +2101,8 @@ export interface RouteDeparture {
 export interface RouteSchedule {
   minimumJourneyMinutes?: number;
   turnaroundMinutes?: number;
+  /** Driver rest after this route; the enforced gap is the larger of this and turnaroundMinutes. */
+  minRestMinutes?: number;
   returnDepartures?: Array<{ stopIndex: number; time: string }>;
   daysOfWeek: number[];
   departures: RouteDeparture[];
@@ -2113,9 +2157,14 @@ export async function registerForRoute(
     /** Legacy path: register against a specific existing admin slot index.
      *  Either this or departureTime must be supplied. */
     departureIndex?: number;
+    /** Sent with the index so the server refuses a slot the admin has since
+     *  changed ("timetable changed, refresh") instead of registering another trip. */
+    direction?: 'outbound' | 'return';
+    stopIndex?: number;
     roundTrip?: boolean;
     returnDepartureIndex?: number;
     returnDepartureTime?: string;
+    returnStopIndex?: number;
     replaceRoute?: boolean;
   },
 ): Promise<{ status: 'pending' | 'approved' }> {
@@ -2208,8 +2257,9 @@ export interface DriverAvailabilityData {
   slots: AvailabilitySlot[];
   exceptions: { routeId: string; routeName: string; departureDate: string; departureTime: string; available: false }[];
 }
-export async function fetchDriverAvailability(date: string): Promise<DriverAvailabilityData> {
-  const res = await request<{ data: DriverAvailabilityData }>(`/drivers/availability?from=${encodeURIComponent(date)}&to=${encodeURIComponent(date)}`, { method: 'GET', auth: true });
+/** `from`/`to` are inclusive IST dates; the backend caps the span at 60 days. */
+export async function fetchDriverAvailability(from: string, to = from): Promise<DriverAvailabilityData> {
+  const res = await request<{ data: DriverAvailabilityData }>(`/drivers/availability?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { method: 'GET', auth: true });
   return res.data;
 }
 export async function setDepartureAvailability(slot: AvailabilitySlot, available: boolean): Promise<void> {
